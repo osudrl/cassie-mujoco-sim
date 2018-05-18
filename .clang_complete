@@ -1,0 +1,6 @@
+-Iinclude
+-Imjpro150/include
+-std=gnu11
+-Wall
+-Wextra
+-Wpedantic
