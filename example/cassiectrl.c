@@ -1,4 +1,19 @@
-#include "udp.h"
+/*
+ * Copyright (c) 2018 Dynamic Robotics Laboratory
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,11 +24,12 @@
 #include "cassie_user_in_t.h"
 #include "state_out_t.h"
 #include "pd_in_t.h"
+#include "udp.h"
 
 
 enum mode {
     MODE_STANDARD,
-    MODE_RL
+    MODE_PD
 };
 
 
@@ -21,12 +37,14 @@ int main(int argc, char *argv[])
 {
     // Option variables and flags
     char *remote_addr_str = "127.0.0.1";
-    char *port_str = "25000";
+    char *remote_port_str = "25000";
+    char *iface_addr_str = "0.0.0.0";
+    char *iface_port_str = "25001";
     int mode = MODE_STANDARD;
 
     // Parse arguments
     int c;
-    while ((c = getopt(argc, argv, "a:p:x")) != -1) {
+    while ((c = getopt(argc, argv, "a:p:b:c:x")) != -1) {
         switch (c) {
         case 'a':
             // Remote address to connect to
@@ -34,11 +52,19 @@ int main(int argc, char *argv[])
             break;
         case 'p':
             // Port to connect to
-            port_str = optarg;
+            remote_port_str = optarg;
+            break;
+        case 'b':
+            // Remote address to connect to
+            iface_addr_str = optarg;
+            break;
+        case 'c':
+            // Port to connect to
+            iface_port_str = optarg;
             break;
         case 'x':
-            // Run in RL mode
-            mode = MODE_RL;
+            // Run in PD mode
+            mode = MODE_PD;
             break;
         default:
             // Print usage
@@ -48,23 +74,27 @@ int main(int argc, char *argv[])
 "\n"
 "  -a [ADDRESS]   Specify the local interface to bind to.\n"
 "  -p [PORT]      Specify the port to listen on.\n"
-"  -x             Run in RL mode, taking state estimates and sending PD targets.\n"
+"  -b [ADDRESS]   Specify the remote address to connect to.\n"
+"  -c [PORT]      Specify the remote port to connect to.\n"
+"  -x             Run in PD mode, taking state estimates and sending PD targets.\n"
 "\n"
-"By default, the simulator connects to localhost over IPv4 at port %s.\n\n",
-port_str);
+"By default, the controller connects to localhost over IPv4 to port %s"
+"from port %s.\n\n",
+remote_port_str, iface_port_str);
             exit(EXIT_SUCCESS);
         }
     }
 
     // Bind to network interface
-    int sock = udp_init(remote_addr_str, port_str, UDP_CLIENT);
+    int sock = udp_init_client(remote_addr_str, remote_port_str,
+                               iface_addr_str, iface_port_str);
     if (-1 == sock)
         exit(EXIT_FAILURE);
 
     // Create packet input/output buffers
     int dinlen, doutlen;
     switch (mode) {
-    case MODE_RL:
+    case MODE_PD:
         dinlen = STATE_OUT_T_PACKED_LEN;
         doutlen = PD_IN_T_PACKED_LEN;
         break;
@@ -87,7 +117,7 @@ port_str);
     cassie_user_in_t cassie_user_in = {0};
     cassie_out_t cassie_out;
 
-    // Create RL input/output structs
+    // Create PD input/output structs
     pd_in_t pd_in = {0};
     state_out_t state_out;
 
@@ -101,21 +131,27 @@ port_str);
 
     // Listen/respond loop
     while (true) {
-        // Try to get a new packet
-        ssize_t nbytes = get_newest_packet(sock, recvbuf, recvlen, NULL, NULL);
+        ssize_t nbytes;
 
-        // If no data has been received from the simulator, send null command
         if (!received_data) {
+            // If no data has been received from the simulator,
+            // send null commands every millisecond
             while (-1 == send(sock, sendbuf, sendlen, 0)) {}
             usleep(1000);
+
+            // Check for new packets
+            nbytes = get_newest_packet(sock, recvbuf, recvlen, NULL, NULL);
+
+            // If no new cassie output packets were received, do nothing
+            if (recvlen != nbytes)
+                continue;
+
+            received_data = true;
+            printf("Connected!\n\n");
+        } else {
+            // Wait for a new packet
+            nbytes = wait_for_packet(sock, recvbuf, recvlen, NULL, NULL);
         }
-
-        // If no new cassie output packets were received, do nothing
-        if (recvlen != nbytes)
-            continue;
-
-        // If execution reaches here, data has been received from the simulator
-        received_data = true;
 
         // Process incoming header and write outgoing header
         process_packet_header(&header_info, header_in, header_out);
@@ -123,7 +159,7 @@ port_str);
                header_info.delay, header_info.seq_num_in_diff);
 
         switch (mode) {
-        case MODE_RL:
+        case MODE_PD:
             // Unpack received data into cassie user input struct
             unpack_state_out_t(data_in, &state_out);
 

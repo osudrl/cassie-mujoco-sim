@@ -1,4 +1,19 @@
-#include "udp.h"
+/*
+ * Copyright (c) 2018 Dynamic Robotics Laboratory
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -7,11 +22,12 @@
 #include <time.h>
 #include <unistd.h>
 #include "cassiemujoco.h"
+#include "udp.h"
 
 
 enum mode {
     MODE_STANDARD,
-    MODE_RL
+    MODE_PD
 };
 
 
@@ -26,7 +42,7 @@ int main(int argc, char *argv[])
 {
     // Option variables and flags
     char *iface_addr_str = "0.0.0.0";
-    char *port_str = "25000";
+    char *iface_port_str = "25000";
     bool realtime = false;
     bool visualize = false;
     bool hold = false;
@@ -44,7 +60,7 @@ int main(int argc, char *argv[])
             break;
         case 'p':
             // Port to bind
-            port_str = optarg;
+            iface_port_str = optarg;
             break;
         case 'r':
             // Enable real-time mode
@@ -67,8 +83,8 @@ int main(int argc, char *argv[])
             qlog_file_path = optarg;
             break;
         case 'x':
-            // Run in RL mode
-            mode = MODE_RL;
+            // Run in PD mode
+            mode = MODE_PD;
             break;
         default:
             // Print usage
@@ -83,26 +99,26 @@ int main(int argc, char *argv[])
 "  -h             Hold the pelvis in place.\n"
 "  -l [FILENAME]  Log the input and output UDP data to a file.\n"
 "  -q [FILENAME]  Log simulation time, qpos, and qvel to a file.\n"
-"  -x             Run in RL mode, taking PD targets and sending state estimates.\n"
+"  -x             Run in PD mode, taking PD targets and sending state estimates.\n"
 "\n"
 "By default, the simulator listens on all IPv4 interfaces at port %s.\n"
 "If the option -r is not given, the simulator waits for input after sending\n"
 "each sensor data packet. With -r, the simulator runs in real-time, reusing\n"
 "old input if new data is not yet ready and waiting a minimum amount of time\n"
-"between sending sensor data packets.\n\n", port_str);
+"between sending sensor data packets.\n\n", iface_port_str);
             exit(EXIT_SUCCESS);
         }
     }
 
     // Bind to network interface
-    int sock = udp_init(iface_addr_str, port_str, UDP_SERVER);
+    int sock = udp_init_host(iface_addr_str, iface_port_str);
     if (-1 == sock)
         exit(EXIT_FAILURE);
 
     // Create packet input/output buffers
     int dinlen, doutlen;
     switch (mode) {
-    case MODE_RL:
+    case MODE_PD:
         dinlen = PD_IN_T_PACKED_LEN;
         doutlen = STATE_OUT_T_PACKED_LEN;
         break;
@@ -125,7 +141,7 @@ int main(int argc, char *argv[])
     cassie_user_in_t cassie_user_in = {0};
     cassie_out_t cassie_out;
 
-    // Create RL input/output structs
+    // Create PD input/output structs
     pd_in_t pd_in = {0};
     state_out_t state_out;
 
@@ -163,7 +179,7 @@ int main(int argc, char *argv[])
     static const long cycle_usec = 1000000 / 2000;
     long timeout_usec;
     switch (mode) {
-    case MODE_RL:
+    case MODE_PD:
         timeout_usec = 100 * 1000;
         break;
     default:
@@ -195,7 +211,7 @@ int main(int argc, char *argv[])
 
             // Unpack received data into cassie user input struct
             switch (mode) {
-            case MODE_RL:
+            case MODE_PD:
                 unpack_pd_in_t(data_in, &pd_in);
                 break;
             default:
@@ -212,7 +228,7 @@ int main(int argc, char *argv[])
         if (run_sim) {
             // Run simulator and pack output struct into outgoing packet
             switch (mode) {
-            case MODE_RL:
+            case MODE_PD:
                 cassie_sim_step_pd(sim, &state_out, &pd_in);
                 pack_state_out_t(&state_out, data_out);
                 break;

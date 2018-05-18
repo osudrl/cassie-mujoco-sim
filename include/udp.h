@@ -36,14 +36,12 @@ void process_packet_header(packet_header_info_t *info,
 #ifndef _WIN32
 #include <sys/socket.h>
 
-enum udp_init_mode {
-    UDP_SERVER,
-    UDP_CLIENT
-};
+// Create a UDP socket listening at a specific address/port
+int udp_init_host(const char *addr_str, const char *port_str);
 
-// Create a UDP socket bound or connected to a specific address
-int udp_init(const char *addr_str, const char *port_str,
-             enum udp_init_mode mode);
+// Create a UDP socket connected and listening to specific addresses/ports
+int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
+                    const char *local_addr_str, const char *local_port_str);
 
 // Get newest valid packet in RX buffer
 ssize_t get_newest_packet(int sock, void *recvbuf, size_t recvlen,

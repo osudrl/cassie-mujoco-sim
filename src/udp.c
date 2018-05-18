@@ -50,48 +50,114 @@ void process_packet_header(packet_header_info_t *info,
 
 #ifndef _WIN32
 
-int udp_init(const char *addr_str, const char *port_str,
-             enum udp_init_mode mode)
+int udp_init_host(const char *local_addr_str, const char *local_port_str)
 {
     int err;
 
     // Get address info
-    struct addrinfo *res;
+    struct addrinfo *local;
     struct addrinfo hints = {0};
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_protocol = IPPROTO_UDP;
-    err = getaddrinfo(addr_str, port_str, &hints, &res);
+    err = getaddrinfo(local_addr_str, local_port_str, &hints, &local);
     if (err) {
         perror(gai_strerror(err));
         return -1;
     }
 
     // Create socket
-    int sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    int sock = socket(local->ai_family, local->ai_socktype, local->ai_protocol);
     if (-1 == sock) {
-        perror("Error creating socket: ");
-        freeaddrinfo(res);
+        perror("Error creating socket");
+        freeaddrinfo(local);
         return -1;
     }
 
     // Bind to interface address
-    if (UDP_SERVER == mode)
-        err = bind(sock, (struct sockaddr *) res->ai_addr, res->ai_addrlen);
-    else
-        err = connect(sock, (struct sockaddr *) res->ai_addr, res->ai_addrlen);
-    if (-1 == err) {
-        if (UDP_SERVER == mode)
-            perror("Error binding to interface address: ");
-        else
-            perror("Error connecting to remote address: ");
+    if (bind(sock, (struct sockaddr *) local->ai_addr,
+             local->ai_addrlen)) {
+        perror("Error binding to interface address");
         close(sock);
-        freeaddrinfo(res);
+        freeaddrinfo(local);
         return -1;
     }
 
     // Free addrinfo struct
-    freeaddrinfo(res);
+    freeaddrinfo(local);
+
+    // Make socket non-blocking
+    fcntl(sock, O_NONBLOCK);
+
+    return sock;
+}
+
+
+int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
+                    const char *local_addr_str, const char *local_port_str)
+{
+    int err;
+
+    // Get remote address info
+    struct addrinfo *remote;
+    struct addrinfo hints = {0};
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_protocol = IPPROTO_UDP;
+    err = getaddrinfo(remote_addr_str, remote_port_str, &hints, &remote);
+    if (err) {
+        perror(gai_strerror(err));
+        return -1;
+    }
+
+    // Get remote address info
+    struct addrinfo *local;
+    err = getaddrinfo(local_addr_str, local_port_str, &hints, &local);
+    if (err) {
+        perror(gai_strerror(err));
+        return -1;
+    }
+
+    // Create socket
+    int sock = socket(remote->ai_family, remote->ai_socktype,
+                      remote->ai_protocol);
+    if (-1 == sock) {
+        perror("Error creating socket");
+        freeaddrinfo(remote);
+        freeaddrinfo(local);
+        return -1;
+    }
+
+    // Bind to interface address with correct local port
+    if (err) {
+        perror(gai_strerror(err));
+        close(sock);
+        freeaddrinfo(remote);
+        freeaddrinfo(local);
+        return -1;
+    }
+
+    if (bind(sock, (struct sockaddr *) local->ai_addr, local->ai_addrlen)) {
+        perror("Error binding to interface address");
+        close(sock);
+        freeaddrinfo(remote);
+        freeaddrinfo(local);
+        return -1;
+    }
+
+    // Connect to remote address
+    if (connect(sock, (struct sockaddr *) remote->ai_addr,
+                remote->ai_addrlen)) {
+        perror("Error connecting to remote address");
+        close(sock);
+        freeaddrinfo(remote);
+        freeaddrinfo(local);
+        return -1;
+    }
+
+    // Free addrinfo structs
+    freeaddrinfo(remote);
+    freeaddrinfo(local);
 
     // Make socket non-blocking
     fcntl(sock, O_NONBLOCK);
