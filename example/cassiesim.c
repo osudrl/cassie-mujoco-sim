@@ -266,9 +266,9 @@ int main(int argc, char *argv[])
                 }
             }
 
-            // Send response, retry if busy
-            while (-1 == sendto(sock, sendbuf, sendlen, 0,
-                                (struct sockaddr *) &src_addr, addrlen)) {}
+            // Send response
+            send_packet(sock, sendbuf, sendlen,
+                        (struct sockaddr *) &src_addr, addrlen);
         }
 
         // Draw no more then once every 33 simulation steps

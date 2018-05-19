@@ -14,6 +14,7 @@
 
 from cassiemujoco_ctypes import *
 import os
+import ctypes
 
 # Get base directory
 _dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -28,39 +29,6 @@ state_out_t = struct_c__SA_state_out_t
 pd_in_t = struct_c__SA_pd_in_t
 
 # Interface classes
-class CassieState:
-    def __init__(self):
-        self.s = cassie_state_alloc()
-
-    def time(self):
-        timep = cassie_state_time(self.s)
-        return timep[0]
-
-    def qpos(self):
-        qposp = cassie_state_qpos(self.s)
-        return qposp[:35]
-
-    def qvel(self):
-        qvelp = cassie_state_qvel(self.s)
-        return qvelp[:32]
-
-    def set_time(self, time):
-        timep = cassie_state_time(self.s)
-        timep[0] = time
-
-    def set_qpos(self, qpos):
-        qposp = cassie_state_qpos(self.s)
-        for i in range(min(len(qpos), 35)):
-            qposp[i] = qpos[i]
-
-    def set_qvel(self, qvel):
-        qvelp = cassie_state_qvel(self.s)
-        for i in range(min(len(qvel), 32)):
-            qvelp[i] = qvel[i]
-
-    def __del__(self):
-        cassie_state_free(self.s)
-
 class CassieSim:
     def __init__(self):
         self.c = cassie_sim_init()
@@ -133,3 +101,116 @@ class CassieVis:
 
     def __del__(self):
         cassie_vis_free(self.v)
+
+class CassieState:
+    def __init__(self):
+        self.s = cassie_state_alloc()
+
+    def time(self):
+        timep = cassie_state_time(self.s)
+        return timep[0]
+
+    def qpos(self):
+        qposp = cassie_state_qpos(self.s)
+        return qposp[:35]
+
+    def qvel(self):
+        qvelp = cassie_state_qvel(self.s)
+        return qvelp[:32]
+
+    def set_time(self, time):
+        timep = cassie_state_time(self.s)
+        timep[0] = time
+
+    def set_qpos(self, qpos):
+        qposp = cassie_state_qpos(self.s)
+        for i in range(min(len(qpos), 35)):
+            qposp[i] = qpos[i]
+
+    def set_qvel(self, qvel):
+        qvelp = cassie_state_qvel(self.s)
+        for i in range(min(len(qvel), 32)):
+            qvelp[i] = qvel[i]
+
+    def __del__(self):
+        cassie_state_free(self.s)
+
+class CassieUdp:
+    def __init__(self, remote_addr='127.0.0.1', remote_port='25000',
+                 local_addr='0.0.0.0', local_port='25001'):
+        self.sock = udp_init_client(str.encode(remote_addr),
+                                    str.encode(remote_port),
+                                    str.encode(local_addr),
+                                    str.encode(local_port))
+        self.packet_header_info = packet_header_info_t()
+        self.recvlen = 2 + 697
+        self.sendlen = 2 + 58
+        self.recvlen_pd = 2 + 493
+        self.sendlen_pd = 2 + 476
+        self.recvbuf = (ctypes.c_ubyte * max(self.recvlen, self.recvlen_pd))()
+        self.sendbuf = (ctypes.c_ubyte * max(self.sendlen, self.sendlen_pd))()
+        self.inbuf = ctypes.cast(ctypes.byref(self.recvbuf, 2),
+                                 ctypes.POINTER(ctypes.c_ubyte))
+        self.outbuf = ctypes.cast(ctypes.byref(self.sendbuf, 2),
+                                  ctypes.POINTER(ctypes.c_ubyte))
+
+    def send(self, u):
+        pack_cassie_user_in_t(u, self.outbuf)
+        send_packet(self.sock, self.sendbuf, self.sendlen, None, 0)
+
+    def send_pd(self, u):
+        pack_pd_in_t(u, self.outbuf)
+        send_packet(self.sock, self.sendbuf, self.sendlen_pd, None, 0)
+
+    def recv_wait(self):
+        nbytes = -1
+        while nbytes != self.recvlen:
+            nbytes = get_newest_packet(self.sock, self.recvbuf, self.recvlen,
+                                       None, None)
+        process_packet_header(self.packet_header_info,
+                              self.recvbuf, self.sendbuf)
+        cassie_out = cassie_out_t()
+        unpack_cassie_out_t(self.inbuf, cassie_out)
+        return cassie_out
+
+    def recv_wait_pd(self):
+        nbytes = -1
+        while nbytes != self.recvlen_pd:
+            nbytes = get_newest_packet(self.sock, self.recvbuf, self.recvlen_pd,
+                                       None, None)
+        process_packet_header(self.packet_header_info,
+                              self.recvbuf, self.sendbuf)
+        state_out = state_out_t()
+        unpack_state_out_t(self.inbuf, state_out)
+        return state_out
+
+    def recv_newest(self):
+        nbytes = get_newest_packet(self.sock, self.recvbuf, self.recvlen,
+                                   None, None)
+        if nbytes != self.recvlen:
+            return None
+        process_packet_header(self.packet_header_info,
+                              self.recvbuf, self.sendbuf)
+        cassie_out = cassie_out_t()
+        unpack_cassie_out_t(self.inbuf, cassie_out)
+        return cassie_out
+
+    def recv_newest_pd(self):
+        nbytes = get_newest_packet(self.sock, self.recvbuf, self.recvlen_pd,
+                                   None, None)
+        if nbytes != self.recvlen_pd:
+            return None
+        process_packet_header(self.packet_header_info,
+                              self.recvbuf, self.sendbuf)
+        state_out = state_out_t()
+        unpack_state_out_t(self.inbuf, state_out)
+        return state_out
+
+    def delay(self):
+        return ord(self.packet_header_info.delay)
+
+    def seq_num_in_diff(self):
+        return ord(self.packet_header_info.seq_num_in_diff)
+
+    def __del__(self):
+        udp_close(self.sock)

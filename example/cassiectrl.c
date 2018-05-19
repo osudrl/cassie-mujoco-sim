@@ -131,26 +131,19 @@ remote_port_str, iface_port_str);
 
     // Listen/respond loop
     while (true) {
-        ssize_t nbytes;
-
         if (!received_data) {
-            // If no data has been received from the simulator,
-            // send null commands every millisecond
-            while (-1 == send(sock, sendbuf, sendlen, 0)) {}
-            usleep(1000);
-
-            // Check for new packets
-            nbytes = get_newest_packet(sock, recvbuf, recvlen, NULL, NULL);
-
-            // If no new cassie output packets were received, do nothing
-            if (recvlen != nbytes)
-                continue;
-
+            // Send null commands until the simulator responds
+            ssize_t nbytes;
+            do {
+                send_packet(sock, sendbuf, sendlen, NULL, 0);
+                usleep(1000);
+                nbytes = get_newest_packet(sock, recvbuf, recvlen, NULL, NULL);
+            } while (recvlen != nbytes);
             received_data = true;
             printf("Connected!\n\n");
         } else {
             // Wait for a new packet
-            nbytes = wait_for_packet(sock, recvbuf, recvlen, NULL, NULL);
+            wait_for_packet(sock, recvbuf, recvlen, NULL, NULL);
         }
 
         // Process incoming header and write outgoing header
@@ -180,7 +173,7 @@ remote_port_str, iface_port_str);
             pack_cassie_user_in_t(&cassie_user_in, data_out);
         }
 
-        // Send response, retry if busy
-        while (-1 == send(sock, sendbuf, sendlen, 0)) {}
+        // Send response
+        send_packet(sock, sendbuf, sendlen, NULL, 0);
     }
 }

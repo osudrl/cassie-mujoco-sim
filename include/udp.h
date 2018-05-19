@@ -43,6 +43,9 @@ int udp_init_host(const char *addr_str, const char *port_str);
 int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
                     const char *local_addr_str, const char *local_port_str);
 
+// Close a UDP socket
+void udp_close(int sock);
+
 // Get newest valid packet in RX buffer
 ssize_t get_newest_packet(int sock, void *recvbuf, size_t recvlen,
                           struct sockaddr *src_addr, socklen_t *addrlen);
@@ -50,6 +53,10 @@ ssize_t get_newest_packet(int sock, void *recvbuf, size_t recvlen,
 // Wait for a new valid packet
 ssize_t wait_for_packet(int sock, void *recvbuf, size_t recvlen,
                         struct sockaddr *src_addr, socklen_t *addrlen);
+
+// Send a packet
+ssize_t send_packet(int sock, void *sendbuf, size_t sendlen,
+                    struct sockaddr *dst_addr, socklen_t addrlen);
 
 #endif // _WIN32
 #endif // UDP_H

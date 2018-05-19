@@ -15,14 +15,6 @@
  */
 
 #include "udp.h"
-#ifndef _WIN32
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <poll.h>
-#include <netdb.h>
-#include <fcntl.h>
-#endif // _WIN32
 
 
 void process_packet_header(packet_header_info_t *info,
@@ -49,6 +41,13 @@ void process_packet_header(packet_header_info_t *info,
 
 
 #ifndef _WIN32
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <poll.h>
+#include <netdb.h>
+#include <fcntl.h>
+
 
 int udp_init_host(const char *local_addr_str, const char *local_port_str)
 {
@@ -128,15 +127,7 @@ int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
         return -1;
     }
 
-    // Bind to interface address with correct local port
-    if (err) {
-        perror(gai_strerror(err));
-        close(sock);
-        freeaddrinfo(remote);
-        freeaddrinfo(local);
-        return -1;
-    }
-
+    // Bind to interface address
     if (bind(sock, (struct sockaddr *) local->ai_addr, local->ai_addrlen)) {
         perror("Error binding to interface address");
         close(sock);
@@ -163,6 +154,12 @@ int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
     fcntl(sock, O_NONBLOCK);
 
     return sock;
+}
+
+
+void udp_close(int sock)
+{
+    close(sock);
 }
 
 
@@ -205,5 +202,21 @@ ssize_t wait_for_packet(int sock, void *recvbuf, size_t recvlen,
     // Return the copied packet size
     return nbytes;
 }
+
+
+ssize_t send_packet(int sock, void *sendbuf, size_t sendlen,
+                    struct sockaddr *dst_addr, socklen_t addrlen)
+{
+    ssize_t nbytes;
+
+    // Send packet, retrying if busy
+    do {
+        nbytes = sendto(sock, sendbuf, sendlen, 0, dst_addr, addrlen);
+    } while (-1 == nbytes);
+
+    // Return the sent packet size
+    return nbytes;
+}
+
 
 #endif // _WIN32
