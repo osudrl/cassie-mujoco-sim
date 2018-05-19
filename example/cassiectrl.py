@@ -49,5 +49,5 @@ while True:
     # Run controller
     u = controller(y)
 
-    # Send responde
+    # Send response
     cassie.send_pd(u)

@@ -83,8 +83,14 @@ class CassieSim:
     def release(self):
         cassie_sim_release(self.c)
 
-    def force(self, xfrc):
-        cassie_sim_apply_force(self.c, xfrc, 0)
+    def force(self, xfrc, body=1):
+        xfrc_array = (ctypes.c_double * 6)()
+        for i in range(len(xfrc)):
+            xfrc_array[i] = xfrc[i]
+        cassie_sim_apply_force(self.c, xfrc_array, body)
+
+    def clear_forces(self):
+        cassie_sim_clear_forces(self.c)
 
     def __del__(self):
         cassie_sim_free(self.c)
