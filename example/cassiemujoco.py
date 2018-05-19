@@ -83,7 +83,7 @@ class CassieSim:
     def release(self):
         cassie_sim_release(self.c)
 
-    def force(self, xfrc, body=1):
+    def apply_force(self, xfrc, body=1):
         xfrc_array = (ctypes.c_double * 6)()
         for i in range(len(xfrc)):
             xfrc_array[i] = xfrc[i]
