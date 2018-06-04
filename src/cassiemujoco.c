@@ -43,6 +43,8 @@
 static bool glfw_initialized = false;
 static bool mujoco_initialized = false;
 static mjModel *initial_model;
+static int left_foot_body_id;
+static int right_foot_body_id;
 
 
 /*******************************************************************************
@@ -62,8 +64,11 @@ void (*mj_deleteData_fp)(mjData*);
 void (*mj_forward_fp)(mjModel*, mjData*);
 void (*mj_step1_fp)(mjModel*, mjData*);
 void (*mj_step2_fp)(mjModel*, mjData*);
+void (*mj_contactForce_fp)(mjModel*, mjData*, int, mjtNum*);
+int (*mj_name2id_fp)(mjModel*, int, char*);
 void (*mju_copy_fp)(mjtNum*, mjtNum*, int);
 void (*mju_zero_fp)(mjtNum*, int);
+void (*mju_rotVecMatT_fp)(mjtNum*, mjtNum*, mjtNum*);
 void (*mjv_makeScene_fp)(mjvScene*, int);
 void (*mjv_freeScene_fp)(mjvScene*);
 void (*mjv_updateScene_fp)(mjModel*, mjData*, mjvOption*, mjvPerturb*,
@@ -289,8 +294,11 @@ static bool load_mujoco_library(const char *basedir)
     LOADFUN(mj_handle, mj_forward);
     LOADFUN(mj_handle, mj_step1);
     LOADFUN(mj_handle, mj_step2);
+    LOADFUN(mj_handle, mj_contactForce);
+    LOADFUN(mj_handle, mj_name2id);
     LOADFUN(mj_handle, mju_copy);
     LOADFUN(mj_handle, mju_zero);
+    LOADFUN(mj_handle, mju_rotVecMatT);
     LOADFUN(mj_handle, mjv_makeScene);
     LOADFUN(mj_handle, mjv_freeScene);
     LOADFUN(mj_handle, mjv_updateScene);
@@ -571,6 +579,16 @@ static void cassie_motor_data(cassie_sim_t *c, const cassie_in_t *cassie_in)
  * Public functions
  ******************************************************************************/
 
+#define ID_NAME_LOOKUP(idvar, objtype, name)                            \
+    do {                                                                \
+        idvar = mj_name2id_fp(initial_model, objtype, #name);           \
+        if (-1 == idvar) {                                              \
+            fprintf(stderr, "Could not find body named " #name "\n");   \
+            return false;                                               \
+        }                                                               \
+    } while (0)
+
+
 bool cassie_mujoco_init(const char *basedir)
 {
     // Buffer for paths
@@ -612,10 +630,16 @@ bool cassie_mujoco_init(const char *basedir)
         char error[1000] = "Could not load XML model";
         initial_model = mj_loadXML_fp(buf, 0, error, 1000);
 
-        if (initial_model)
-            mujoco_initialized = true;
-        else
+        if (!initial_model) {
             fprintf(stderr, "Load model error: %s\n", error);
+            return false;
+        }
+
+        // Look up relevant IDs based on names
+        ID_NAME_LOOKUP(left_foot_body_id, mjOBJ_BODY, left-foot);
+        ID_NAME_LOOKUP(right_foot_body_id, mjOBJ_BODY, right-foot);
+
+        mujoco_initialized = true;
     }
 
     // Initialize GLFW if it was loaded
@@ -849,6 +873,51 @@ bool cassie_sim_check_self_collision(const cassie_sim_t *c)
     }
 
     return false;
+}
+
+
+void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12])
+{
+    double force_torque[6];
+    double force_global[3];
+
+    // Zero the output foot forces
+    mju_zero_fp(cfrc, 12);
+
+    // Accumulate the forces on each foot
+    for (int i = 0; i < c->d->ncon; ++i) {
+        // Get body IDs for both geoms in the collision
+        int body1 = c->m->geom_bodyid[c->d->contact[i].geom1];
+        int body2 = c->m->geom_bodyid[c->d->contact[i].geom2];
+
+        // Left foot
+        if (body1 == left_foot_body_id || body2 == left_foot_body_id) {
+            // Get contact force in world coordinates
+            mj_contactForce_fp(c->m, c->d, i, force_torque);
+            mju_rotVecMatT_fp(force_global, force_torque,
+                             c->d->contact[i].frame);
+
+            // Add to total forces on foot
+            if (body1 == left_foot_body_id)
+                for (int j = 0; j < 3; ++j) cfrc[j] -= force_global[j];
+            else
+                for (int j = 0; j < 3; ++j) cfrc[j] += force_global[j];
+        }
+
+        // Right foot
+        if (body1 == right_foot_body_id || body2 == right_foot_body_id) {
+            // Get contact force in world coordinates
+            mj_contactForce_fp(c->m, c->d, i, force_torque);
+            mju_rotVecMatT_fp(force_global, force_torque,
+                             c->d->contact[i].frame);
+
+            // Add to total forces on foot
+            if (body1 == right_foot_body_id)
+                for (int j = 0; j < 3; ++j) cfrc[j+6] -= force_global[j];
+            else
+                for (int j = 0; j < 3; ++j) cfrc[j+6] += force_global[j];
+        }
+    }
 }
 
 

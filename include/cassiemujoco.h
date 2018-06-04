@@ -171,6 +171,13 @@ bool cassie_sim_check_obstacle_collision(const cassie_sim_t *sim);
 // contact with each other (i.e. right and left leg collide).
 bool cassie_sim_check_self_collision(const cassie_sim_t *sim);
 
+// Returns the contact forces on the left and right feet
+// cfrc[0-2]:  Contact force acting on the left foot, in world coordinates
+// cfrc[3-5]:  Currently zero, reserved for torque acting on the left foot
+// cfrc[6-8]:  Contact force acting on the left foot, in world coordinates
+// cfrc[9-11]: Currently zero, reserved for torque acting on the right foot
+void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12]);
+
 // Applies an external force to a specified body.
 void cassie_sim_apply_force(cassie_sim_t *sim, double xfrc[6], int body);
 
