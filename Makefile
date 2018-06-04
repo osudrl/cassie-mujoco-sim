@@ -15,7 +15,7 @@ clean:
 	rm -rf build/
 	rm -rf test/
 
-$(LIBOUT):
+$(LIBOUT): src/*.c
 	gcc src/*.c $(INC) $(CFLAGS) -o $(LIBOUT) $(LDFLAGS) $(LIBS)
 
 build: $(LIBOUT)

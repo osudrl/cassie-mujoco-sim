@@ -22,12 +22,6 @@ _dir_path = os.path.dirname(os.path.realpath(__file__))
 # Initialize libcassiesim
 cassie_mujoco_init(str.encode(_dir_path))
 
-# Nicer structure names
-cassie_out_t = struct_c__SA_cassie_out_t
-cassie_user_in_t = struct_c__SA_cassie_user_in_t
-state_out_t = struct_c__SA_state_out_t
-pd_in_t = struct_c__SA_pd_in_t
-
 # Interface classes
 class CassieSim:
     def __init__(self):

@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
             // Print usage
             printf(
 "Usage: cassiectrl [OPTION]...\n"
-"Controlls the Cassie robot over UDP.\n"
+"Controls the Cassie robot over UDP.\n"
 "\n"
 "  -a [ADDRESS]   Specify the local interface to bind to.\n"
 "  -p [PORT]      Specify the port to listen on.\n"
