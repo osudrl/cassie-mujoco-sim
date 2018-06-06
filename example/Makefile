@@ -1,17 +1,25 @@
-# Compiler
-CC      := gcc
-LD      := $(CC)
+# Build for linux by default
+PLATFORM := LINUX
 
-# Options for all targets
+# Compilation settings
 INC     := -Iinclude
 CFLAGS  := -std=gnu11 -Wall -Wextra -O3 -march=sandybridge -flto
-LDFLAGS := -L. -Wl,-rpath,'$$ORIGIN'
+LDFLAGS := -L.
 LIBS    := -lcassiemujoco
 
-# Output binaries
+# Platform-specific settings
+ifeq ($(PLATFORM), WIN)
+CC      := x86_64-w64-mingw32-gcc
+TESTOUT := cassietest.exe
+SIMOUT  := cassiesim.exe
+CTRLOUT := cassiectrl.exe
+else
+CC      := gcc
+LDFLAGS += -Wl,-rpath,'$$ORIGIN'
 TESTOUT := cassietest
 SIMOUT  := cassiesim
 CTRLOUT := cassiectrl
+endif
 
 # Default target
 all: $(TESTOUT) $(SIMOUT) $(CTRLOUT)

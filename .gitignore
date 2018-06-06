@@ -3,3 +3,4 @@ test/
 mjpro150/
 mjkey.txt
 *.so
+*.dll

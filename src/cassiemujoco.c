@@ -599,16 +599,15 @@ bool cassie_mujoco_init(const char *basedir)
         // If no base directory is provided, use the direectory
         // containing the executable as the base directory
 #ifdef _WIN32
-        HMODULE hModule = GetModuleHandleW(NULL);
-        WCHAR binpath[4096];
-        GetModuleFileNameW(hModule, binpath,
-                           sizeof binpath / sizeof binpath[0]);
-        WCHAR bindir[4096];
-        _wsplitpath_s(binpath, NULL, 0,
-                      bindir, sizeof bindir / sizeof bindir[0],
-                      NULL, 0, NULL, 0);
+        char buf2[1024];
+        HMODULE hModule = GetModuleHandle(NULL);
+        GetModuleFileName(hModule, buf2, sizeof buf2);
+        char bindrive[16];
+        _splitpath_s(buf2, bindrive, sizeof bindrive,
+                     buf, sizeof buf, NULL, 0, NULL, 0);
+        snprintf(buf2, sizeof buf2, "%s%s", bindrive, buf);
         if (!basedir)
-            basedir = bindir;
+            basedir = buf2;
 #else
         char binpath[4096];
         if (-1 == readlink("/proc/self/exe", binpath, sizeof binpath))

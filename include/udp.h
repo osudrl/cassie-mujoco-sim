@@ -27,14 +27,20 @@ typedef struct {
     char seq_num_in_diff;
 } packet_header_info_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Process packet header used to measure delay and skipped packets
 void process_packet_header(packet_header_info_t *info,
                            const unsigned char *header_in,
                            unsigned char *header_out);
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#else
 #include <sys/socket.h>
+#endif
 
 // Create a UDP socket listening at a specific address/port
 int udp_init_host(const char *addr_str, const char *port_str);
@@ -58,5 +64,8 @@ ssize_t wait_for_packet(int sock, void *recvbuf, size_t recvlen,
 ssize_t send_packet(int sock, void *sendbuf, size_t sendlen,
                     struct sockaddr *dst_addr, socklen_t addrlen);
 
-#endif // _WIN32
+#ifdef __cplusplus
+}
+#endif
+
 #endif // UDP_H

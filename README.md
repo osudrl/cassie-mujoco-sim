@@ -1,7 +1,7 @@
 # cassie-mujoco-sim
 A simulation library for Agility Robotics' Cassie robot using MuJoCo.
 
-Developed and tested on Ubuntu 16.04.
+Developed and tested on Ubuntu 16.04. Also compiles for Windows using mingw-w64.
 
 To build the shared library:
 1.  Install libglfw3-dev
@@ -9,6 +9,8 @@ To build the shared library:
 3.  Download mjpro150_linux.zip from roboti.us
 4.  Put mjpro150 in the cassie-mujoco-sim directory
 5.  `make`
+
+To cross-compile for Windows, use `make PLATFORM=WIN`.
 
 A directory named release will be created containing the files needed to use the library with a C interface. A Python interface can be generated with `make ctypes`, which requires ctypeslib2 to be installed.
 

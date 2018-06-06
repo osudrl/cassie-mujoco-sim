@@ -31,11 +31,27 @@ enum mode {
 };
 
 
-static long diff_time_us(const struct timespec *a, const struct timespec *b)
+#ifdef _WIN32
+#include <windows.h>
+
+static long long get_microseconds(void)
 {
-    return (a->tv_sec - b->tv_sec) * 1000000 +
-        (a->tv_nsec - b->tv_nsec) / 1000;
+    LARGE_INTEGER count, frequency;
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&count);
+    return (count.QuadPart * 1000000) / frequency.QuadPart;
 }
+
+#else
+
+static long long get_microseconds(void)
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return now.tv_sec * 1000000 + now.tv_nsec / 1000;
+}
+
+#endif // _WIN32
 
 
 int main(int argc, char *argv[])
@@ -173,18 +189,10 @@ int main(int argc, char *argv[])
     // Manage simulation loop
     unsigned long long loop_counter = 0;
     bool run_sim = false;
-    struct timespec send_time, recv_time;
-    clock_gettime(CLOCK_MONOTONIC, &send_time);
-    clock_gettime(CLOCK_MONOTONIC, &recv_time);
-    static const long cycle_usec = 1000000 / 2000;
-    long timeout_usec;
-    switch (mode) {
-    case MODE_PD:
-        timeout_usec = 100 * 1000;
-        break;
-    default:
-        timeout_usec = 10 * 1000;
-    }
+    const long long cycle_usec = 1000000 / 2000;
+    const long long timeout_usec = mode == MODE_PD ? 100000 : 10000;
+    long long send_time = get_microseconds();
+    long long recv_time = get_microseconds();
 
     printf("Waiting for input...\n");
 
@@ -219,7 +227,7 @@ int main(int argc, char *argv[])
             }
 
             // Update packet received timestamp
-            clock_gettime(CLOCK_MONOTONIC, &recv_time);
+            recv_time = get_microseconds();
 
             // Start the simulation after the first valid packet is received
             run_sim = true;
@@ -252,15 +260,12 @@ int main(int argc, char *argv[])
 
             if (realtime) {
                 // Wait at least cycle_usec between sending simulator updates
-                struct timespec current_time;
-                do {
-                    clock_gettime(CLOCK_MONOTONIC, &current_time);
-                } while (diff_time_us(&current_time, &send_time) < cycle_usec);
-                send_time = current_time;
+                while (get_microseconds() - send_time < cycle_usec) {}
+                send_time = get_microseconds();
 
                 // Zero input data if no new packets have been
                 // received in a while
-                if (diff_time_us(&current_time, &recv_time) > timeout_usec) {
+                if (get_microseconds() - recv_time > timeout_usec) {
                     memset(&cassie_user_in, 0, sizeof cassie_user_in);
                     memset(&pd_in, 0, sizeof pd_in);
                 }

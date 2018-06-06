@@ -14,7 +14,45 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifdef _WIN32
+
+// Winsock compatibility
+#define _WIN32_WINNT 0x0601
+#include <winsock2.h>
+
+#define poll WSAPoll
+#define close closesocket
+#define ioctl ioctlsocket
+#define perror(str) fprintf(stderr, str ": %d\n", WSAGetLastError())
+#define SOCKETS_INIT                                    \
+    do {                                                \
+        WSADATA wsaData;                                \
+        int res = WSAStartup(MAKEWORD(2, 2), &wsaData); \
+        if (res) {                                      \
+            printf("WSAStartup failed: %d\n", res);     \
+            return -1;                                  \
+        }                                               \
+    } while (0)
+#define SOCKETS_CLEANUP WSACleanup()
+typedef u_long ioctl_arg_t;
+
+#else
+
+// Linux sockets
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <poll.h>
+#include <netdb.h>
+#include <fcntl.h>
+
+#define SOCKETS_INIT
+#define SOCKETS_CLEANUP
+typedef int ioctl_arg_t;
+
+#endif // _WIN32
+
 #include "udp.h"
+#include <stdio.h>
 
 
 void process_packet_header(packet_header_info_t *info,
@@ -40,17 +78,11 @@ void process_packet_header(packet_header_info_t *info,
 }
 
 
-#ifndef _WIN32
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <poll.h>
-#include <netdb.h>
-#include <fcntl.h>
-
-
 int udp_init_host(const char *local_addr_str, const char *local_port_str)
 {
+    // Platform-specific socket library initialization
+    SOCKETS_INIT;
+
     int err;
 
     // Get address info
@@ -61,7 +93,8 @@ int udp_init_host(const char *local_addr_str, const char *local_port_str)
     hints.ai_protocol = IPPROTO_UDP;
     err = getaddrinfo(local_addr_str, local_port_str, &hints, &local);
     if (err) {
-        perror(gai_strerror(err));
+        printf("%s\n", gai_strerror(err));
+        SOCKETS_CLEANUP;
         return -1;
     }
 
@@ -70,6 +103,7 @@ int udp_init_host(const char *local_addr_str, const char *local_port_str)
     if (-1 == sock) {
         perror("Error creating socket");
         freeaddrinfo(local);
+        SOCKETS_CLEANUP;
         return -1;
     }
 
@@ -79,6 +113,7 @@ int udp_init_host(const char *local_addr_str, const char *local_port_str)
         perror("Error binding to interface address");
         close(sock);
         freeaddrinfo(local);
+        SOCKETS_CLEANUP;
         return -1;
     }
 
@@ -86,7 +121,8 @@ int udp_init_host(const char *local_addr_str, const char *local_port_str)
     freeaddrinfo(local);
 
     // Make socket non-blocking
-    fcntl(sock, O_NONBLOCK);
+    ioctl_arg_t mode = 1;
+    ioctl(sock, FIONBIO, &mode);
 
     return sock;
 }
@@ -95,6 +131,9 @@ int udp_init_host(const char *local_addr_str, const char *local_port_str)
 int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
                     const char *local_addr_str, const char *local_port_str)
 {
+    // Platform-specific socket library initialization
+    SOCKETS_INIT;
+
     int err;
 
     // Get remote address info
@@ -105,7 +144,8 @@ int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
     hints.ai_protocol = IPPROTO_UDP;
     err = getaddrinfo(remote_addr_str, remote_port_str, &hints, &remote);
     if (err) {
-        perror(gai_strerror(err));
+        printf("%s\n", gai_strerror(err));
+        SOCKETS_CLEANUP;
         return -1;
     }
 
@@ -113,7 +153,8 @@ int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
     struct addrinfo *local;
     err = getaddrinfo(local_addr_str, local_port_str, &hints, &local);
     if (err) {
-        perror(gai_strerror(err));
+        printf("%s\n", gai_strerror(err));
+        SOCKETS_CLEANUP;
         return -1;
     }
 
@@ -124,6 +165,7 @@ int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
         perror("Error creating socket");
         freeaddrinfo(remote);
         freeaddrinfo(local);
+        SOCKETS_CLEANUP;
         return -1;
     }
 
@@ -133,6 +175,7 @@ int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
         close(sock);
         freeaddrinfo(remote);
         freeaddrinfo(local);
+        SOCKETS_CLEANUP;
         return -1;
     }
 
@@ -143,6 +186,7 @@ int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
         close(sock);
         freeaddrinfo(remote);
         freeaddrinfo(local);
+        SOCKETS_CLEANUP;
         return -1;
     }
 
@@ -151,7 +195,8 @@ int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
     freeaddrinfo(local);
 
     // Make socket non-blocking
-    fcntl(sock, O_NONBLOCK);
+    ioctl_arg_t mode = 1;
+    ioctl(sock, FIONBIO, &mode);
 
     return sock;
 }
@@ -160,6 +205,7 @@ int udp_init_client(const char *remote_addr_str, const char *remote_port_str,
 void udp_close(int sock)
 {
     close(sock);
+    SOCKETS_CLEANUP;
 }
 
 
@@ -172,7 +218,7 @@ ssize_t get_newest_packet(int sock, void *recvbuf, size_t recvlen,
 
     // Loop through RX buffer, copying data if packet is correct size
     while (poll(&fd, 1, 0)) {
-        int nbytes_avail;
+        ioctl_arg_t nbytes_avail;
         ioctl(sock, FIONREAD, &nbytes_avail);
         if (recvlen == (size_t) nbytes_avail)
             nbytes = recvfrom(sock, recvbuf, recvlen, 0, src_addr, addrlen);
@@ -217,6 +263,3 @@ ssize_t send_packet(int sock, void *sendbuf, size_t sendlen,
     // Return the sent packet size
     return nbytes;
 }
-
-
-#endif // _WIN32

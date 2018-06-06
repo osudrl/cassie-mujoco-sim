@@ -1,10 +1,22 @@
-CC      := gcc
-LD      := $(CC)
+# Build for linux by default
+PLATFORM := LINUX
+
+# Compilation settings
 INC     := -Iinclude -Imjpro150/include
-CFLAGS  := -std=gnu11 -Wall -Wextra -O3 -march=sandybridge -flto -fPIC
+CFLAGS  := -std=gnu11 -Wall -Wextra -O3 -march=sandybridge -flto
 LDFLAGS := -shared -Lsrc
-LIBS    := -lm -ldl -Wl,--whole-archive -lagilitycassie -Wl,--no-whole-archive
-LIBOUT  := libcassiemujoco.so
+
+# Platform-specific settings
+ifeq ($(PLATFORM), WIN)
+CC     := x86_64-w64-mingw32-gcc
+LIBS   := -lws2_32 -Wl,--whole-archive -l:agilitycassie.lib -Wl,--no-whole-archive
+LIBOUT := cassiemujoco.dll
+else
+CC     := gcc
+CFLAGS += -fPIC
+LIBS   := -lm -ldl -Wl,--whole-archive -lagilitycassie -Wl,--no-whole-archive
+LIBOUT := libcassiemujoco.so
+endif
 
 # Default build target
 all: checkdirs build
@@ -16,7 +28,7 @@ clean:
 	rm -rf test/
 
 $(LIBOUT): src/*.c
-	gcc src/*.c $(INC) $(CFLAGS) -o $(LIBOUT) $(LDFLAGS) $(LIBS)
+	$(CC) src/*.c $(INC) $(CFLAGS) -o $(LIBOUT) $(LDFLAGS) $(LIBS)
 
 build: $(LIBOUT)
 	mkdir -p build
@@ -29,13 +41,13 @@ ctypes: build
 	sed -i '/import ctypes/aimport os\n_dir_path = os.path.dirname(os.path.realpath(__file__))' build/cassiemujoco_ctypes.py
 	sed -i "s/CDLL('.\/$(LIBOUT)')/CDLL(_dir_path + '\/$(LIBOUT)')/g" build/cassiemujoco_ctypes.py
 
-test: checkdirs build ctypes
+test: checkdirs build
 	mkdir -p test
 	cp -r build/* test/
 	cp example/* test/
 	cp -r mjpro150 test/
 	cp mjkey.txt test/
-	make -C test
+	make -C test PLATFORM="$(PLATFORM)"
 
 # Virtual targets
 .PHONY: all checkdirs clean build builddir test ctypes
