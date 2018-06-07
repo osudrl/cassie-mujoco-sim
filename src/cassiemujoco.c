@@ -185,6 +185,7 @@ typedef struct joint_filter {
 
 #define NUM_DRIVES 10
 #define NUM_JOINTS 6
+#define TORQUE_DELAY_CYCLES 6
 
 struct cassie_sim {
     mjModel *m;
@@ -195,6 +196,7 @@ struct cassie_sim {
     cassie_out_t cassie_out;
     drive_filter_t drive_filter[NUM_DRIVES];
     joint_filter_t joint_filter[NUM_JOINTS];
+    double torque_delay[NUM_DRIVES][TORQUE_DELAY_CYCLES];
 };
 
 struct cassie_vis {
@@ -206,7 +208,6 @@ struct cassie_vis {
 };
 
 struct cassie_state {
-    double time;
     mjData *d;
     CassieCoreSim *core;
     StateOutput *estimator;
@@ -214,6 +215,7 @@ struct cassie_state {
     cassie_out_t cassie_out;
     drive_filter_t drive_filter[NUM_DRIVES];
     joint_filter_t joint_filter[NUM_JOINTS];
+    double torque_delay[NUM_DRIVES][TORQUE_DELAY_CYCLES];
 };
 
 #define CASSIE_ALLOC_POINTER(c)                 \
@@ -239,6 +241,8 @@ struct cassie_state {
                sizeof dst->drive_filter);               \
         memcpy(dst->joint_filter, src->joint_filter,    \
                sizeof dst->joint_filter);               \
+        memcpy(dst->torque_delay, src->torque_delay,    \
+               sizeof dst->torque_delay);               \
     } while (0)
 
 #define CASSIE_COPY_POINTER(dst, src)                       \
@@ -397,7 +401,8 @@ static void joint_encoder(const mjModel *m,
 }
 
 
-static double motor(const mjModel* m, mjData *d, int i, double u, bool sto)
+static double motor(const mjModel* m, mjData *d, int i, double u,
+                    double *torque_delay, bool sto)
 {
     double ratio = m->actuator_gear[6 * i];
     double tmax = m->actuator_ctrlrange[2 * i + 1];
@@ -413,9 +418,15 @@ static double motor(const mjModel* m, mjData *d, int i, double u, bool sto)
         u = 0;
 
     // Compute motor-side torque
-    d->ctrl[i] = copysign(fmin(fabs(u / ratio), tlim), u);
+    double tau = copysign(fmin(fabs(u / ratio), tlim), u);
 
-    // Return limited output-side torque
+    // Torque delay line
+    d->ctrl[i] = torque_delay[TORQUE_DELAY_CYCLES - 1];
+    for (int i = TORQUE_DELAY_CYCLES - 1; i > 0; --i)
+        torque_delay[i] = torque_delay[i - 1];
+    torque_delay[0] = tau;
+
+    // Return the current value of the output-side torque
     return d->ctrl[i] * ratio;
 }
 
@@ -551,7 +562,8 @@ static void cassie_motor_data(cassie_sim_t *c, const cassie_in_t *cassie_in)
 
     // Copy motor data from cassie out and set torque measurement
     for (int i = 0; i < NUM_DRIVES; ++i)
-        drives[i]->torque = motor(c->m, c->d, i, torque_commands[i], sto);
+        drives[i]->torque = motor(c->m, c->d, i, torque_commands[i],
+                                  c->torque_delay[i], sto);
 }
 
 
