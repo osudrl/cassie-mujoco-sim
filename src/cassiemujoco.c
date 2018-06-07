@@ -16,7 +16,6 @@
 
 #include "cassiemujoco.h"
 #include <stdio.h>
-#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -51,63 +50,73 @@ static int right_foot_body_id;
  * Dynamic library loading
  ******************************************************************************/
 
-// MuJoCo function pointers
-void *mj_handle;
-int (*mj_activate_fp)(char*);
-void (*mj_deactivate_fp)(void);
-mjModel* (*mj_loadXML_fp)(char*, mjVFS*, char*, int);
-mjModel* (*mj_copyModel_fp)(mjModel*, mjModel*);
-void (*mj_deleteModel_fp)(mjModel*);
-mjData* (*mj_makeData_fp)(mjModel*);
-mjData* (*mj_copyData_fp)(mjData*, mjModel*, mjData*);
-void (*mj_deleteData_fp)(mjData*);
-void (*mj_forward_fp)(mjModel*, mjData*);
-void (*mj_step1_fp)(mjModel*, mjData*);
-void (*mj_step2_fp)(mjModel*, mjData*);
-void (*mj_contactForce_fp)(mjModel*, mjData*, int, mjtNum*);
-int (*mj_name2id_fp)(mjModel*, int, char*);
-void (*mju_copy_fp)(mjtNum*, mjtNum*, int);
-void (*mju_zero_fp)(mjtNum*, int);
-void (*mju_rotVecMatT_fp)(mjtNum*, mjtNum*, mjtNum*);
-void (*mjv_makeScene_fp)(mjvScene*, int);
-void (*mjv_freeScene_fp)(mjvScene*);
-void (*mjv_updateScene_fp)(mjModel*, mjData*, mjvOption*, mjvPerturb*,
-                           mjvCamera*, int, mjvScene*);
-void (*mjv_defaultOption_fp)(mjvOption*);
-void (*mjr_defaultContext_fp)(mjrContext*);
-void (*mjr_makeContext_fp)(mjModel*, mjrContext*, int);
-void (*mjr_freeContext_fp)(mjrContext*);
-void (*mjr_render_fp)(mjrRect, mjvScene*, mjrContext*);
+// Loaded MuJoCo functions
+#define MUJOCO_FUNCTION_LIST                    \
+    X(mj_activate)                              \
+    X(mj_deactivate)                            \
+    X(mj_loadXML)                               \
+    X(mj_copyModel)                             \
+    X(mj_deleteModel)                           \
+    X(mj_makeData)                              \
+    X(mj_copyData)                              \
+    X(mj_deleteData)                            \
+    X(mj_forward)                               \
+    X(mj_step1)                                 \
+    X(mj_step2)                                 \
+    X(mj_contactForce)                          \
+    X(mj_name2id)                               \
+    X(mju_copy)                                 \
+    X(mju_zero)                                 \
+    X(mju_rotVecMatT)                           \
+    X(mjv_makeScene)                            \
+    X(mjv_freeScene)                            \
+    X(mjv_updateScene)                          \
+    X(mjv_defaultOption)                        \
+    X(mjr_defaultContext)                       \
+    X(mjr_makeContext)                          \
+    X(mjr_freeContext)                          \
+    X(mjr_render)
 
-// GLFW function pointers
+// Loaded GLFW functions
+#define GLFW_FUNCTION_LIST                      \
+    X(glfwInit)                                 \
+    X(glfwTerminate)                            \
+    X(glfwCreateWindow)                         \
+    X(glfwDestroyWindow)                        \
+    X(glfwMakeContextCurrent)                   \
+    X(glfwGetWindowUserPointer)                 \
+    X(glfwSetWindowUserPointer)                 \
+    X(glfwSetWindowCloseCallback)               \
+    X(glfwGetFramebufferSize)                   \
+    X(glfwSwapBuffers)                          \
+    X(glfwSwapInterval)                         \
+    X(glfwPollEvents)
+
+// Dynamic object handles
+void *mj_handle;
 void *glfw_handle, *gl_handle, *glew_handle;
-int (*glfwInit_fp)(void);
-void (*glfwTerminate_fp)(void);
-GLFWwindow* (*glfwCreateWindow_fp)(int, int, char*, GLFWmonitor*, GLFWwindow*);
-void (*glfwDestroyWindow_fp)(GLFWwindow*);
-void (*glfwMakeContextCurrent_fp)(GLFWwindow*);
-void* (*glfwGetWindowUserPointer_fp)(GLFWwindow*);
-void (*glfwSetWindowUserPointer_fp)(GLFWwindow*, void*);
-GLFWwindowclosefun (*glfwSetWindowCloseCallback_fp)(GLFWwindow*,
-                                                    GLFWwindowclosefun);
-void (*glfwGetFramebufferSize_fp)(GLFWwindow*, int*, int*);
-void (*glfwSwapBuffers_fp)(GLFWwindow*);
-void (*glfwSwapInterval_fp)(int);
-void (*glfwPollEvents_fp)();
+
+// Function pointers
+#define X(fun)                                  \
+    typedef __typeof__(fun) fun ## _fp_type;    \
+    fun ## _fp_type *fun ## _fp;
+MUJOCO_FUNCTION_LIST
+GLFW_FUNCTION_LIST
+#undef X
 
 // Cross-platform dynamic loading
 #ifdef _WIN32
 
-#define LOADLIB(path) LoadLibrary(path);
-#define UNLOADLIB(handle) FreeLibrary(handle);
+#define LOADLIB(path) LoadLibrary(path)
+#define UNLOADLIB(handle) FreeLibrary(handle)
 #define LOADFUN(handle, sym) sym ## _fp = (void*) GetProcAddress(handle, #sym)
 #define MJLIBNAME "mujoco150.dll"
 #define GLFWLIBNAME "glfw3.dll"
 
 #else
 
-#define LOADLIB(path) dlopen(path, RTLD_LAZY | RTLD_GLOBAL);
-#define UNLOADLIB(handle) dlclose(handle);
+#define LOADLIB(path) dlopen(path, RTLD_LAZY | RTLD_GLOBAL)
+#define UNLOADLIB(handle) dlclose(handle)
 #define LOADFUN(handle, sym) sym ## _fp = dlsym(handle, #sym)
 #define MJLIBNAME "libmujoco150.so"
 #define MJLIBNAMENOGL "libmujoco150nogl.so"
@@ -119,11 +128,11 @@ void (*glfwPollEvents_fp)();
  * Sensor filtering
  ******************************************************************************/
 
-#define MOTOR_FILTER_NB 9
+#define DRIVE_FILTER_NB 9
 #define JOINT_FILTER_NB 4
 #define JOINT_FILTER_NA 3
 
-static int motor_filter_b[MOTOR_FILTER_NB] = {
+static int drive_filter_b[DRIVE_FILTER_NB] = {
     2727, 534, -2658, -795, 72, 110, 19, -6, -3
 };
 
@@ -135,9 +144,9 @@ static double joint_filter_a[JOINT_FILTER_NA] = {
     1.0, -1.7658, 0.79045
 };
 
-typedef struct motor_filter {
-    int x[MOTOR_FILTER_NB];
-} motor_filter_t;
+typedef struct drive_filter {
+    int x[DRIVE_FILTER_NB];
+} drive_filter_t;
 
 typedef struct joint_filter {
     double x[JOINT_FILTER_NB];
@@ -146,10 +155,35 @@ typedef struct joint_filter {
 
 
 /*******************************************************************************
+ * Drive and joint order X macro lists
+ ******************************************************************************/
+
+#define DRIVE_LIST                              \
+    X(leftLeg.hipRollDrive)                     \
+    X(leftLeg.hipYawDrive)                      \
+    X(leftLeg.hipPitchDrive)                    \
+    X(leftLeg.kneeDrive)                        \
+    X(leftLeg.footDrive)                        \
+    X(rightLeg.hipRollDrive)                    \
+    X(rightLeg.hipYawDrive)                     \
+    X(rightLeg.hipPitchDrive)                   \
+    X(rightLeg.kneeDrive)                       \
+    X(rightLeg.footDrive)
+
+#define JOINT_LIST                              \
+    X(leftLeg.shinJoint)                        \
+    X(leftLeg.tarsusJoint)                      \
+    X(leftLeg.footJoint)                        \
+    X(rightLeg.shinJoint)                       \
+    X(rightLeg.tarsusJoint)                     \
+    X(rightLeg.footJoint)
+
+
+/*******************************************************************************
  * Opaque structure definitions
  ******************************************************************************/
 
-#define NUM_MOTORS 10
+#define NUM_DRIVES 10
 #define NUM_JOINTS 6
 
 struct cassie_sim {
@@ -159,7 +193,7 @@ struct cassie_sim {
     StateOutput *estimator;
     PdInput *pd;
     cassie_out_t cassie_out;
-    motor_filter_t motor_filter[NUM_MOTORS];
+    drive_filter_t drive_filter[NUM_DRIVES];
     joint_filter_t joint_filter[NUM_JOINTS];
 };
 
@@ -178,7 +212,7 @@ struct cassie_state {
     StateOutput *estimator;
     PdInput *pd;
     cassie_out_t cassie_out;
-    motor_filter_t motor_filter[NUM_MOTORS];
+    drive_filter_t drive_filter[NUM_DRIVES];
     joint_filter_t joint_filter[NUM_JOINTS];
 };
 
@@ -201,8 +235,8 @@ struct cassie_state {
 #define CASSIE_COPY_POD(dst, src)                       \
     do {                                                \
         dst->cassie_out = src->cassie_out;              \
-        memcpy(dst->motor_filter, src->motor_filter,    \
-               sizeof dst->motor_filter);               \
+        memcpy(dst->drive_filter, src->drive_filter,    \
+               sizeof dst->drive_filter);               \
         memcpy(dst->joint_filter, src->joint_filter,    \
                sizeof dst->joint_filter);               \
     } while (0)
@@ -243,18 +277,9 @@ static bool load_glfw_library(const char *basedir)
     }
 
     // Get function pointers
-    LOADFUN(glfw_handle, glfwInit);
-    LOADFUN(glfw_handle, glfwTerminate);
-    LOADFUN(glfw_handle, glfwCreateWindow);
-    LOADFUN(glfw_handle, glfwDestroyWindow);
-    LOADFUN(glfw_handle, glfwMakeContextCurrent);
-    LOADFUN(glfw_handle, glfwGetWindowUserPointer);
-    LOADFUN(glfw_handle, glfwSetWindowUserPointer);
-    LOADFUN(glfw_handle, glfwSetWindowCloseCallback);
-    LOADFUN(glfw_handle, glfwGetFramebufferSize);
-    LOADFUN(glfw_handle, glfwSwapBuffers);
-    LOADFUN(glfw_handle, glfwSwapInterval);
-    LOADFUN(glfw_handle, glfwPollEvents);
+#define X(fun) LOADFUN(glfw_handle, fun);
+GLFW_FUNCTION_LIST
+#undef X
 
     return true;
 }
@@ -283,44 +308,23 @@ static bool load_mujoco_library(const char *basedir)
     }
 
     // Get function pointers
-    LOADFUN(mj_handle, mj_activate);
-    LOADFUN(mj_handle, mj_deactivate);
-    LOADFUN(mj_handle, mj_loadXML);
-    LOADFUN(mj_handle, mj_copyModel);
-    LOADFUN(mj_handle, mj_deleteModel);
-    LOADFUN(mj_handle, mj_makeData);
-    LOADFUN(mj_handle, mj_copyData);
-    LOADFUN(mj_handle, mj_deleteData);
-    LOADFUN(mj_handle, mj_forward);
-    LOADFUN(mj_handle, mj_step1);
-    LOADFUN(mj_handle, mj_step2);
-    LOADFUN(mj_handle, mj_contactForce);
-    LOADFUN(mj_handle, mj_name2id);
-    LOADFUN(mj_handle, mju_copy);
-    LOADFUN(mj_handle, mju_zero);
-    LOADFUN(mj_handle, mju_rotVecMatT);
-    LOADFUN(mj_handle, mjv_makeScene);
-    LOADFUN(mj_handle, mjv_freeScene);
-    LOADFUN(mj_handle, mjv_updateScene);
-    LOADFUN(mj_handle, mjv_defaultOption);
-    LOADFUN(mj_handle, mjr_defaultContext);
-    LOADFUN(mj_handle, mjr_makeContext);
-    LOADFUN(mj_handle, mjr_freeContext);
-    LOADFUN(mj_handle, mjr_render);
+#define X(fun) LOADFUN(mj_handle, fun);
+MUJOCO_FUNCTION_LIST
+#undef X
 
     return true;
 }
 
 
-static void mencoder(const mjModel* m,
-                     elmo_out_t *drive,
-                     const mjtNum *sensordata,
-                     motor_filter_t *filter,
-                     size_t isensor)
+static void drive_encoder(const mjModel *m,
+                          elmo_out_t *drive,
+                          const mjtNum *sensordata,
+                          drive_filter_t *filter,
+                          int isensor)
 {
     // Position
     // Get digital encoder value
-    size_t bits = m->sensor_user[m->nuser_sensor * isensor];
+    int bits = m->sensor_user[m->nuser_sensor * isensor];
     int encoder_value = sensordata[isensor] / (2 * M_PI) * (1 << bits);
     double ratio = m->actuator_gear[6 * m->sensor_objid[isensor]];
     double scale = (2 * M_PI) / (1 << bits) / ratio;
@@ -329,37 +333,37 @@ static void mencoder(const mjModel* m,
     // Velocity
     // Initialize unfiltered signal array to prevent bad transients
     bool allzero = true;
-    for (size_t i = 0; i < MOTOR_FILTER_NB; ++i)
+    for (int i = 0; i < DRIVE_FILTER_NB; ++i)
         allzero &= filter->x[i] == 0;
     if (allzero) {
         // If all filter values are zero, initialize the signal array
         // with the current encoder value
-        for (size_t i = 0; i < MOTOR_FILTER_NB; ++i)
+        for (int i = 0; i < DRIVE_FILTER_NB; ++i)
             filter->x[i] = encoder_value;
     }
 
     // Shift and update unfiltered signal array
-    for (size_t i = MOTOR_FILTER_NB - 1; i > 0; --i)
+    for (int i = DRIVE_FILTER_NB - 1; i > 0; --i)
         filter->x[i] = filter->x[i - 1];
     filter->x[0] = encoder_value;
 
     // Compute filter value
     int y = 0;
-    for (size_t i = 0; i < MOTOR_FILTER_NB; ++i)
-        y += filter->x[i] * motor_filter_b[i];
+    for (int i = 0; i < DRIVE_FILTER_NB; ++i)
+        y += filter->x[i] * drive_filter_b[i];
     drive->velocity = y * scale / M_PI;
 }
 
 
-static void jencoder(const mjModel* m,
-                     cassie_joint_out_t *joint,
-                     const mjtNum *sensordata,
-                     joint_filter_t *filter,
-                     size_t isensor)
+static void joint_encoder(const mjModel *m,
+                          cassie_joint_out_t *joint,
+                          const mjtNum *sensordata,
+                          joint_filter_t *filter,
+                          int isensor)
 {
     // Position
     // Get digital encoder value
-    size_t bits = m->sensor_user[m->nuser_sensor * isensor];
+    int bits = m->sensor_user[m->nuser_sensor * isensor];
     int encoder_value = sensordata[isensor] / (2 * M_PI) * (1 << bits);
     double scale = (2 * M_PI) / (1 << bits);
     joint->position = encoder_value * scale;
@@ -367,33 +371,33 @@ static void jencoder(const mjModel* m,
     // Velocity
     // Initialize unfiltered signal array to prevent bad transients
     bool allzero = true;
-    for (size_t i = 0; i < JOINT_FILTER_NB; ++i)
+    for (int i = 0; i < JOINT_FILTER_NB; ++i)
         allzero &= filter->x[i] == 0;
     if (allzero) {
         // If all filter values are zero, initialize the signal array
         // with the current encoder value
-        for (size_t i = 0; i < JOINT_FILTER_NB; ++i)
+        for (int i = 0; i < JOINT_FILTER_NB; ++i)
             filter->x[i] = joint->position;
     }
 
     // Shift and update signal arrays
-    for (size_t i = JOINT_FILTER_NB - 1; i > 0; --i)
+    for (int i = JOINT_FILTER_NB - 1; i > 0; --i)
         filter->x[i] = filter->x[i - 1];
     filter->x[0] = joint->position;
-    for (size_t i = JOINT_FILTER_NA - 1; i > 0; --i)
+    for (int i = JOINT_FILTER_NA - 1; i > 0; --i)
         filter->y[i] = filter->y[i - 1];
 
     // Compute filter value
     filter->y[0] = 0;
-    for (size_t i = 0; i < JOINT_FILTER_NB; ++i)
+    for (int i = 0; i < JOINT_FILTER_NB; ++i)
         filter->y[0] += filter->x[i] * joint_filter_b[i];
-    for (size_t i = 1; i < JOINT_FILTER_NA; ++i)
+    for (int i = 1; i < JOINT_FILTER_NA; ++i)
         filter->y[0] -= filter->y[i] * joint_filter_a[i];
     joint->velocity = filter->y[0];
 }
 
 
-static double motor(const mjModel* m, mjData *d, size_t i, double u, bool sto)
+static double motor(const mjModel* m, mjData *d, int i, double u, bool sto)
 {
     double ratio = m->actuator_gear[6 * i];
     double tmax = m->actuator_ctrlrange[2 * i + 1];
@@ -431,6 +435,7 @@ static void elmo_out_init(elmo_out_t *o, double torqueLimit, double gearRatio)
     o->gearRatio = gearRatio;
 }
 
+
 static void cassie_leg_out_init(cassie_leg_out_t *o)
 {
     o->medullaCounter = 1;
@@ -464,9 +469,9 @@ static void cassie_out_init(cassie_out_t *o)
     // Battery
     o->pelvis.battery.dataGood = true;
     o->pelvis.battery.stateOfCharge = 1;
-    for (size_t i = 0; i < 4; ++i)
+    for (int i = 0; i < 4; ++i)
         o->pelvis.battery.temperature[i] = 30;
-    for (size_t i = 0; i < 12; ++i)
+    for (int i = 0; i < 12; ++i)
         o->pelvis.battery.voltage[i] = 4.2;
 
     // Radio
@@ -487,60 +492,41 @@ static void cassie_out_init(cassie_out_t *o)
 
 static void cassie_sensor_data(cassie_sim_t *c)
 {
-    // Copy sensor data from mujoco into cassie outputs
-    size_t i = 0;
-    size_t imf = 0; // Motor filters
-    size_t ijf = 0; // Joint filters
+    // Ordered list of drive_out_t addresses
+    elmo_out_t *drives[NUM_DRIVES] = {
+#define X(drive) &c->cassie_out.drive,
+        DRIVE_LIST
+#undef X
+    };
+
+    // Ordered list of cassie_joint_out_t addresses
+    cassie_joint_out_t *joints[NUM_JOINTS] = {
+#define X(joint) &c->cassie_out.joint,
+        JOINT_LIST
+#undef X
+    };
+
+    // Sensor ID for each encoder
+    static const int drive_sensor_ids[] = {0, 1, 2, 3, 4, 8, 9, 10, 11, 12};
+    static const int joint_sensor_ids[] = {5, 6, 7, 13, 14, 15};
 
     // Encoders
-    mencoder(c->m, &c->cassie_out.leftLeg.hipRollDrive,
-             c->d->sensordata, &c->motor_filter[imf++], i++);
-    mencoder(c->m, &c->cassie_out.leftLeg.hipYawDrive,
-             c->d->sensordata, &c->motor_filter[imf++], i++);
-    mencoder(c->m, &c->cassie_out.leftLeg.hipPitchDrive,
-             c->d->sensordata, &c->motor_filter[imf++], i++);
-    mencoder(c->m, &c->cassie_out.leftLeg.kneeDrive,
-             c->d->sensordata, &c->motor_filter[imf++], i++);
-    mencoder(c->m, &c->cassie_out.leftLeg.footDrive,
-             c->d->sensordata, &c->motor_filter[imf++], i++);
-
-    jencoder(c->m, &c->cassie_out.leftLeg.shinJoint,
-             c->d->sensordata, &c->joint_filter[ijf++], i++);
-    jencoder(c->m, &c->cassie_out.leftLeg.tarsusJoint,
-             c->d->sensordata, &c->joint_filter[ijf++], i++);
-    jencoder(c->m, &c->cassie_out.leftLeg.footJoint,
-             c->d->sensordata, &c->joint_filter[ijf++], i++);
-
-    mencoder(c->m, &c->cassie_out.rightLeg.hipRollDrive,
-             c->d->sensordata, &c->motor_filter[imf++], i++);
-    mencoder(c->m, &c->cassie_out.rightLeg.hipYawDrive,
-             c->d->sensordata, &c->motor_filter[imf++], i++);
-    mencoder(c->m, &c->cassie_out.rightLeg.hipPitchDrive,
-             c->d->sensordata, &c->motor_filter[imf++], i++);
-    mencoder(c->m, &c->cassie_out.rightLeg.kneeDrive,
-             c->d->sensordata, &c->motor_filter[imf++], i++);
-    mencoder(c->m, &c->cassie_out.rightLeg.footDrive,
-             c->d->sensordata, &c->motor_filter[imf++], i++);
-
-    jencoder(c->m, &c->cassie_out.rightLeg.shinJoint,
-             c->d->sensordata, &c->joint_filter[ijf++], i++);
-    jencoder(c->m, &c->cassie_out.rightLeg.tarsusJoint,
-             c->d->sensordata, &c->joint_filter[ijf++], i++);
-    jencoder(c->m, &c->cassie_out.rightLeg.footJoint,
-             c->d->sensordata, &c->joint_filter[ijf++], i++);
+    for (int i = 0; i < NUM_DRIVES; ++i)
+        drive_encoder(c->m, drives[i], c->d->sensordata,
+                      &c->drive_filter[i], drive_sensor_ids[i]);
+    for (int i = 0; i < NUM_JOINTS; ++i)
+        joint_encoder(c->m, joints[i], c->d->sensordata,
+                      &c->joint_filter[i], joint_sensor_ids[i]);
 
     // IMU
     mju_copy_fp(c->cassie_out.pelvis.vectorNav.orientation,
-             &c->d->sensordata[i], 4);
-    i += 4;
+                &c->d->sensordata[16], 4);
     mju_copy_fp(c->cassie_out.pelvis.vectorNav.angularVelocity,
-             &c->d->sensordata[i], 3);
-    i += 3;
+                &c->d->sensordata[20], 3);
     mju_copy_fp(c->cassie_out.pelvis.vectorNav.linearAcceleration,
-             &c->d->sensordata[i], 3);
-    i += 3;
+                &c->d->sensordata[23], 3);
     mju_copy_fp(c->cassie_out.pelvis.vectorNav.magneticField,
-             &c->d->sensordata[i], 3);
+                &c->d->sensordata[26], 3);
 }
 
 
@@ -549,29 +535,23 @@ static void cassie_motor_data(cassie_sim_t *c, const cassie_in_t *cassie_in)
     // STO
     bool sto = c->cassie_out.pelvis.radio.channel[8] < 1;
 
-    // Copy motor data from cassie out and set torque measurement
-    size_t i = 0;
-    c->cassie_out.leftLeg.hipRollDrive.torque =
-        motor(c->m, c->d, i++, cassie_in->leftLeg.hipRollDrive.torque, sto);
-    c->cassie_out.leftLeg.hipYawDrive.torque =
-        motor(c->m, c->d, i++, cassie_in->leftLeg.hipYawDrive.torque, sto);
-    c->cassie_out.leftLeg.hipPitchDrive.torque =
-        motor(c->m, c->d, i++, cassie_in->leftLeg.hipPitchDrive.torque, sto);
-    c->cassie_out.leftLeg.kneeDrive.torque =
-        motor(c->m, c->d, i++, cassie_in->leftLeg.kneeDrive.torque, sto);
-    c->cassie_out.leftLeg.footDrive.torque =
-        motor(c->m, c->d, i++, cassie_in->leftLeg.footDrive.torque, sto);
+    // Ordered list of drive_out_t addresses
+    elmo_out_t *drives[NUM_DRIVES] = {
+#define X(drive) &c->cassie_out.drive,
+        DRIVE_LIST
+#undef X
+    };
 
-    c->cassie_out.rightLeg.hipRollDrive.torque =
-        motor(c->m, c->d, i++, cassie_in->rightLeg.hipRollDrive.torque, sto);
-    c->cassie_out.rightLeg.hipYawDrive.torque =
-        motor(c->m, c->d, i++, cassie_in->rightLeg.hipYawDrive.torque, sto);
-    c->cassie_out.rightLeg.hipPitchDrive.torque =
-        motor(c->m, c->d, i++, cassie_in->rightLeg.hipPitchDrive.torque, sto);
-    c->cassie_out.rightLeg.kneeDrive.torque =
-        motor(c->m, c->d, i++, cassie_in->rightLeg.kneeDrive.torque, sto);
-    c->cassie_out.rightLeg.footDrive.torque =
-        motor(c->m, c->d, i++, cassie_in->rightLeg.footDrive.torque, sto);
+    // Ordered list of torque commands
+    double torque_commands[NUM_DRIVES] = {
+#define X(drive) cassie_in->drive.torque,
+        DRIVE_LIST
+#undef X
+    };
+
+    // Copy motor data from cassie out and set torque measurement
+    for (int i = 0; i < NUM_DRIVES; ++i)
+        drives[i]->torque = motor(c->m, c->d, i, torque_commands[i], sto);
 }
 
 
@@ -786,8 +766,8 @@ void cassie_sim_step_ethercat(cassie_sim_t *c,
     *y = c->cassie_out;
 
     // Step the MuJoCo simulation forward
-    const size_t mjsteps = round(5e-4 / c->m->opt.timestep);
-    for (size_t i = 0; i < mjsteps; ++i) {
+    const int mjsteps = round(5e-4 / c->m->opt.timestep);
+    for (int i = 0; i < mjsteps; ++i) {
         mj_step1_fp(c->m, c->d);
         mj_step2_fp(c->m, c->d);
     }
