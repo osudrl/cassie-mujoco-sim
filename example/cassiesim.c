@@ -179,12 +179,12 @@ int main(int argc, char *argv[])
     // Cassie input/output log file
     FILE *log_file = NULL;
     if (log_file_path)
-        log_file = fopen(log_file_path, "w");
+        log_file = fopen(log_file_path, "wb");
 
     // SImulator state log file
     FILE *qlog_file = NULL;
     if (qlog_file_path)
-        qlog_file = fopen(qlog_file_path, "w");
+        qlog_file = fopen(qlog_file_path, "wb");
 
     // Manage simulation loop
     unsigned long long loop_counter = 0;
