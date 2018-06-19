@@ -14,26 +14,27 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef STATEOUTPUT_H
-#define STATEOUTPUT_H
+#ifndef PD_INPUT_H
+#define PD_INPUT_H
 
+#include "pd_in_t.h"
 #include "cassie_out_t.h"
-#include "state_out_t.h"
+#include "cassie_user_in_t.h"
 
-typedef struct StateOutput StateOutput;
+typedef struct PdInput pd_input_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-StateOutput* StateOutput_alloc(void);
-void StateOutput_copy(StateOutput *dst, const StateOutput *src);
-void StateOutput_free(StateOutput *sys);
-void StateOutput_setup(StateOutput *sys);
-void StateOutput_step(StateOutput *sys, const cassie_out_t *in1,
-  state_out_t *out1);
+pd_input_t* pd_input_alloc(void);
+void pd_input_copy(pd_input_t *dst, const pd_input_t *src);
+void pd_input_free(pd_input_t *sys);
+void pd_input_setup(pd_input_t *sys);
+void pd_input_step(pd_input_t *sys, const pd_in_t *in1, const cassie_out_t
+  *in2, cassie_user_in_t *out1);
 
 #ifdef __cplusplus
 }
 #endif
-#endif // STATEOUTPUT_H
+#endif // PD_INPUT_H

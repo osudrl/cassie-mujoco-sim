@@ -14,27 +14,26 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef CASSIECORESIM_H
-#define CASSIECORESIM_H
+#ifndef STATE_OUTPUT_H
+#define STATE_OUTPUT_H
 
-#include "cassie_user_in_t.h"
 #include "cassie_out_t.h"
-#include "cassie_in_t.h"
+#include "state_out_t.h"
 
-typedef struct CassieCoreSim CassieCoreSim;
+typedef struct StateOutput state_output_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-CassieCoreSim* CassieCoreSim_alloc(void);
-void CassieCoreSim_copy(CassieCoreSim *dst, const CassieCoreSim *src);
-void CassieCoreSim_free(CassieCoreSim *sys);
-void CassieCoreSim_setup(CassieCoreSim *sys);
-void CassieCoreSim_step(CassieCoreSim *sys, const cassie_user_in_t *in1,
-  const cassie_out_t *in2, cassie_in_t *out1);
+state_output_t* state_output_alloc(void);
+void state_output_copy(state_output_t *dst, const state_output_t *src);
+void state_output_free(state_output_t *sys);
+void state_output_setup(state_output_t *sys);
+void state_output_step(state_output_t *sys, const cassie_out_t *in1,
+  state_out_t *out1);
 
 #ifdef __cplusplus
 }
 #endif
-#endif // CASSIECORESIM_H
+#endif // STATE_OUTPUT_H

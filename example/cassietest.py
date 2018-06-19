@@ -25,9 +25,9 @@ vis = CassieVis()
 u = pd_in_t()
 u.leftLeg.motorPd.torque[3] = 0 # Feedforward torque
 u.leftLeg.motorPd.pTarget[3] = -2
-u.leftLeg.motorPd.pGain[3] = 1000
+u.leftLeg.motorPd.pGain[3] = 100
 u.leftLeg.motorPd.dTarget[3] = -2
-u.leftLeg.motorPd.dGain[3] = 100
+u.leftLeg.motorPd.dGain[3] = 10
 u.rightLeg.motorPd = u.leftLeg.motorPd
 
 # Hold pelvis in place

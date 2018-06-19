@@ -21,9 +21,9 @@
 #include <math.h>
 #include "mujoco.h"
 #include "glfw3.h"
-#include "CassieCoreSim.h"
-#include "StateOutput.h"
-#include "PdInput.h"
+#include "cassie_core_sim.h"
+#include "state_output.h"
+#include "pd_input.h"
 
 // Platform specific headers
 #ifdef _WIN32
@@ -93,13 +93,15 @@ static int right_foot_body_id;
     X(glfwPollEvents)
 
 // Dynamic object handles
-void *mj_handle;
-void *glfw_handle, *gl_handle, *glew_handle;
+static void *mj_handle;
+static void *glfw_handle;
+static void *gl_handle;
+static void *glew_handle;
 
 // Function pointers
 #define X(fun)                                  \
     typedef __typeof__(fun) fun ## _fp_type;    \
-    fun ## _fp_type *fun ## _fp;
+    static fun ## _fp_type *fun ## _fp;
 MUJOCO_FUNCTION_LIST
 GLFW_FUNCTION_LIST
 #undef X
@@ -190,9 +192,9 @@ typedef struct joint_filter {
 struct cassie_sim {
     mjModel *m;
     mjData *d;
-    CassieCoreSim *core;
-    StateOutput *estimator;
-    PdInput *pd;
+    cassie_core_sim_t *core;
+    state_output_t *estimator;
+    pd_input_t *pd;
     cassie_out_t cassie_out;
     drive_filter_t drive_filter[NUM_DRIVES];
     joint_filter_t joint_filter[NUM_JOINTS];
@@ -209,9 +211,9 @@ struct cassie_vis {
 
 struct cassie_state {
     mjData *d;
-    CassieCoreSim *core;
-    StateOutput *estimator;
-    PdInput *pd;
+    cassie_core_sim_t *core;
+    state_output_t *estimator;
+    pd_input_t *pd;
     cassie_out_t cassie_out;
     drive_filter_t drive_filter[NUM_DRIVES];
     joint_filter_t joint_filter[NUM_JOINTS];
@@ -221,17 +223,17 @@ struct cassie_state {
 #define CASSIE_ALLOC_POINTER(c)                 \
     do {                                        \
         c->d = mj_makeData_fp(initial_model);   \
-        c->core = CassieCoreSim_alloc();        \
-        c->estimator = StateOutput_alloc();     \
-        c->pd = PdInput_alloc();                \
+        c->core = cassie_core_sim_alloc();      \
+        c->estimator = state_output_alloc();    \
+        c->pd = pd_input_alloc();               \
     } while (0)
 
 #define CASSIE_FREE_POINTER(c)                  \
     do {                                        \
         mj_deleteData_fp(c->d);                 \
-        CassieCoreSim_free(c->core);            \
-        StateOutput_free(c->estimator);         \
-        PdInput_free(c->pd);                    \
+        cassie_core_sim_free(c->core);          \
+        state_output_free(c->estimator);        \
+        pd_input_free(c->pd);                   \
     } while (0)
 
 #define CASSIE_COPY_POD(dst, src)                       \
@@ -248,9 +250,9 @@ struct cassie_state {
 #define CASSIE_COPY_POINTER(dst, src)                       \
     do {                                                    \
         mj_copyData_fp(dst->d, initial_model, src->d);      \
-        CassieCoreSim_copy(dst->core, src->core);           \
-        StateOutput_copy(dst->estimator, src->estimator);   \
-        PdInput_copy(dst->pd, src->pd);                     \
+        cassie_core_sim_copy(dst->core, src->core);         \
+        state_output_copy(dst->estimator, src->estimator);  \
+        pd_input_copy(dst->pd, src->pd);                    \
     } while (0)
 
 
@@ -716,9 +718,9 @@ cassie_sim_t *cassie_sim_init(void)
     mj_forward_fp(c->m, c->d);
 
     // Intialize systems
-    CassieCoreSim_setup(c->core);
-    StateOutput_setup(c->estimator);
-    PdInput_setup(c->pd);
+    cassie_core_sim_setup(c->core);
+    state_output_setup(c->estimator);
+    pd_input_setup(c->pd);
 
     return c;
 }
@@ -790,7 +792,7 @@ void cassie_sim_step(cassie_sim_t *c, cassie_out_t *y, const cassie_user_in_t *u
 {
     // Run cassie core system to get internal cassie inputs
     cassie_in_t cassie_in;
-    CassieCoreSim_step(c->core, u, &c->cassie_out, &cassie_in);
+    cassie_core_sim_step(c->core, u, &c->cassie_out, &cassie_in);
 
     // Run ethercat-level simulator
     cassie_sim_step_ethercat(c, y, &cassie_in);
@@ -801,14 +803,14 @@ void cassie_sim_step_pd(cassie_sim_t *c, state_out_t *y, const pd_in_t *u)
 {
     // Run PD controller system
     cassie_user_in_t cassie_user_in;
-    PdInput_step(c->pd, u, &c->cassie_out, &cassie_user_in);
+    pd_input_step(c->pd, u, &c->cassie_out, &cassie_user_in);
 
     // Run core-level simulator
     cassie_out_t cassie_out;
     cassie_sim_step(c, &cassie_out, &cassie_user_in);
 
     // Run state estimator system
-    StateOutput_step(c->estimator, &cassie_out, y);
+    state_output_step(c->estimator, &cassie_out, y);
 }
 
 

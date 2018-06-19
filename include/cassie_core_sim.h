@@ -14,27 +14,27 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef PDINPUT_H
-#define PDINPUT_H
+#ifndef CASSIE_CORE_SIM_H
+#define CASSIE_CORE_SIM_H
 
-#include "pd_in_t.h"
-#include "cassie_out_t.h"
 #include "cassie_user_in_t.h"
+#include "cassie_out_t.h"
+#include "cassie_in_t.h"
 
-typedef struct PdInput PdInput;
+typedef struct CassieCoreSim cassie_core_sim_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-PdInput* PdInput_alloc(void);
-void PdInput_copy(PdInput *dst, const PdInput *src);
-void PdInput_free(PdInput *sys);
-void PdInput_setup(PdInput *sys);
-void PdInput_step(PdInput *sys, const pd_in_t *in1, const cassie_out_t
-  *in2, cassie_user_in_t *out1);
+cassie_core_sim_t* cassie_core_sim_alloc(void);
+void cassie_core_sim_copy(cassie_core_sim_t *dst, const cassie_core_sim_t *src);
+void cassie_core_sim_free(cassie_core_sim_t *sys);
+void cassie_core_sim_setup(cassie_core_sim_t *sys);
+void cassie_core_sim_step(cassie_core_sim_t *sys, const cassie_user_in_t *in1,
+  const cassie_out_t *in2, cassie_in_t *out1);
 
 #ifdef __cplusplus
 }
 #endif
-#endif // PDINPUT_H
+#endif // CASSIE_CORE_SIM_H
