@@ -19,6 +19,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <time.h>
+#include <linux/limits.h>
 #include "mujoco.h"
 #include "glfw3.h"
 #include "cassie_core_sim.h"
@@ -63,16 +67,29 @@ static int right_foot_body_id;
     X(mj_forward)                               \
     X(mj_step1)                                 \
     X(mj_step2)                                 \
+    X(mj_step)                                  \
     X(mj_contactForce)                          \
     X(mj_name2id)                               \
     X(mju_copy)                                 \
     X(mju_zero)                                 \
     X(mju_rotVecMatT)                           \
+    X(mju_sub3)                                 \
+    X(mju_mulMatTVec)                           \
+    X(mjv_defaultScene)                         \
     X(mjv_makeScene)                            \
+    X(mjv_defaultScene)                         \
     X(mjv_freeScene)                            \
     X(mjv_updateScene)                          \
+    X(mjv_defaultCamera)                        \
     X(mjv_defaultOption)                        \
+    X(mjv_movePerturb)                          \
+    X(mjv_moveCamera)                           \
+    X(mjv_initPerturb)                          \
+    X(mjv_select)                               \
+    X(mjv_applyPerturbForce)                    \
+    X(mjv_applyPerturbPose)                     \
     X(mjr_defaultContext)                       \
+    X(mjv_defaultFigure)                        \
     X(mjr_makeContext)                          \
     X(mjr_freeContext)                          \
     X(mjr_render)
@@ -87,10 +104,19 @@ static int right_foot_body_id;
     X(glfwGetWindowUserPointer)                 \
     X(glfwSetWindowUserPointer)                 \
     X(glfwSetWindowCloseCallback)               \
+    X(glfwSetCursorPosCallback)                 \
+    X(glfwSetMouseButtonCallback)               \
+    X(glfwSetScrollCallback)                    \
     X(glfwGetFramebufferSize)                   \
     X(glfwSwapBuffers)                          \
     X(glfwSwapInterval)                         \
-    X(glfwPollEvents)
+    X(glfwPollEvents)                           \
+    X(glfwGetVideoMode)                         \
+    X(glfwGetPrimaryMonitor)                    \
+    X(glfwGetWindowSize)                        \
+    X(glfwGetKey)                               \
+    X(glfwGetMouseButton)                       \
+    X(glfwGetCursorPos)
 
 // Dynamic object handles
 static void *mj_handle;
@@ -120,8 +146,8 @@ GLFW_FUNCTION_LIST
 #define LOADLIB(path) dlopen(path, RTLD_LAZY | RTLD_GLOBAL)
 #define UNLOADLIB(handle) dlclose(handle)
 #define LOADFUN(handle, sym) sym ## _fp = dlsym(handle, #sym)
-#define MJLIBNAME "libmujoco150.so"
-#define MJLIBNAMENOGL "libmujoco150nogl.so"
+#define MJLIBNAME "libmujoco200.so"
+#define MJLIBNAMENOGL "libmujoco200nogl.so"
 #define GLFWLIBNAME "libglfw.so.3"
 
 #endif
@@ -202,11 +228,44 @@ struct cassie_sim {
 };
 
 struct cassie_vis {
+    //visual interaction controls
+    double lastx;
+    double lasty;
+    bool button_left;
+    bool button_middle;
+    bool button_right;
+
+    int lastbutton;
+    double lastclicktm;
+
+    int refreshrate;
+
+    int showhelp;
+    bool showoption;
+    bool showdepth;
+    bool showfullscreen;
+    bool showsensor;
+    bool slowmotion;
+
+    bool showinfo;
+    bool paused;
+
+    int framenum;
+    int lastframenum;
+    
+    // GLFW  handle
     GLFWwindow *window;
+
+    // MuJoCo stuff
+
     mjvCamera cam;
     mjvOption opt;
     mjvScene scn;
     mjrContext con;
+    mjvPerturb pert;
+    mjvFigure figsensor;
+    mjModel* m;
+    mjData* d;
 };
 
 struct cassie_state {
@@ -268,14 +327,16 @@ static bool load_glfw_library(const char *basedir)
 #ifndef _WIN32
     // Open dependencies
     gl_handle = LOADLIB("libGL.so.1");
-    snprintf(buf, sizeof buf, "%.4096s/mjpro150/bin/libglew.so", basedir);
+    snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/libglew.so", basedir);
     glew_handle = LOADLIB(buf);
-    if (!gl_handle || !glew_handle)
+    if (!gl_handle || !glew_handle) {
+        printf("gl_handle or glew_handle not loaded\n");
         return false;
+    }
 #endif
 
     // Open library
-    snprintf(buf, sizeof buf, "%.4096s/mjpro150/bin/" GLFWLIBNAME, basedir);
+    snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/" GLFWLIBNAME, basedir);
     glfw_handle = LOADLIB(buf);
     if (!glfw_handle) {
         fprintf(stderr, "Failed to load %s\n", buf);
@@ -291,25 +352,34 @@ GLFW_FUNCTION_LIST
 }
 
 
-static bool load_mujoco_library(const char *basedir)
+static bool load_mujoco_library()
 {
     // Buffer for paths
     char buf[4096 + 1024];
+    // Get home directory
+    const char* homedir;
+    if ((homedir = getenv("HOME")) == NULL) {
+        homedir = getpwuid(getuid())->pw_dir;
+    }
 
     // Try loading GLFW
-    bool __attribute__((unused)) gl = load_glfw_library(basedir);
-
+    bool __attribute__((unused)) gl = load_glfw_library(homedir);
+    struct passwd *pw = getpwuid(getuid());
+    
     // Choose library version
-    snprintf(buf, sizeof buf, "%.4096s/mjpro150/bin/" MJLIBNAME, basedir);
+    snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/" MJLIBNAME, homedir);
+    // snprintf(buf, sizeof buf, "%.4096s/mujoco200_linux/bin/" MJLIBNAME, "~/.mujoco");
 #ifndef _WIN32
-    if (!gl)
-        snprintf(buf, sizeof buf, "%.4096s/mjpro150/bin/" MJLIBNAMENOGL, basedir);
+    if (!gl) {
+        snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/" MJLIBNAMENOGL, homedir);
+        // snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/" MJLIBNAMENOGL, "~");
+    }
 #endif
 
     // Open library
     mj_handle = LOADLIB(buf);
     if (!mj_handle) {
-        fprintf(stderr, "Failed to load %s\n", buf);
+        fprintf(stderr, "Failed to load %s\n%s\n", buf, dlerror());
         return false;
     }
 
@@ -317,7 +387,6 @@ static bool load_mujoco_library(const char *basedir)
 #define X(fun) LOADFUN(mj_handle, fun);
 MUJOCO_FUNCTION_LIST
 #undef X
-
     return true;
 }
 
@@ -352,7 +421,6 @@ static void drive_encoder(const mjModel *m,
     for (int i = DRIVE_FILTER_NB - 1; i > 0; --i)
         filter->x[i] = filter->x[i - 1];
     filter->x[0] = encoder_value;
-
     // Compute filter value
     int y = 0;
     for (int i = 0; i < DRIVE_FILTER_NB; ++i)
@@ -427,7 +495,6 @@ static double motor(const mjModel* m, mjData *d, int i, double u,
     for (int i = TORQUE_DELAY_CYCLES - 1; i > 0; --i)
         torque_delay[i] = torque_delay[i - 1];
     torque_delay[0] = tau;
-
     // Return the current value of the output-side torque
     return d->ctrl[i] * ratio;
 }
@@ -561,7 +628,6 @@ static void cassie_motor_data(cassie_sim_t *c, const cassie_in_t *cassie_in)
         DRIVE_LIST
 #undef X
     };
-
     // Copy motor data from cassie out and set torque measurement
     for (int i = 0; i < NUM_DRIVES; ++i)
         drives[i]->torque = motor(c->m, c->d, i, torque_commands[i],
@@ -583,7 +649,7 @@ static void cassie_motor_data(cassie_sim_t *c, const cassie_in_t *cassie_in)
     } while (0)
 
 
-bool cassie_mujoco_init(const char *basedir)
+bool cassie_mujoco_init(const char *file_input)
 {
     // Buffer for paths
     char buf[4096 + 1024];
@@ -606,35 +672,39 @@ bool cassie_mujoco_init(const char *basedir)
         char binpath[4096];
         if (-1 == readlink("/proc/self/exe", binpath, sizeof binpath))
             fprintf(stderr, "Failed to get binary directory\n");
-        if (!basedir)
-            basedir = dirname(binpath);
+        // if (!basedir)
+        //     basedir = dirname(binpath);
 #endif
 
         // Load MuJoCo
-        if (!load_mujoco_library(basedir))
+        if (!load_mujoco_library()) {
             return false;
-
+        }
         // Activate MuJoCo
-        snprintf(buf, sizeof buf, "%.4096s/mjkey.txt", basedir);
-        mj_activate_fp(buf);
-
-        // Load the model
-        snprintf(buf, sizeof buf, "%.4096s/cassie.xml", basedir);
+        const char* key_buf = getenv("MUJOCO_KEY_PATH");
+        mj_activate_fp(key_buf);
+        // Load the model;
+        const char* modelfile;
+        if ((modelfile = getenv("CASSIE_MODEL_PATH")) == NULL) {
+            modelfile = file_input;
+        }
+        printf("loading model file: %s\n", modelfile);
         char error[1000] = "Could not load XML model";
-        initial_model = mj_loadXML_fp(buf, 0, error, 1000);
-
+        initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
         if (!initial_model) {
             fprintf(stderr, "Load model error: %s\n", error);
             return false;
         }
-
+        int sens_objid[20] = {0, 1, 2, 3, 4, 9, 10, 14, 5, 6, 7, 8, 9, 20, 21, 25, 0, 0, 0, 0};
+        for (int i = 0; i < 20; i++) {
+            initial_model->sensor_objid[i] = sens_objid[i];
+        }
         // Look up relevant IDs based on names
         ID_NAME_LOOKUP(left_foot_body_id, mjOBJ_BODY, left-foot);
         ID_NAME_LOOKUP(right_foot_body_id, mjOBJ_BODY, right-foot);
 
         mujoco_initialized = true;
     }
-
     // Initialize GLFW if it was loaded
     if (glfw_handle && !glfw_initialized) {
         if (!glfwInit_fp()) {
@@ -643,7 +713,6 @@ bool cassie_mujoco_init(const char *basedir)
         }
         glfw_initialized = true;
     }
-
     return mujoco_initialized;
 }
 
@@ -686,17 +755,17 @@ void cassie_cleanup()
 }
 
 
-cassie_sim_t *cassie_sim_init(void)
+cassie_sim_t *cassie_sim_init(const char* modelfile)
 {
     // Make sure MuJoCo is initialized and the model is loaded
     if (!mujoco_initialized) {
-        if (!cassie_mujoco_init(NULL))
+        if (!cassie_mujoco_init(modelfile)) {
             return NULL;
+        }   
     }
 
     // Allocate memory, zeroed for cassie_out_t and filter initialization
     cassie_sim_t *c = calloc(1, sizeof (cassie_sim_t));
-
     // Initialize cassie outputs
     cassie_out_init(&c->cassie_out);
 
@@ -721,7 +790,6 @@ cassie_sim_t *cassie_sim_init(void)
     cassie_core_sim_setup(c->core);
     state_output_setup(c->estimator);
     pd_input_setup(c->pd);
-
     return c;
 }
 
@@ -770,7 +838,6 @@ void cassie_sim_step_ethercat(cassie_sim_t *c,
 {
     // Configured to emulate delay on the physical robot
     // Corresponds to running a controller directly in Simulink
-
     // Apply control signal to MuJoCo control inputs
     cassie_motor_data(c, u);
 
@@ -782,6 +849,7 @@ void cassie_sim_step_ethercat(cassie_sim_t *c,
     // Step the MuJoCo simulation forward
     const int mjsteps = round(5e-4 / c->m->opt.timestep);
     for (int i = 0; i < mjsteps; ++i) {
+      //   printf("taking mj_step!\n");
         mj_step1_fp(c->m, c->d);
         mj_step2_fp(c->m, c->d);
     }
@@ -804,11 +872,9 @@ void cassie_sim_step_pd(cassie_sim_t *c, state_out_t *y, const pd_in_t *u)
     // Run PD controller system
     cassie_user_in_t cassie_user_in;
     pd_input_step(c->pd, u, &c->cassie_out, &cassie_user_in);
-
     // Run core-level simulator
     cassie_out_t cassie_out;
     cassie_sim_step(c, &cassie_out, &cassie_user_in);
-
     // Run state estimator system
     state_output_step(c->estimator, &cassie_out, y);
 }
@@ -831,6 +897,45 @@ double *cassie_sim_qvel(cassie_sim_t *c)
     return c->d->qvel;
 }
 
+int cassie_sim_forward(cassie_sim_t *c)
+{
+   mj_forward_fp(c->m, c->d);
+   return 0;
+}
+
+double *cassie_sim_accel(cassie_sim_t *c)
+{
+    return c->d->qacc;
+}
+
+
+double *cassie_sim_qfrc(cassie_sim_t *c)
+{
+    return c->d->qfrc_applied;
+}
+
+
+double *cassie_sim_ctrl(cassie_sim_t *c)
+{
+    return c->d->ctrl;
+}
+
+void cassie_sim_setctrl(cassie_sim_t *c, double *ctrl)
+{
+    for (int i = 0; i < c->m->nu; i++) {
+        c->d->ctrl[i] = ctrl[i];
+    }
+}
+
+int *cassie_sim_params(cassie_sim_t *c)
+{
+    int *params = malloc(sizeof(int)*4);
+    params[0] = c->m->nq;
+    params[1] = c->m->nv;
+    params[2] = c->m->nu;
+    params[3] = c->m->nsensordata;
+    return params;
+}
 
 void *cassie_sim_mjmodel(cassie_sim_t *c)
 {
@@ -868,6 +973,17 @@ bool cassie_sim_check_self_collision(const cassie_sim_t *c)
     return false;
 }
 
+void cassie_sim_foot_positions(const cassie_sim_t *c, double cpos[6])
+{
+    // Zero the output foot positions 
+    mju_zero_fp(cpos, 6);
+
+    for (int i = 0; i < 3; ++i) {
+        // Get foot xyz (global coords)
+        cpos[i]     = c->d->xpos[3 * left_foot_body_id + i];
+        cpos[3 + i] = c->d->xpos[3 * right_foot_body_id + i];
+    }
+}
 
 void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12])
 {
@@ -961,37 +1077,249 @@ void cassie_sim_radio(cassie_sim_t *c, double channels[16])
         c->cassie_out.pelvis.radio.channel[i] = channels[i];
 }
 
+void scroll(GLFWwindow* window, double xoffset, double yoffset) {
+    cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);
 
-cassie_vis_t *cassie_vis_init()
-{
-    // Make sure MuJoCo is initialized and the model is loaded
-    if (!mujoco_initialized) {
-        if (!cassie_mujoco_init(NULL))
-            return NULL;
+    // scroll: emulate vertical mouse motion = 5% of window height
+    mjv_moveCamera_fp(v->m, mjMOUSE_ZOOM, 0.0, -0.05 * yoffset, &v->scn, &v->cam);
+
+}
+
+void mouse_move(GLFWwindow* w, double xpos, double ypos) {
+    cassie_vis_t* v = glfwGetWindowUserPointer_fp(w);
+
+    // no buttons down: nothing to do
+    if (!v->button_left && !v->button_middle && !v->button_right) {
+        return;
     }
 
-    if (!glfw_initialized)
+    // compute mouse displacement, save
+    double dx = xpos - v->lastx;
+    double dy = ypos - v->lasty;
+    v->lastx = xpos;
+    v->lasty = ypos;
+
+    int width;
+    int height;
+    glfwGetWindowSize_fp(w, &width, &height);
+
+    int mod_shift = glfwGetKey_fp(w, GLFW_KEY_LEFT_SHIFT) || glfwGetKey_fp(w, GLFW_KEY_RIGHT_SHIFT);
+
+    // determine action based on mouse button
+    int action = mjMOUSE_ZOOM;
+    if (v->button_right) {
+        action = mod_shift ? mjMOUSE_MOVE_H : mjMOUSE_MOVE_V;
+    } else if (v->button_left) {
+        action = mod_shift ? mjMOUSE_ROTATE_H : mjMOUSE_ROTATE_V;
+    }
+
+    // move perturb or camera
+    mjtNum xchange = dx / height;
+    mjtNum ychange = dy / height;
+    if (v->pert.active != 0) {
+        mjv_movePerturb_fp(v->m, v->d, action, xchange, ychange, &v->scn, &v->pert);
+    } else {
+        mjv_moveCamera_fp(v->m, action, xchange, ychange, &v->scn, &v->cam);
+    }
+}
+
+// past data for double-click detection
+void mouse_button(GLFWwindow* window, int button, int act, int mods) {
+    cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);
+    // update button state
+    v->button_left = glfwGetMouseButton_fp(window, GLFW_MOUSE_BUTTON_LEFT);
+    v->button_middle = glfwGetMouseButton_fp(window, GLFW_MOUSE_BUTTON_MIDDLE);
+    v->button_right = glfwGetMouseButton_fp(window, GLFW_MOUSE_BUTTON_RIGHT);
+
+    // Alt: swap left and right
+    if (mods == GLFW_MOD_ALT) {
+        bool tmp = v->button_left;
+        v->button_left = v->button_right;
+        v->button_right = tmp;
+
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            button = GLFW_MOUSE_BUTTON_RIGHT;
+        } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+            button = GLFW_MOUSE_BUTTON_LEFT;
+        }
+    }
+
+    // update mouse position
+    double x, y;
+    glfwGetCursorPos_fp(window, &x, &y);
+    v->lastx = x;
+    v->lasty = y;
+
+    // set perturbation
+    int newperturb = 0;
+    if (act == GLFW_PRESS && mods == GLFW_MOD_CONTROL && v->pert.select > 0) {
+        // right: translate;  left: rotate
+        if (v->button_right) {
+            newperturb = mjPERT_TRANSLATE;
+        } else if (v->button_left) {
+            newperturb = mjPERT_ROTATE;
+        }
+        // perturbation onset: reset reference
+        if (newperturb > 0 && v->pert.active == 0) {
+            mjv_initPerturb_fp(v->m, v->d, &v->scn, &v->pert);
+        }
+    }
+    v->pert.active = newperturb;
+
+    // detect double-click (250 msec)
+    time_t curr_time = time(0);
+    if (act == GLFW_PRESS && (curr_time - v->lastclicktm < 0.25) && (button == v->lastbutton)) {
+        // determine selection mode
+        int selmode = 2;    // Right Click
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            selmode = 1;
+        } else if (mods == GLFW_MOD_CONTROL) {
+            selmode = 3; // CTRL + Right Click
+        }
+        // get current window size
+        int width, height;
+        glfwGetWindowSize_fp(window, &width, &height);
+        // find geom and 3D click point, get corresponding body
+        mjtNum selpnt[3];
+
+        int selgeom = 0;
+        int selskin = 0;
+        mjtNum aspectratio = (mjtNum) width / height;
+        mjtNum relx = (mjtNum) x / width;
+        mjtNum rely = (mjtNum) (height - y) / height;
+
+        int selbody = mjv_select_fp(v->m, v->d, &v->opt,
+                            aspectratio, relx,
+                            rely, 
+                            &v->scn, selpnt, &selgeom, &selskin);
+        // set lookat point, start tracking is requested
+        if (selmode == 2 || selmode == 3) {
+            // copy selpnt if geom clicked
+            if (selbody >= 0) {
+                memcpy(v->cam.lookat, selpnt, sizeof(v->cam.lookat));
+            }
+
+            // switch to tracking camera
+            if (selmode == 3 && selbody >= 0) {
+                v->cam.type = mjCAMERA_TRACKING;
+                v->cam.trackbodyid = selbody;
+                v->cam.fixedcamid = -1;
+            }
+        } else { // set body selection
+            if (selbody >= 0) {
+                // compute localpos
+                mjtNum tmp[3];
+                mju_sub3_fp(tmp, selpnt, v->d->qpos+3*selbody);
+                mju_mulMatTVec_fp(v->pert.localpos, v->d->xmat+9*selbody, tmp, 3, 3);
+
+                // record selection
+                v->pert.select = selbody;
+                v->pert.skinselect = selskin;
+            } else {
+                v->pert.select = 0;
+                v->pert.skinselect = -1;
+            }
+        }
+
+        // stop perturbation on select
+        v->pert.active = 0;
+    }
+    // save info
+    if (act == GLFW_PRESS) {
+        v->lastbutton = button;
+        v->lastclicktm = time(0);
+    }
+    
+}
+
+void sensorinit(cassie_vis_t *v) {
+    mjv_defaultFigure_fp(&v->figsensor);
+
+    // Set flags
+    v->figsensor.flg_extend = 1;
+    v->figsensor.flg_barplot = 1;
+
+    strcpy(v->figsensor.title, "Sensor data");
+    
+    // y-tick number format
+    strcpy(v->figsensor.yformat, "%.0f");
+    // grid size
+    v->figsensor.gridsize[0] = 2;
+    v->figsensor.gridsize[1] = 3;
+    // minimum range
+    int min_range[2][2] = { {0, 1}, {-1, 1} };
+    memcpy(min_range, v->figsensor.range, sizeof(min_range));
+
+}
+
+cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
+    // Make sure MuJoCo is initialized and the model is loaded
+    if (!mujoco_initialized) {
+        if (!cassie_mujoco_init(modelfile)) {
+            printf("mujoco not init\n");
+            return NULL;
+        }
+    }
+
+    if (!glfw_initialized) {
+        printf("glfw not init\n");
         return NULL;
+    }
 
     // Allocate visualization structure
     cassie_vis_t *v = malloc(sizeof (cassie_vis_t));
+
+    // Set interaction ctrl vars
+    v->lastx = 0.0;
+    v->lasty = 0.0;
+    v->button_left = false;
+    v->button_middle = false;
+    v->button_right = false;
+    v->lastbutton = GLFW_MOUSE_BUTTON_1;
+    v->lastclicktm = 0.0;
+    // GLFWvidmode* vidmode = glfwGetVideoMode_fp(glfwGetPrimaryMonitor_fp());
+    v->refreshrate = glfwGetVideoMode_fp(glfwGetPrimaryMonitor_fp())->refreshRate;
+    v->showhelp = 0;
+    v->showoption = false;
+    v->showdepth = false;
+    v->showfullscreen = false;
+    v->showsensor = false;
+    v->slowmotion = false;
+    v->showinfo = true;
+    v->paused = true;
+    v->framenum = 0;
+    v->lastframenum = 0;
+    v->m = c->m;
+    v->d = c->d;
 
     // Create window
     v->window = glfwCreateWindow_fp(1200, 900, "Cassie", NULL, NULL);
     glfwMakeContextCurrent_fp(v->window);
     glfwSwapInterval_fp(0);
+    printf("made window\n");
 
+    printf("Refresh Rate: %i\n", v->refreshrate);
+    printf("Resolution: %ix%i\n", 1200, 900);
+
+    sensorinit(v);
     // Set up mujoco visualization objects
-    v->cam.type = mjCAMERA_FIXED;
-    v->cam.fixedcamid = 0;
+    // v->cam.type = mjCAMERA_FIXED;
+    // v->cam.fixedcamid = 0;
+    mjv_defaultCamera_fp(&v->cam);
     mjv_defaultOption_fp(&v->opt);
     mjr_defaultContext_fp(&v->con);
-    mjv_makeScene_fp(&v->scn, 1000);
+    mjv_defaultScene_fp(&v->scn);
+    mjv_makeScene_fp(initial_model, &v->scn, 1000);
     mjr_makeContext_fp(initial_model, &v->con, mjFONTSCALE_100);
 
     // Set callback for user-initiated window close events
     glfwSetWindowUserPointer_fp(v->window, v);
     glfwSetWindowCloseCallback_fp(v->window, window_close_callback);
+
+    // Set glfw mouse callbacks
+    glfwSetCursorPosCallback_fp(v->window, mouse_move);
+    glfwSetMouseButtonCallback_fp(v->window, mouse_button);
+    glfwSetScrollCallback_fp(v->window, scroll);
 
     return v;
 }
@@ -1035,13 +1363,22 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     if (!v || !v->window)
         return false;
 
+    // clear old perturbations, apply new
+    mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
+    if (v->pert.select > 0) {
+       mjv_applyPerturbPose_fp(v->m, v->d, &v->pert, 0); // move mocap bodies only
+       mjv_applyPerturbForce_fp(v->m, v->d, &v->pert);
+    }
+
+    mj_forward_fp(v->m, v->d);
+
     // Set up for rendering
     glfwMakeContextCurrent_fp(v->window);
     mjrRect viewport = {0, 0, 0, 0};
     glfwGetFramebufferSize_fp(v->window, &viewport.width, &viewport.height);
 
     // Render scene
-    mjv_updateScene_fp(c->m, c->d, &v->opt, NULL, &v->cam, mjCAT_ALL, &v->scn);
+    mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
     mjr_render_fp(viewport, &v->scn, &v->con);
 
     // Show updated scene

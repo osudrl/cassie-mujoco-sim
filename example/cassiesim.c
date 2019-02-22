@@ -169,10 +169,11 @@ int main(int argc, char *argv[])
     socklen_t addrlen = sizeof src_addr;
 
     // Create cassie simulation
-    cassie_sim_t *sim = cassie_sim_init();
+    const char modelfile[] = "../model/cassie.xml";
+    cassie_sim_t *sim = cassie_sim_init(modelfile);
     cassie_vis_t *vis;
     if (visualize)
-        vis = cassie_vis_init();
+        vis = cassie_vis_init(sim, modelfile);
     if (hold)
         cassie_sim_hold(sim);
 

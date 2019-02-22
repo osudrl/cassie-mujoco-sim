@@ -15,12 +15,14 @@
  */
 
 #include "cassiemujoco.h"
+#include <stddef.h>
 
 
 int main(void)
 {
-    cassie_sim_t *c = cassie_sim_init();
-    cassie_vis_t *v = cassie_vis_init();
+    const char modelfile[] = "../model/cassie.xml";
+    cassie_sim_t *c = cassie_sim_init(modelfile);
+    cassie_vis_t *v = cassie_vis_init(c, modelfile);
 
     state_out_t y;
     pd_in_t u = {0};

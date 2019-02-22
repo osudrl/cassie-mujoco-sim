@@ -38,7 +38,7 @@ extern "C" {
 // containing cassie.xml, mjpro150/, mjkey.txt, etc. If NULL is
 // passed, the directory containing the current executable is used
 // instead. Returns true if loading was successful, false otherwise.
-bool cassie_mujoco_init(const char *basedir);
+bool cassie_mujoco_init(const char *modelfile);
 
 // Unloads the MuJoCo library and Cassie model. After calling this
 // function, cassie_mujoco_init can be called again.
@@ -52,7 +52,7 @@ void cassie_cleanup(void);
 // Creates an instance of the Cassie simulator. If called before
 // cassie_mujoco_init, cassie_mujoco_init is called with the parameter
 // NULL.
-cassie_sim_t *cassie_sim_init(void);
+cassie_sim_t *cassie_sim_init(const char *modelfile);
 
 // Creates an instance of the Cassie simulator with the same state as
 // an existing instance.
@@ -203,7 +203,7 @@ void cassie_sim_radio(cassie_sim_t *sim, double channels[16]);
 // Creates an instance of the Cassie simulation visualizer. If called
 // before cassie_mujoco_init, cassie_mujoco_init is called with the
 // parameter NULL.
-cassie_vis_t *cassie_vis_init(void);
+cassie_vis_t *cassie_vis_init(cassie_sim_t *sim, const char* modelfile);
 
 // Closes the visualization window without freeing the instance. After
 // calling this, cassie_vis_draw can still be called, but the
