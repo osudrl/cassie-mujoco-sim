@@ -1,4 +1,4 @@
-# julia-mujoco-sim
+# cassie-mujoco-sim
 
 A simulation library for Agility Robotics' Cassie robot using MuJoCo.
 
