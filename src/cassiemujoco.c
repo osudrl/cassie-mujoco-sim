@@ -48,6 +48,7 @@ static bool mujoco_initialized = false;
 static mjModel *initial_model;
 static int left_foot_body_id;
 static int right_foot_body_id;
+static int fontscale = mjFONTSCALE_200;
 
 
 /*******************************************************************************
@@ -75,6 +76,7 @@ static int right_foot_body_id;
     X(mju_rotVecMatT)                           \
     X(mju_sub3)                                 \
     X(mju_mulMatTVec)                           \
+    X(mju_printMat)                             \
     X(mjv_defaultScene)                         \
     X(mjv_makeScene)                            \
     X(mjv_defaultScene)                         \
@@ -116,7 +118,10 @@ static int right_foot_body_id;
     X(glfwGetWindowSize)                        \
     X(glfwGetKey)                               \
     X(glfwGetMouseButton)                       \
-    X(glfwGetCursorPos)
+    X(glfwGetCursorPos)                         \
+    X(glfwRestoreWindow)                        \
+    X(glfwMaximizeWindow)                       \
+    X(glfwWindowShouldClose)
 
 // Dynamic object handles
 static void *mj_handle;
@@ -1232,6 +1237,173 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
     
 }
 
+void key_callback(GLFW* window, int key, int scancode, int action, int mods) {
+    cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);
+    if (action == GLFW_RELEASE) {
+        return;
+    } else if (action == GLFW_PRESS) {
+        // control keys
+        if (mods == GLFW_MOD_CONTROL) {
+            if (key == GLFW_KEY_A) {
+                v->cam.lookat = v->m->stat.center;
+                v->cam.distance = 1.5*v->m->stat.extent;
+                // set to free camera
+                v->cam.type = mjCAMERA_FREE;
+            } else if (key == GLFW_KEY_P) {
+                mju_printMat_fp(v->d->qpos, v->m->nq, 1);
+            } else if (key == GLFW_KEY_Q) {
+                glfwSetWindowShouldClose_fp(window, true)
+            }
+        }
+        // toggle visualiztion flag
+        for (int i=0; i < mj.NVISFLAG; i++) {
+            if (key == mjVISSTRING[i][3]) {
+                flags = MVector(s.vopt[].flags)
+                flags[i] = flags[i] == 0 ? 1 : 0
+                s.vopt[].flags = flags
+                return;
+            }
+        end
+      # toggle rendering flag
+      for i=1:Int(mj.NRNDFLAG)
+         if Int(key) == Int(mj.RNDSTRING[i,3][1])
+            flags = MVector(s.scn[].flags)
+            flags[i] = flags[i] == 0 ? 1 : 0
+            s.scn[].flags = flags
+            return
+         end
+      end
+      # toggle geom/site group
+      for i=1:Int(mj.NGROUP)
+         if Int(key) == i + Int('0')
+            if mods & GLFW.MOD_SHIFT == true
+               sitegroup = MVector(s.vopt[].sitegroup)
+               sitegroup[i] = sitegroup[i] > 0 ? 0 : 1
+               s.vopt[].sitegroup[i] = sitegroup
+               return
+            else
+               geomgroup = MVector(s.vopt[].geomgroup)
+               geomgroup[i] = geomgroup[i] > 0 ? 0 : 1
+               s.vopt[].geomgroup = geomgroup
+               return
+            end
+         end
+      end
+        switch (key) {
+            case GLFW_KEY_F1: {     // help
+                v->showhelp += 1;
+                if (v->showhelp > 2) {
+                    v->showhelp = 0;
+                }
+            } break;
+            case GLFW_KEY_F2: {     // option
+                v->showoption = !v->showoption;
+            } break;
+            case GLFW_KEY_F3: {     // info
+                v->showinfo = !v->showinfo;
+            } break;
+            case GLFW_KEY_F4: {     // depth
+                v->showdepth = !v->showdepth;
+            } break;
+            case GLFW_KEY_F5: {     // toggle fullscreen
+                v->showfullscreen = !v->showfullscreen;
+                v->showfullscreen ? glfwMaximizeWindow_fp(window) : glfwRestoreWindow_fp(window);
+            } break;
+            case GLFW_KEY_F7: {     // sensor figure
+                v->showsensor = !v->showsensor;
+            } break;
+            case GLFW_KEY_ENTER: {  // slow motion
+                v->slowmotion = !v.slowmotion;
+                v->slowmotion ? printf("Slow Motion Mode!\n") : printf("Normal Speed Mode!\n")
+            } break;
+            case GLFW_KEY_SPACE: {  // pause
+                v->paused = !v->paused;
+                v->paused ? printf("Paused\n") : printf("Running\n");
+            } break;
+            case GLFW_KEY_BACKSPACE: {  // reset
+                double qpos_init[] =
+                    { 0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
+                    -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
+                    -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
+                    -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
+                double qvel_zero[v->m->nv] = {0};
+                mju_copy_fp(v->d->qpos[7], qpos_init, 28);
+                mju_copy_fp(v->d->qvel, qvel_zero, v->m->nv);
+                v->d->time = 0.0;
+                mj_forward_fp(v->m, v->d);
+            } break;
+            case GLFW_KEY_RIGHT: {      // step forward
+                if (v->paused) {
+                    mj_step_fp(v->m, v->d);
+                }
+            } break;
+            case GLFW_KEY_LEFT: {       // step backw
+                if (v->paused) {
+                    double dt = v->m->opt.timestep;
+                    v->m->opt.timestep = -dt;
+                    mj_step_fp(v->m, v->d);
+                    v->m->opt.timestep = dt;
+                }
+            } break;
+            case GLFW_KEY_DOWN: {      // step forward 100
+                if (v->paused) {
+                    for (int i = 0; i < 100; i++) {
+                        mj_step_fp(v->m, v->d);
+                    }
+                }
+            } break;
+            case GLFW_KEY_UP: {       // step back 100
+                if (v->paused) {
+                    double dt = v->m->opt.timestep;
+                    v->m->opt.timestep = -dt;
+                    for (int i = 0; i < 100; i++) {
+                        mj_step_fp(v->m, v->d);
+                    }
+                    v->m->opt.timestep = dt;
+                }
+            } break;
+            case GLFW_KEY_ESCAPE: {     // free camera
+                v->cam.type = mjCAMERA_FREE;
+            } break;
+            case GLFW_KEY_EQUAL: {      // bigger font
+                if (fontscale < 200) {
+                    fontscale += 50;
+                    mjr_makeContext_fp(v->m, v->con, fontscale);
+                }
+            } break;
+            case GLFW_KEY_MINUS: {      // smaller font
+                if (fontscale > 100) {
+                    fontscale -= 50;
+                    mjr_makeContext_fp(v->m, v->con, fontscale);
+                }
+            } break;
+            case GLFW_KEY_LEFT_BRACKET: {  // '[' previous fixed camera or free
+                int fixedcam = v->cam.type;
+                if (v->m->ncam > 0 && fixedcam == mjCAMERA_FIXED) {
+                    int fixedcamid = v->cam.fixedcamid;
+                    if (fixedcamid  > 0) {
+                        v->cam.fixedcamid = fixedcamid-1;
+                    } else {
+                        v->cam.type = mjCAMERA_FREE;
+                    }
+                }
+            } break;
+            case GLFW_KEY_RIGHT_BRACKET: {  // ']' next fixed camera
+                if (v->m.ncam > 0) {
+                    int fixedcam = v->cam.type;
+                    int fixedcamid = v->cam.fixedcamid;
+                    if (fixedcam != mjCAMERA_FIXED) {
+                        v->cam.type = mjCAMERA_FIXED;
+                    } else if (fixedcamid < v->m.ncam - 1) {
+                        v->cam.fixedcamid = fixedcamid+1;
+                    }
+                }
+            } break;
+        }
+    }
+
+}
+
 void sensorinit(cassie_vis_t *v) {
     mjv_defaultFigure_fp(&v->figsensor);
 
@@ -1310,7 +1482,7 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     mjr_defaultContext_fp(&v->con);
     mjv_defaultScene_fp(&v->scn);
     mjv_makeScene_fp(initial_model, &v->scn, 1000);
-    mjr_makeContext_fp(initial_model, &v->con, mjFONTSCALE_100);
+    mjr_makeContext_fp(initial_model, &v->con, fontscale);
 
     // Set callback for user-initiated window close events
     glfwSetWindowUserPointer_fp(v->window, v);
