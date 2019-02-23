@@ -77,7 +77,6 @@ static int fontscale = mjFONTSCALE_200;
     X(mju_sub3)                                 \
     X(mju_mulMatTVec)                           \
     X(mju_printMat)                             \
-    X(mjv_defaultScene)                         \
     X(mjv_makeScene)                            \
     X(mjv_defaultScene)                         \
     X(mjv_freeScene)                            \
@@ -121,7 +120,7 @@ static int fontscale = mjFONTSCALE_200;
     X(glfwGetCursorPos)                         \
     X(glfwRestoreWindow)                        \
     X(glfwMaximizeWindow)                       \
-    X(glfwWindowShouldClose)
+    X(glfwSetWindowShouldClose)
 
 // Dynamic object handles
 static void *mj_handle;
@@ -382,6 +381,7 @@ static bool load_mujoco_library()
 #endif
 
     // Open library
+    printf("mj lib: %s\n", buf);
     mj_handle = LOADLIB(buf);
     if (!mj_handle) {
         fprintf(stderr, "Failed to load %s\n%s\n", buf, dlerror());
@@ -656,9 +656,7 @@ static void cassie_motor_data(cassie_sim_t *c, const cassie_in_t *cassie_in)
 
 bool cassie_mujoco_init(const char *file_input)
 {
-    // Buffer for paths
-    char buf[4096 + 1024];
-
+    
     // Check if mujoco has already been initialized
     if (!mujoco_initialized) {
         // If no base directory is provided, use the direectory
@@ -1237,7 +1235,7 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
     
 }
 
-void key_callback(GLFW* window, int key, int scancode, int action, int mods) {
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);
     if (action == GLFW_RELEASE) {
         return;
@@ -1245,50 +1243,55 @@ void key_callback(GLFW* window, int key, int scancode, int action, int mods) {
         // control keys
         if (mods == GLFW_MOD_CONTROL) {
             if (key == GLFW_KEY_A) {
-                v->cam.lookat = v->m->stat.center;
+                memcpy(v->cam.lookat, v->m->stat.center, sizeof(v->cam.lookat));
                 v->cam.distance = 1.5*v->m->stat.extent;
                 // set to free camera
                 v->cam.type = mjCAMERA_FREE;
             } else if (key == GLFW_KEY_P) {
                 mju_printMat_fp(v->d->qpos, v->m->nq, 1);
             } else if (key == GLFW_KEY_Q) {
-                glfwSetWindowShouldClose_fp(window, true)
+                glfwSetWindowShouldClose_fp(window, true);
             }
         }
         // toggle visualiztion flag
-        for (int i=0; i < mj.NVISFLAG; i++) {
-            if (key == mjVISSTRING[i][3]) {
-                flags = MVector(s.vopt[].flags)
-                flags[i] = flags[i] == 0 ? 1 : 0
-                s.vopt[].flags = flags
-                return;
+        // for (int i=0; i < mjNVISFLAG; i++) {
+        //     if (key == mjVISSTRING[i][2][0]) {
+        //         mjtByte flags[mjNVISFLAG];
+        //         memcpy(flags, v->opt.flags, sizeof(flags));
+        //         flags[i] = flags[i] == 0 ? 1 : 0;
+        //         memcpy(v->opt.flags, flags, sizeof(v->opt.flags));
+        //         return;
+        //     }
+        // }
+        // toggle rendering flag
+        // for (int i=0; i < mjNRNDFLAG; i++) {
+        //     if (key == *mjRNDSTRING[i][2]) {
+        //         mjtByte flags[mjNRNDFLAG];
+        //         memcpy(flags, v->scn.flags, sizeof(flags));
+        //         flags[i] = flags[i] == 0 ? 1 : 0;
+        //         memcpy(v->scn.flags, flags, sizeof(v->scn.flags));
+        //         return;
+        //     }
+        // }
+        // toggle geom/site group
+        for (int i=0; i < mjNGROUP; i++) {
+            if (key == i + 48) {    // Int('0') = 48
+                if (mods && GLFW_MOD_SHIFT == true) {
+                    mjtByte sitegroup[mjNGROUP];
+                    memcpy(sitegroup, v->opt.sitegroup, sizeof(sitegroup));
+                    sitegroup[i] = sitegroup[i] > 0 ? 0 : 1;
+                    // memcpy(v->opt.sitegroup = sitegroup
+                    v->opt.sitegroup[i] = sitegroup[i];
+                    return;
+                } else {
+                    mjtByte geomgroup[mjNGROUP];
+                    memcpy(geomgroup, v->opt.geomgroup, sizeof(geomgroup));
+                    geomgroup[i] = geomgroup[i] > 0 ? 0 : 1;
+                    memcpy(v->opt.geomgroup, geomgroup, sizeof(v->opt.geomgroup));
+                    return;
+                }
             }
-        end
-      # toggle rendering flag
-      for i=1:Int(mj.NRNDFLAG)
-         if Int(key) == Int(mj.RNDSTRING[i,3][1])
-            flags = MVector(s.scn[].flags)
-            flags[i] = flags[i] == 0 ? 1 : 0
-            s.scn[].flags = flags
-            return
-         end
-      end
-      # toggle geom/site group
-      for i=1:Int(mj.NGROUP)
-         if Int(key) == i + Int('0')
-            if mods & GLFW.MOD_SHIFT == true
-               sitegroup = MVector(s.vopt[].sitegroup)
-               sitegroup[i] = sitegroup[i] > 0 ? 0 : 1
-               s.vopt[].sitegroup[i] = sitegroup
-               return
-            else
-               geomgroup = MVector(s.vopt[].geomgroup)
-               geomgroup[i] = geomgroup[i] > 0 ? 0 : 1
-               s.vopt[].geomgroup = geomgroup
-               return
-            end
-         end
-      end
+        }
         switch (key) {
             case GLFW_KEY_F1: {     // help
                 v->showhelp += 1;
@@ -1313,21 +1316,21 @@ void key_callback(GLFW* window, int key, int scancode, int action, int mods) {
                 v->showsensor = !v->showsensor;
             } break;
             case GLFW_KEY_ENTER: {  // slow motion
-                v->slowmotion = !v.slowmotion;
-                v->slowmotion ? printf("Slow Motion Mode!\n") : printf("Normal Speed Mode!\n")
+                v->slowmotion = !v->slowmotion;
+                v->slowmotion ? printf("Slow Motion Mode!\n") : printf("Normal Speed Mode!\n");
             } break;
             case GLFW_KEY_SPACE: {  // pause
                 v->paused = !v->paused;
                 v->paused ? printf("Paused\n") : printf("Running\n");
             } break;
             case GLFW_KEY_BACKSPACE: {  // reset
-                double qpos_init[] =
+                double qpos_init[28] =
                     { 0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
                     -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
                     -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
                     -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
-                double qvel_zero[v->m->nv] = {0};
-                mju_copy_fp(v->d->qpos[7], qpos_init, 28);
+                double qvel_zero[32] = {0};
+                mju_copy_fp(&v->d->qpos[7], qpos_init, 28);
                 mju_copy_fp(v->d->qvel, qvel_zero, v->m->nv);
                 v->d->time = 0.0;
                 mj_forward_fp(v->m, v->d);
@@ -1368,13 +1371,13 @@ void key_callback(GLFW* window, int key, int scancode, int action, int mods) {
             case GLFW_KEY_EQUAL: {      // bigger font
                 if (fontscale < 200) {
                     fontscale += 50;
-                    mjr_makeContext_fp(v->m, v->con, fontscale);
+                    mjr_makeContext_fp(v->m, &v->con, fontscale);
                 }
             } break;
             case GLFW_KEY_MINUS: {      // smaller font
                 if (fontscale > 100) {
                     fontscale -= 50;
-                    mjr_makeContext_fp(v->m, v->con, fontscale);
+                    mjr_makeContext_fp(v->m, &v->con, fontscale);
                 }
             } break;
             case GLFW_KEY_LEFT_BRACKET: {  // '[' previous fixed camera or free
@@ -1389,12 +1392,12 @@ void key_callback(GLFW* window, int key, int scancode, int action, int mods) {
                 }
             } break;
             case GLFW_KEY_RIGHT_BRACKET: {  // ']' next fixed camera
-                if (v->m.ncam > 0) {
+                if (v->m->ncam > 0) {
                     int fixedcam = v->cam.type;
                     int fixedcamid = v->cam.fixedcamid;
                     if (fixedcam != mjCAMERA_FIXED) {
                         v->cam.type = mjCAMERA_FIXED;
-                    } else if (fixedcamid < v->m.ncam - 1) {
+                    } else if (fixedcamid < v->m->ncam - 1) {
                         v->cam.fixedcamid = fixedcamid+1;
                     }
                 }
