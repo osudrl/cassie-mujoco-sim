@@ -37,28 +37,28 @@ Documentation for the simulation functions is included in include/cassiemujoco.h
 
 ## New Visualization Features
 * Mouse Interactivity:
-    ** The camera can be rotated by holding left mouse button and can be moved by holding the right mouse button.
-    ** Zoom the camera in and out using the scroll wheel.
-    ** To have the camera track a certain body, double control right-click on the desired body. To go back to free camera mode press the esc key.
-    ** Double left-click to select a body to apply a force on.
-    ** Once a body is selected, control right-click and drag to apply a force in a direction. The magnitude of the force is proportional to the distance from the cursor the body.
-    ** Control left-click allows you to apply a rotational force.
+  * The camera can be rotated by holding left mouse button and can be moved by holding the right mouse button.
+  * Zoom the camera in and out using the scroll wheel.
+  * To have the camera track a certain body, double control right-click on the desired body. To go back to free camera mode press the esc key.
+  * Double left-click to select a body to apply a force on.
+  * Once a body is selected, control right-click and drag to apply a force in a direction. The magnitude of the force is proportional to the distance from the cursor the body.
+  * Control left-click allows you to apply a rotational force.
 * Key Commands:
-    ** The cassie_vis_t struct now has a `paused` flag that can be toggled using the spacebar key. This allows to simulation to be paused and restarted. For an example of this, see `cassietest.c`.
-    ** The backspace key resets the model to the initial qpos.
-    ** When paused, the model can be simulated step by step using the right arrow key. To step forward in increments of 100, use the down arrow key.
-    ** The equal ('=') and minus ('-') keys can be used to increase and decrease the font size of the info screen respectively.
-    ** Ctrl+a will recenter the camera to the center of the platform
-    ** Ctrl+p will print the current qpos to the terminal
-    ** Ctrl+q will close the visualization window.
-    ** Toggle visualization flags:
-        *** 'j': Highlight the joint locations
-        *** 'u': Highlight the actuator locations
-        *** 'n': Highlight the constraint locations
-        *** 'c': Highlight points of contact
-        *** 'f': Show contact force arrows
-        *** 't': Make the model transparent
-        *** 'm': Show the center of mass of the entire model
+  * The cassie_vis_t struct now has a `paused` flag that can be toggled using the spacebar key. This allows to simulation to be paused and restarted. For an example of this, see `cassietest.c`.
+  * The backspace key resets the model to the initial qpos.
+  * When paused, the model can be simulated step by step using the right arrow key. To step forward in increments of 100, use the down arrow key.
+  * The equal ('=') and minus ('-') keys can be used to increase and decrease the font size of the info screen respectively.
+  * Ctrl+a will recenter the camera to the center of the platform
+  * Ctrl+p will print the current qpos to the terminal
+  * Ctrl+q will close the visualization window.
+  * Toggle visualization flags:
+    * 'j': Highlight the joint locations
+    * 'u': Highlight the actuator locations
+    * 'n': Highlight the constraint locations
+    * 'c': Highlight points of contact
+    * 'f': Show contact force arrows
+    * 't': Make the model transparent
+    * 'm': Show the center of mass of the entire model
 
 ## Features to be added:
 * Overlayed graph and ground reaction forces
