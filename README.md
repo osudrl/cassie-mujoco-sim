@@ -35,11 +35,32 @@ Documentation for the simulation functions is included in include/cassiemujoco.h
 * There are now two options for specifying a Cassie model file. The library will check if there is a `CASSIE_MODEL_PATH` environment variable defined. If such a variable is defined, it loads the model on that path. Otherwise, it will load the modelfile that is inputted into `cassie_sim_init`/`cassie_vis_init` (which is then passed along to `cassie_mujoco_init`). If you are using a environment variable then you can just pass `NULL` or an empty string to these methods. Using an environment variable is makes the usage invariant to the directory a program is run from, but requires changing and sourcing your `.bashrc` everytime you want to change modelfile. Note that a model file path (or `NULL` input) is also required when making a python `CassieSim` or `CassieVis` object, though you can make the argument have a default value so you don't have to input a model everytime.
 * If building fails because it can't find `mujoco.h`, specify the full path in the Makefile when including mujoco200_linux/include, rather than using `~`.
 
+## New Visualization Features
+* Mouse Interactivity:
+    ** The camera can be rotated by holding left mouse button and can be moved by holding the right mouse button.
+    ** Zoom the camera in and out using the scroll wheel.
+    ** To have the camera track a certain body, double control right-click on the desired body. To go back to free camera mode press the esc key.
+    ** Double left-click to select a body to apply a force on.
+    ** Once a body is selected, control right-click and drag to apply a force in a direction. The magnitude of the force is proportional to the distance from the cursor the body.
+    ** Control left-click allows you to apply a rotational force.
+* Key Commands:
+    ** The cassie_vis_t struct now has a `paused` flag that can be toggled using the spacebar key. This allows to simulation to be paused and restarted. For an example of this, see `cassietest.c`.
+    ** The backspace key resets the model to the initial qpos.
+    ** When paused, the model can be simulated step by step using the right arrow key. To step forward in increments of 100, use the down arrow key.
+    ** The equal ('=') and minus ('-') keys can be used to increase and decrease the font size of the info screen respectively.
+    ** Ctrl+a will recenter the camera to the center of the platform
+    ** Ctrl+p will print the current qpos to the terminal
+    ** Ctrl+q will close the visualization window.
+    ** Toggle visualization flags:
+        *** 'j': Highlight the joint locations
+        *** 'u': Highlight the actuator locations
+        *** 'n': Highlight the constraint locations
+        *** 'c': Highlight points of contact
+        *** 'f': Show contact force arrows
+        *** 't': Make the model transparent
+        *** 'm': Show the center of mass of the entire model
+
 ## Features to be added:
-* Additional key command functionality:
-    * backspace key for resetting the model
-    * forward key for frame by frame stepping
-    * ctrl-q to quit/close the rendering window
-* Overlayed graphs of sensor values and ground reaction forces
-* Switching between free camera and tracking camera
-* Pause and slowmotion functionality (requires changes to `cassiemujoco.py`)
+* Overlayed graph and ground reaction forces
+* Slowmotion functionality? (requires changes to `cassiemujoco.py` and using GLFW in python when executing policies)
+* Add full mujoco 2.00 ui functionality?

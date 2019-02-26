@@ -219,6 +219,11 @@ bool cassie_vis_draw(cassie_vis_t *vis, cassie_sim_t *sim);
 // Returns true if the visualizer has been closed but not freed.
 bool cassie_vis_valid(cassie_vis_t *vis);
 
+// Returns value of vis->paused
+bool cassie_vis_paused(cassie_vis_t *vis);
+
+// Returns value of vis->slowmotion
+bool cassie_vis_slowmo(cassie_vis_t *vis);
 
 /*******************************************************************************
  * Cassie simulation state functions

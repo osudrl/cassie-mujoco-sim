@@ -25,6 +25,8 @@
 #include <linux/limits.h>
 #include "mujoco.h"
 #include "glfw3.h"
+#include "mjxmacro.h"
+#include "uitools.h"
 #include "cassie_core_sim.h"
 #include "state_output.h"
 #include "pd_input.h"
@@ -48,7 +50,9 @@ static bool mujoco_initialized = false;
 static mjModel *initial_model;
 static int left_foot_body_id;
 static int right_foot_body_id;
+// Globals for visualization
 static int fontscale = mjFONTSCALE_200;
+mjvFigure figsensor;
 
 
 /*******************************************************************************
@@ -93,7 +97,9 @@ static int fontscale = mjFONTSCALE_200;
     X(mjv_defaultFigure)                        \
     X(mjr_makeContext)                          \
     X(mjr_freeContext)                          \
-    X(mjr_render)
+    X(mjr_render)                               \
+    X(mjr_overlay)                              \
+    X(mjr_figure)
 
 // Loaded GLFW functions
 #define GLFW_FUNCTION_LIST                      \
@@ -108,6 +114,7 @@ static int fontscale = mjFONTSCALE_200;
     X(glfwSetCursorPosCallback)                 \
     X(glfwSetMouseButtonCallback)               \
     X(glfwSetScrollCallback)                    \
+    X(glfwSetKeyCallback)                       \
     X(glfwGetFramebufferSize)                   \
     X(glfwSwapBuffers)                          \
     X(glfwSwapInterval)                         \
@@ -120,7 +127,8 @@ static int fontscale = mjFONTSCALE_200;
     X(glfwGetCursorPos)                         \
     X(glfwRestoreWindow)                        \
     X(glfwMaximizeWindow)                       \
-    X(glfwSetWindowShouldClose)
+    X(glfwSetWindowShouldClose)                 \
+    X(glfwWindowShouldClose)
 
 // Dynamic object handles
 static void *mj_handle;
@@ -283,6 +291,39 @@ struct cassie_state {
     double torque_delay[NUM_DRIVES][TORQUE_DELAY_CYCLES];
 };
 
+// Redefine mjVISSTRING HAAAACKKKK to fix stupid bug
+const char* VISSTRING[mjNVISFLAG][3] = { {"Convex Hull"    ,"0",  "H"},
+                                        {"Texture"         ,"1",  "X"},
+                                        {"Joint"           ,"0",  "J"},
+                                        {"Actuator"        ,"0",  "U"},
+                                        {"Camera"          ,"0",  "Q"},
+                                        {"Light"           ,"0",  "Z"},
+                                        {"Tendon"          ,"1",  "V"},
+                                        {"Range Finder"    ,"1",  "Y"},
+                                        {"Constraint"      ,"0",  "N"},
+                                        {"Inertia"         ,"0",  "I"},
+                                        {"SCL Inertia"     ,"0",  "S"},
+                                        {"Perturb Force"   ,"0",  "B"},
+                                        {"Perturb Object"  ,"1",  "O"},
+                                        {"Contact Point"   ,"0",  "C"},
+                                        {"Contact Force"   ,"0",  "F"},
+                                        {"Contact Split"   ,"0",  "P"},
+                                        {"Transparent"     ,"0",  "T"},
+                                        {"Auto Connect"    ,"0",  "A"},
+                                        {"Center of Mass"  ,"0",  "M"},
+                                        {"Select Point"    ,"0",  "E"},
+                                        {"Static Body"     ,"1",  "D"},
+                                        {"Skin"            ,"1",  ";"}};
+const char* RNDSTRING[mjNRNDFLAG][3] = {{"Shadow"      ,"1",  "S"},
+                                        {"Wireframe"   ,"0",  "W"},
+                                        {"Reflection"  ,"1",  "R"},
+                                        {"Additive"    ,"0",  "L"},
+                                        {"Skybox"      ,"1",  "K"},
+                                        {"Fog"         ,"0",  "G"},
+                                        {"Haze"        ,"1",  "/"},
+                                        {"Segment"     ,"0",  ","},
+                                        {"Id Color"    ,"0",  "."}};
+
 #define CASSIE_ALLOC_POINTER(c)                 \
     do {                                        \
         c->d = mj_makeData_fp(initial_model);   \
@@ -381,7 +422,6 @@ static bool load_mujoco_library()
 #endif
 
     // Open library
-    printf("mj lib: %s\n", buf);
     mj_handle = LOADLIB(buf);
     if (!mj_handle) {
         fprintf(stderr, "Failed to load %s\n%s\n", buf, dlerror());
@@ -689,6 +729,7 @@ bool cassie_mujoco_init(const char *file_input)
         // Load the model;
         const char* modelfile;
         if ((modelfile = getenv("CASSIE_MODEL_PATH")) == NULL) {
+            printf("env variable doesn't exist\n");
             modelfile = file_input;
         }
         printf("loading model file: %s\n", modelfile);
@@ -1248,31 +1289,39 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 // set to free camera
                 v->cam.type = mjCAMERA_FREE;
             } else if (key == GLFW_KEY_P) {
-                mju_printMat_fp(v->d->qpos, v->m->nq, 1);
+                printf("qpos: ");
+                for (int i = 0; i < v->m->nq; i++) {
+                    printf("%f", v->d->qpos[i]);
+                    if (i != v->m->nq-1) {
+                        printf(", ");
+                    }
+                }
+                printf("\n");
+                // mju_printMat_fp(v->d->qpos, v->m->nq, 1);
             } else if (key == GLFW_KEY_Q) {
                 glfwSetWindowShouldClose_fp(window, true);
             }
         }
         // toggle visualiztion flag
-        // for (int i=0; i < mjNVISFLAG; i++) {
-        //     if (key == mjVISSTRING[i][2][0]) {
-        //         mjtByte flags[mjNVISFLAG];
-        //         memcpy(flags, v->opt.flags, sizeof(flags));
-        //         flags[i] = flags[i] == 0 ? 1 : 0;
-        //         memcpy(v->opt.flags, flags, sizeof(v->opt.flags));
-        //         return;
-        //     }
-        // }
+        for (int i=0; i < mjNVISFLAG; i++) {
+            if (key == VISSTRING[i][2][0]) {
+                mjtByte flags[mjNVISFLAG];
+                memcpy(flags, v->opt.flags, sizeof(flags));
+                flags[i] = flags[i] == 0 ? 1 : 0;
+                memcpy(v->opt.flags, flags, sizeof(v->opt.flags));
+                return;
+            }
+        }
         // toggle rendering flag
-        // for (int i=0; i < mjNRNDFLAG; i++) {
-        //     if (key == *mjRNDSTRING[i][2]) {
-        //         mjtByte flags[mjNRNDFLAG];
-        //         memcpy(flags, v->scn.flags, sizeof(flags));
-        //         flags[i] = flags[i] == 0 ? 1 : 0;
-        //         memcpy(v->scn.flags, flags, sizeof(v->scn.flags));
-        //         return;
-        //     }
-        // }
+        for (int i=0; i < mjNRNDFLAG; i++) {
+            if (key == RNDSTRING[i][2][0]) {
+                mjtByte flags[mjNRNDFLAG];
+                memcpy(flags, v->scn.flags, sizeof(flags));
+                flags[i] = flags[i] == 0 ? 1 : 0;
+                memcpy(v->scn.flags, flags, sizeof(v->scn.flags));
+                return;
+            }
+        }
         // toggle geom/site group
         for (int i=0; i < mjNGROUP; i++) {
             if (key == i + 48) {    // Int('0') = 48
@@ -1324,13 +1373,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 v->paused ? printf("Paused\n") : printf("Running\n");
             } break;
             case GLFW_KEY_BACKSPACE: {  // reset
-                double qpos_init[28] =
-                    { 0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
+                double qpos_init[35] =
+                    {0, 0, 1.01, 1, 0, 0, 0,
+                    0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
                     -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
                     -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
                     -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
                 double qvel_zero[32] = {0};
-                mju_copy_fp(&v->d->qpos[7], qpos_init, 28);
+                mju_copy_fp(v->d->qpos, qpos_init, 35);
                 mju_copy_fp(v->d->qvel, qvel_zero, v->m->nv);
                 v->d->time = 0.0;
                 mj_forward_fp(v->m, v->d);
@@ -1340,14 +1390,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                     mj_step_fp(v->m, v->d);
                 }
             } break;
-            case GLFW_KEY_LEFT: {       // step backw
-                if (v->paused) {
-                    double dt = v->m->opt.timestep;
-                    v->m->opt.timestep = -dt;
-                    mj_step_fp(v->m, v->d);
-                    v->m->opt.timestep = dt;
-                }
-            } break;
+            // case GLFW_KEY_LEFT: {       // step backward
+            //     if (v->paused) {
+            //         double dt = v->m->opt.timestep;
+            //         v->m->opt.timestep = -dt;
+            //         mj_step_fp(v->m, v->d);
+            //         v->m->opt.timestep = dt;
+            //     }
+            // } break;
             case GLFW_KEY_DOWN: {      // step forward 100
                 if (v->paused) {
                     for (int i = 0; i < 100; i++) {
@@ -1355,16 +1405,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                     }
                 }
             } break;
-            case GLFW_KEY_UP: {       // step back 100
-                if (v->paused) {
-                    double dt = v->m->opt.timestep;
-                    v->m->opt.timestep = -dt;
-                    for (int i = 0; i < 100; i++) {
-                        mj_step_fp(v->m, v->d);
-                    }
-                    v->m->opt.timestep = dt;
-                }
-            } break;
+            // case GLFW_KEY_UP: {       // step back 100
+            //     if (v->paused) {
+            //         double dt = v->m->opt.timestep;
+            //         v->m->opt.timestep = -dt;
+            //         for (int i = 0; i < 100; i++) {
+            //             mj_step_fp(v->m, v->d);
+            //         }
+            //         v->m->opt.timestep = dt;
+            //     }
+            // } break;
             case GLFW_KEY_ESCAPE: {     // free camera
                 v->cam.type = mjCAMERA_FREE;
             } break;
@@ -1409,10 +1459,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void sensorinit(cassie_vis_t *v) {
     mjv_defaultFigure_fp(&v->figsensor);
+    v->figsensor.figurergba[3] = 0.5f;
 
     // Set flags
     v->figsensor.flg_extend = 1;
     v->figsensor.flg_barplot = 1;
+    v->figsensor.flg_symmetric = 1;
 
     strcpy(v->figsensor.title, "Sensor data");
     
@@ -1422,14 +1474,82 @@ void sensorinit(cassie_vis_t *v) {
     v->figsensor.gridsize[0] = 2;
     v->figsensor.gridsize[1] = 3;
     // minimum range
-    int min_range[2][2] = { {0, 1}, {-1, 1} };
-    memcpy(min_range, v->figsensor.range, sizeof(min_range));
+    v->figsensor.range[0][0] = 0;
+    v->figsensor.range[0][1] = 0;
+    v->figsensor.range[1][0] = -1;
+    v->figsensor.range[1][1] = 1;
+    // int min_range[2][2] = { {0, 1}, {-1, 1} };
+    // memcpy(min_range, v->figsensor.range, sizeof(min_range));
 
+}
+
+// update sensor figure
+void sensorupdate(cassie_vis_t* v) {
+    static const int maxline = 10;
+
+    // clear linepnt
+    for( int i=0; i<maxline; i++ )
+        v->figsensor.linepnt[i] = 0;
+
+    // start with line 0
+    int lineid = 0;
+
+    // loop over sensors
+    for( int n=0; n<v->m->nsensor; n++ )
+    {
+        // go to next line if type is different
+        if( n>0 && v->m->sensor_type[n]!=v->m->sensor_type[n-1] )
+            lineid = mjMIN(lineid+1, maxline-1);
+
+        // get info about this sensor
+        mjtNum cutoff = (v->m->sensor_cutoff[n]>0 ? v->m->sensor_cutoff[n] : 1);
+        int adr = v->m->sensor_adr[n];
+        int dim = v->m->sensor_dim[n];
+
+        // data pointer in line
+        int p = v->figsensor.linepnt[lineid];
+
+        // fill in data for this sensor
+        for( int i=0; i<dim; i++ )
+        {
+            // check size
+            if( (p+2*i)>=mjMAXLINEPNT/2 )
+                break;
+
+            // x
+            v->figsensor.linedata[lineid][2*p+4*i] = (float)(adr+i);
+            v->figsensor.linedata[lineid][2*p+4*i+2] = (float)(adr+i);
+
+            // y
+            v->figsensor.linedata[lineid][2*p+4*i+1] = 0;
+            v->figsensor.linedata[lineid][2*p+4*i+3] = (float)(v->d->sensordata[adr+i]/cutoff);
+        }
+
+        // update linepnt
+        v->figsensor.linepnt[lineid] = mjMIN(mjMAXLINEPNT-1, 
+                                          figsensor.linepnt[lineid]+2*dim);
+    }
+}
+
+// show sensor figure
+void sensorshow(cassie_vis_t* v, mjrRect rect) {
+    // constant width with and without profiler
+    int width = rect.width/4;
+
+    // render figure on the right
+    mjrRect viewport = {
+        rect.left + 3*width, 
+        rect.bottom, 
+        width, 
+        rect.height/3
+    };
+    mjr_figure_fp(viewport, &v->figsensor, &v->con);
 }
 
 cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     // Make sure MuJoCo is initialized and the model is loaded
     if (!mujoco_initialized) {
+        printf("vis mujoco not init\n");
         if (!cassie_mujoco_init(modelfile)) {
             printf("mujoco not init\n");
             return NULL;
@@ -1443,7 +1563,6 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
 
     // Allocate visualization structure
     cassie_vis_t *v = malloc(sizeof (cassie_vis_t));
-
     // Set interaction ctrl vars
     v->lastx = 0.0;
     v->lasty = 0.0;
@@ -1471,7 +1590,6 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     v->window = glfwCreateWindow_fp(1200, 900, "Cassie", NULL, NULL);
     glfwMakeContextCurrent_fp(v->window);
     glfwSwapInterval_fp(0);
-    printf("made window\n");
 
     printf("Refresh Rate: %i\n", v->refreshrate);
     printf("Resolution: %ix%i\n", 1200, 900);
@@ -1491,10 +1609,11 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     glfwSetWindowUserPointer_fp(v->window, v);
     glfwSetWindowCloseCallback_fp(v->window, window_close_callback);
 
-    // Set glfw mouse callbacks
+    // Set glfw callbacks
     glfwSetCursorPosCallback_fp(v->window, mouse_move);
     glfwSetMouseButtonCallback_fp(v->window, mouse_button);
     glfwSetScrollCallback_fp(v->window, scroll);
+    glfwSetKeyCallback_fp(v->window, key_callback);
 
     return v;
 }
@@ -1538,24 +1657,70 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     if (!v || !v->window)
         return false;
 
+    // Check if window should be closed
+    if (glfwWindowShouldClose_fp(v->window)) {
+        cassie_vis_close(v);
+        return false;
+    }
+    // printf("vis data: %p\n", v->d);
+    // printf("sim data: %p\n", c->d);
     // clear old perturbations, apply new
     mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     if (v->pert.select > 0) {
        mjv_applyPerturbPose_fp(v->m, v->d, &v->pert, 0); // move mocap bodies only
        mjv_applyPerturbForce_fp(v->m, v->d, &v->pert);
     }
-
     mj_forward_fp(v->m, v->d);
-
     // Set up for rendering
     glfwMakeContextCurrent_fp(v->window);
     mjrRect viewport = {0, 0, 0, 0};
     glfwGetFramebufferSize_fp(v->window, &viewport.width, &viewport.height);
-
+    mjrRect smallrect = viewport;
+    // smallrect.width = viewport.width - viewport.width/4;
     // Render scene
+    // printf("before scene update\n");printf("sim data: %p\n", c->d);
+    // printf("sim model: %p\n", c->m);
+    // printf("sim data: %p\n", c->d);
+    // printf("vis opt: %p\n", &v->opt);
+    // printf("vis pert: %p\n", &v->pert);
+    // printf("vis cam: %p\n", &v->cam);
+    // printf("vis scn: %p\n", &v->scn);
+    // printf("mjCat_all: %i\n", mjCAT_ALL);
     mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
+    // printf("updated scene\n");
     mjr_render_fp(viewport, &v->scn, &v->con);
+    if (v->showsensor) {
+        if (!v->paused) {
+            sensorupdate(v);
+        }
+        sensorshow(v, smallrect);
+    }
 
+    if (v->showinfo) {
+        char buf[1024];
+        char str_slow[20];
+        if (v->slowmotion) {
+            strcpy(str_slow, "(10x slowdown)");
+        } else {
+            strcpy(str_slow, "");
+        }
+        char str_paused[50];
+        if(v->paused) {
+            strcpy(str_paused, "\nPaused");
+        } else {
+            strcpy(str_paused, "\nRunning");
+        }
+        strcat(str_paused, "\nTime:");
+        char status[50];
+        sprintf(status, "\nPassive Model\n%.2f", v->d->time);
+        strcpy(buf, str_slow);
+        strcat(buf, status);
+        // status = str_slow * status
+
+        mjr_overlay_fp(mjFONT_NORMAL, mjGRID_BOTTOMLEFT, viewport,
+                    str_paused,
+                    buf, &v->con);
+    }
     // Show updated scene
     glfwSwapBuffers_fp(v->window);
     glfwPollEvents_fp();
@@ -1572,6 +1737,13 @@ bool cassie_vis_valid(cassie_vis_t *v)
     return v && v->window;
 }
 
+bool cassie_vis_paused(cassie_vis_t *v) {
+    return v->paused;
+}
+
+bool cassie_vis_slowmo(cassie_vis_t *v) {
+    return v->slowmotion;
+}
 
 cassie_state_t *cassie_state_alloc()
 {
