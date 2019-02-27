@@ -36,6 +36,7 @@ Documentation for the simulation functions is included in include/cassiemujoco.h
 * If building fails because it can't find `mujoco.h`, specify the full path in the Makefile when including mujoco200_linux/include, rather than using `~`.
 
 ## New Visualization Features
+The F1 key will display a help screen that lists the most useful of the following functions.
 * Mouse Interactivity:
   * The camera can be rotated by holding left mouse button and can be moved by holding the right mouse button.
   * Zoom the camera in and out using the scroll wheel.
@@ -59,8 +60,8 @@ Documentation for the simulation functions is included in include/cassiemujoco.h
     * 'f': Show contact force arrows
     * 't': Make the model transparent
     * 'm': Show the center of mass of the entire model
+  * F4 will bring up and overlayed graph of the current ground reaction forces (z foot contact forces).
 
 ## Features to be added:
-* Overlayed graph and ground reaction forces
 * Slowmotion functionality? (requires changes to `cassiemujoco.py` and using GLFW in python when executing policies)
 * Add full mujoco 2.00 ui functionality?
