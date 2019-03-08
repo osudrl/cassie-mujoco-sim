@@ -12,20 +12,21 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from cassiemujoco_ctypes import *
+from .cassiemujoco_ctypes import *
 import os
 import ctypes
+import numpy as np
 
 # Get base directory
 _dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize libcassiesim
-cassie_mujoco_init(str.encode(_dir_path))
+cassie_mujoco_init(str.encode(_dir_path+"/cassie.xml"))
 
 # Interface classes
 class CassieSim:
-    def __init__(self):
-        self.c = cassie_sim_init()
+    def __init__(self, modelfile):
+        self.c = cassie_sim_init(modelfile.encode('utf-8'))
 
     def step(self, u):
         y = cassie_out_t()
@@ -83,21 +84,47 @@ class CassieSim:
             xfrc_array[i] = xfrc[i]
         cassie_sim_apply_force(self.c, xfrc_array, body)
 
+    def foot_force(self, force):
+        frc_array = (ctypes.c_double * 12)()
+        cassie_sim_foot_forces(self.c, frc_array)
+        for i in range(12):
+            force[i] = frc_array[i]
+        #print(force)
+
+    def foot_pos(self, pos):
+        pos_array = (ctypes.c_double * 6)()
+        cassie_sim_foot_positions(self.c, pos_array)
+        for i in range(6):
+            pos[i] = pos_array[i]
+
     def clear_forces(self):
         cassie_sim_clear_forces(self.c)
+
+    def get_foot_forces(self):
+        y = state_out_t()
+        force = np.zeros(12)
+        self.foot_force(force)
+        return force[[2, 8]]
 
     def __del__(self):
         cassie_sim_free(self.c)
 
 class CassieVis:
-    def __init__(self):
-        self.v = cassie_vis_init()
+    def __init__(self, c, modelfile):
+        print("making cassievis")
+        self.v = cassie_vis_init(c.c, modelfile.encode('utf-8'))
+        print("made cassievis python")
 
     def draw(self, c):
-        return cassie_vis_draw(self.v, c.c)
+        state = cassie_vis_draw(self.v, c.c)
+        # print("vis draw state:", state)
+        return state
 
     def valid(self):
         return cassie_vis_valid(self.v)
+
+    def ispaused(self):
+        return cassie_vis_paused(self.v)
 
     def __del__(self):
         cassie_vis_free(self.v)
