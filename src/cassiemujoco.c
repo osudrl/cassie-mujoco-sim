@@ -1838,7 +1838,8 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     glfwGetFramebufferSize_fp(v->window, &viewport.width, &viewport.height);
     mjrRect smallrect = viewport;
     // Render scene
-    // printf("before scene update\n");printf("sim data: %p\n", c->d);
+    // printf("before scene update\n");
+    // printf("sim data: %p\n", c->d);
     // printf("vis data: %p\n", v->d);
     // printf("vis model: %p\n", v->m);
     // printf("sim model: %p\n", c->m);
@@ -1852,7 +1853,6 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
 
 
     // printf("mjCat_all: %i\n", mjCAT_ALL);
-
     mjv_updateScene_fp(v->m, v->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
     mjr_render_fp(viewport, &v->scn, &v->con);
     if (v->showsensor) {
@@ -1886,7 +1886,7 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
         }
         strcat(str_paused, "\nTime:");
         char status[50];
-        sprintf(status, "\nPassive Model\n%.2f", v->d->time);
+        sprintf(status, "\n\n%.2f", v->d->time);
         strcpy(buf, str_slow);
         strcat(buf, status);
         // status = str_slow * status

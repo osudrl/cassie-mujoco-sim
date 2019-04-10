@@ -12,7 +12,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from .cassiemujoco_ctypes import *
+from cassiemujoco_ctypes import *
 import os
 import ctypes
 import numpy as np
@@ -21,7 +21,7 @@ import numpy as np
 _dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize libcassiesim
-cassie_mujoco_init(str.encode(_dir_path+"/cassie.xml"))
+cassie_mujoco_init(str.encode(_dir_path+"/../model/cassie.xml"))
 
 # Interface classes
 class CassieSim:
@@ -111,9 +111,7 @@ class CassieSim:
 
 class CassieVis:
     def __init__(self, c, modelfile):
-        print("making cassievis")
         self.v = cassie_vis_init(c.c, modelfile.encode('utf-8'))
-        print("made cassievis python")
 
     def draw(self, c):
         state = cassie_vis_draw(self.v, c.c)

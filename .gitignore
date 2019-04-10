@@ -1,6 +1,6 @@
 build/
 test/
 mjpro150/
-mjkey.txt
+*mjkey.txt
 *.so
 *.dll
