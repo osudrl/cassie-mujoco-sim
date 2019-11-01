@@ -775,7 +775,6 @@ bool cassie_mujoco_init(const char *file_input)
             printf("env variable doesn't exist\n");
             modelfile = file_input;
         }
-        printf("loading model file: %s\n", modelfile);
         char error[1000] = "Could not load XML model";
         initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
         if (!initial_model) {
@@ -1752,8 +1751,8 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     glfwMakeContextCurrent_fp(v->window);
     glfwSwapInterval_fp(0);
 
-    printf("Refresh Rate: %i\n", v->refreshrate);
-    printf("Resolution: %ix%i\n", 1200, 900);
+    //printf("Refresh Rate: %i\n", v->refreshrate);
+    //printf("Resolution: %ix%i\n", 1200, 900);
 
     sensorinit(v);
     grfinit(v);
