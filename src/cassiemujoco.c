@@ -452,7 +452,7 @@ static bool load_mujoco_library()
 
     // Try loading GLFW
     bool __attribute__((unused)) gl = load_glfw_library(homedir);
-    struct passwd *pw = getpwuid(getuid());
+    //struct passwd *pw = getpwuid(getuid());
     
     // Choose library version
     snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/" MJLIBNAME, homedir);
@@ -772,7 +772,7 @@ bool cassie_mujoco_init(const char *file_input)
         // Load the model;
         const char* modelfile;
         if ((modelfile = getenv("CASSIE_MODEL_PATH")) == NULL) {
-            printf("env variable doesn't exist\n");
+            //printf("env variable doesn't exist\n");
             modelfile = file_input;
         }
         char error[1000] = "Could not load XML model";
@@ -794,7 +794,7 @@ bool cassie_mujoco_init(const char *file_input)
     // Initialize GLFW if it was loaded
     if (glfw_handle && !glfw_initialized) {
         if (!glfwInit_fp()) {
-            fprintf(stderr, "Could not initialize GLFW\n");
+            //fprintf(stderr, "Could not initialize GLFW\n");
             return false;
         }
         glfw_initialized = true;
@@ -1006,10 +1006,58 @@ double *cassie_sim_ctrl(cassie_sim_t *c)
     return c->d->ctrl;
 }
 
+double *cassie_sim_dof_damping(cassie_sim_t *c)
+{
+    return c->m->dof_damping;
+}
+
+double *cassie_sim_body_mass(cassie_sim_t *c)
+{
+    return c->m->body_mass;
+}
+
+double *cassie_sim_body_ipos(cassie_sim_t *c)
+{
+    return c->m->body_ipos;
+}
+
+double *cassie_sim_ground_friction(cassie_sim_t *c)
+{
+    return c->m->geom_friction;
+}
+
 void cassie_sim_setctrl(cassie_sim_t *c, double *ctrl)
 {
     for (int i = 0; i < c->m->nu; i++) {
         c->d->ctrl[i] = ctrl[i];
+    }
+}
+
+void cassie_sim_set_dof_damping(cassie_sim_t *c, double *damp)
+{
+    for (int i = 0; i < c->m->nv; i++) {
+        c->m->dof_damping[i] = damp[i];
+    }
+}
+
+void cassie_sim_set_body_mass(cassie_sim_t *c, double *mass)
+{
+    for (int i = 0; i < c->m->nbody; i++) {
+        c->m->body_mass[i] = mass[i];
+    }
+}
+
+void cassie_sim_set_body_ipos(cassie_sim_t *c, double *ipos)
+{
+    for (int i = 0; i < c->m->nbody; i++) {
+        c->m->body_ipos[i] = ipos[i];
+    }
+}
+
+void cassie_sim_set_ground_friction(cassie_sim_t *c, double *fric)
+{
+    for (int i = 0; i < 3; i++){
+        c->m->geom_friction[i] = fric[i];
     }
 }
 
