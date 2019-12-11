@@ -66,6 +66,7 @@ static int fontscale = mjFONTSCALE_200;
     X(mj_copyData)                              \
     X(mj_deleteData)                            \
     X(mj_forward)                               \
+    X(mj_fwdPosition)                           \
     X(mj_step1)                                 \
     X(mj_step2)                                 \
     X(mj_step)                                  \
@@ -108,6 +109,7 @@ static int fontscale = mjFONTSCALE_200;
     X(glfwSetCursorPosCallback)                 \
     X(glfwSetMouseButtonCallback)               \
     X(glfwSetScrollCallback)                    \
+    X(glfwSetKeyCallback)                       \
     X(glfwGetFramebufferSize)                   \
     X(glfwSwapBuffers)                          \
     X(glfwSwapInterval)                         \
@@ -120,7 +122,8 @@ static int fontscale = mjFONTSCALE_200;
     X(glfwGetCursorPos)                         \
     X(glfwRestoreWindow)                        \
     X(glfwMaximizeWindow)                       \
-    X(glfwSetWindowShouldClose)
+    X(glfwSetWindowShouldClose)                 \
+    X(glfwWindowShouldClose)
 
 // Dynamic object handles
 static void *mj_handle;
@@ -988,6 +991,19 @@ void cassie_sim_foot_positions(const cassie_sim_t *c, double cpos[6])
     }
 }
 
+void cassie_sim_foot_positions2(const cassie_sim_t *c, double cpos[6])
+{
+    // Zero the output foot positions 
+    mju_zero_fp(cpos, 6);
+    mj_fwdPosition_fp(c->m, c->d);
+
+    for (int i = 0; i < 3; ++i) {
+        // Get foot xyz (global coords)
+        cpos[i]     = c->d->xpos[3 * left_foot_body_id + i];
+        cpos[3 + i] = c->d->xpos[3 * right_foot_body_id + i];
+    }
+}
+
 void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12])
 {
     double force_torque[6];
@@ -1240,6 +1256,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (action == GLFW_RELEASE) {
         return;
     } else if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_P && mods == 0) {
+            printf("attaching camera to pelvis\n");
+            v->cam.type = mjCAMERA_TRACKING;
+            v->cam.trackbodyid = 1;
+            v->cam.fixedcamid = -1;
+            mjv_moveCamera_fp(v->m, mjMOUSE_ZOOM, 0.0, -0.05*8, &v->scn, &v->cam);
+            mjv_moveCamera_fp(v->m, action, 0, -.15, &v->scn, &v->cam);
+        }
         // control keys
         if (mods == GLFW_MOD_CONTROL) {
             if (key == GLFW_KEY_A) {
@@ -1248,7 +1272,15 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 // set to free camera
                 v->cam.type = mjCAMERA_FREE;
             } else if (key == GLFW_KEY_P) {
-                mju_printMat_fp(v->d->qpos, v->m->nq, 1);
+                printf("qpos: ");
+                for (int i = 0; i < v->m->nq; i++) {
+                    printf("%f", v->d->qpos[i]);
+                    if (i != v->m->nq-1) {
+                        printf(", ");
+                    }
+                }
+                printf("\n");
+                // mju_printMat_fp(v->d->qpos, v->m->nq, 1);
             } else if (key == GLFW_KEY_Q) {
                 glfwSetWindowShouldClose_fp(window, true);
             }
@@ -1324,8 +1356,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 v->paused ? printf("Paused\n") : printf("Running\n");
             } break;
             case GLFW_KEY_BACKSPACE: {  // reset
-                double qpos_init[28] =
-                    { 0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
+                double qpos_init[35] =
+                    { 0, 0, 1.01, 1, 0, 0, 0,
+                    0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
                     -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
                     -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
                     -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
@@ -1495,6 +1528,7 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     glfwSetCursorPosCallback_fp(v->window, mouse_move);
     glfwSetMouseButtonCallback_fp(v->window, mouse_button);
     glfwSetScrollCallback_fp(v->window, scroll);
+    glfwSetKeyCallback_fp(v->window, key_callback);
 
     return v;
 }
@@ -1538,6 +1572,12 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     if (!v || !v->window)
         return false;
 
+    // Check if window should be closed
+    if (glfwWindowShouldClose_fp(v->window)) {
+        cassie_vis_close(v);
+        return false;
+    }
+
     // clear old perturbations, apply new
     mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     if (v->pert.select > 0) {
@@ -1572,6 +1612,15 @@ bool cassie_vis_valid(cassie_vis_t *v)
     return v && v->window;
 }
 
+bool cassie_vis_paused(cassie_vis_t *v)
+{
+    return v->paused;
+}
+
+bool cassie_vis_slowmo(cassie_vis_t *v)
+{
+    return v->slowmotion;
+}
 
 cassie_state_t *cassie_state_alloc()
 {
