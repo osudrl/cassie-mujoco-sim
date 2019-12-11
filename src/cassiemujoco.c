@@ -1357,13 +1357,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             } break;
             case GLFW_KEY_BACKSPACE: {  // reset
                 double qpos_init[35] =
-                    { 0, 0, 1.01, 1, 0, 0, 0,
+                    {0, 0, 1.01, 1, 0, 0, 0,
                     0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
                     -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
                     -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
                     -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
                 double qvel_zero[32] = {0};
-                mju_copy_fp(&v->d->qpos[7], qpos_init, 28);
+                mju_copy_fp(v->d->qpos, qpos_init, 35);
                 mju_copy_fp(v->d->qvel, qvel_zero, v->m->nv);
                 v->d->time = 0.0;
                 mj_forward_fp(v->m, v->d);
