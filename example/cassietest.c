@@ -28,7 +28,9 @@ int main(void)
     pd_in_t u = {0};
 
     do {
-        cassie_sim_step_pd(c, &y, &u);
+        if (!cassie_vis_paused(v)) {    
+            cassie_sim_step_pd(c, &y, &u);
+        }
     } while (cassie_vis_draw(v, c));
 
     return 0;

@@ -44,7 +44,7 @@ ctypes: build
 test: checkdirs build
 	mkdir -p test
 	cp -r build/* test/
-	cp example/* test/
+	cp -r example/* test/
 	make -C test PLATFORM="$(PLATFORM)"
 
 # Virtual targets

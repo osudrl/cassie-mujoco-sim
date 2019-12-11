@@ -2,9 +2,9 @@
 PLATFORM := LINUX
 
 # Compilation settings
-INC     := -Iinclude
+INC     := -Iinclude -I../include
 CFLAGS  := -std=gnu11 -Wall -Wextra -O3 -march=sandybridge -flto
-LDFLAGS := -L.
+LDFLAGS := -L. -L..
 LIBS    := -lcassiemujoco
 
 # Platform-specific settings
