@@ -1119,19 +1119,12 @@ void cassie_sim_foot_positions(const cassie_sim_t *c, double cpos[6])
         cpos[i]     = c->d->xpos[3 * left_foot_body_id + i];
         cpos[3 + i] = c->d->xpos[3 * right_foot_body_id + i];
     }
-}
 
-void cassie_sim_foot_positions2(const cassie_sim_t *c, double cpos[6])
-{
-    // Zero the output foot positions 
-    mju_zero_fp(cpos, 6);
-    mj_fwdPosition_fp(c->m, c->d);
-
-    for (int i = 0; i < 3; ++i) {
-        // Get foot xyz (global coords)
-        cpos[i]     = c->d->xpos[3 * left_foot_body_id + i];
-        cpos[3 + i] = c->d->xpos[3 * right_foot_body_id + i];
-    }
+    // cassie mechanical model offset
+    // double offset_footJoint2midFoot = sqrt(pow((0.052821 + 0.069746)/2, 2) + pow((0.092622 + 0.010224)/2, 2));
+    double offset_footJoint2midFoot = sqrt(pow(0.01762, 2) + pow(0.05219, 2)); // from cassie agility doc
+    cpos[2] = cpos[2] - offset_footJoint2midFoot; // foot pos are negative
+    cpos[5] = cpos[5] - offset_footJoint2midFoot;
 }
 
 void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12])
@@ -1894,11 +1887,6 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
         cassie_vis_close(v);
         return false;
     }
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 03e08d58df3635182fac38a033950655199c133d
     // clear old perturbations, apply new
     mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     if (v->pert.select > 0) {
@@ -1991,7 +1979,6 @@ bool cassie_vis_valid(cassie_vis_t *v)
     return v && v->window;
 }
 
-<<<<<<< HEAD
 bool cassie_vis_paused(cassie_vis_t *v)
 {
     return v->paused;
@@ -1999,13 +1986,6 @@ bool cassie_vis_paused(cassie_vis_t *v)
 
 bool cassie_vis_slowmo(cassie_vis_t *v)
 {
-=======
-bool cassie_vis_paused(cassie_vis_t *v) {
-    return v->paused;
-}
-
-bool cassie_vis_slowmo(cassie_vis_t *v) {
->>>>>>> 03e08d58df3635182fac38a033950655199c133d
     return v->slowmotion;
 }
 
