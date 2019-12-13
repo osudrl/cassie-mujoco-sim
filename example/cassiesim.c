@@ -198,7 +198,8 @@ int main(int argc, char *argv[])
     printf("Waiting for input...\n");
 
     // Listen/respond loop
-    while (true) {
+    bool render_state = true;
+    while (render_state) {
         // Try to get a new packet
         ssize_t nbytes;
         if (realtime) {
@@ -279,7 +280,7 @@ int main(int argc, char *argv[])
 
         // Draw no more then once every 33 simulation steps
         if (visualize && loop_counter % 33 == 0)
-            cassie_vis_draw(vis, sim);
+            render_state = cassie_vis_draw(vis, sim);
 
         // Increment loop counter
         ++loop_counter;
