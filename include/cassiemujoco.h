@@ -225,6 +225,9 @@ bool cassie_vis_paused(cassie_vis_t *vis);
 // Returns value of vis->slowmotion
 bool cassie_vis_slowmo(cassie_vis_t *vis);
 
+// Apply inputted perturbation to any body in the vis's mjData
+void cassie_vis_apply_force(cassie_vis_t *vis, double xfrc[6], const char* name);
+
 /*******************************************************************************
  * Cassie simulation state functions
  ******************************************************************************/

@@ -1263,6 +1263,12 @@ void cassie_sim_radio(cassie_sim_t *c, double channels[16])
         c->cassie_out.pelvis.radio.channel[i] = channels[i];
 }
 
+void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
+{
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    mju_copy_fp(&v->d->xfrc_applied[6 * body_id], xfrc, 6);
+}
+
 void scroll(GLFWwindow* window, double xoffset, double yoffset) {
     cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);
 
@@ -1302,6 +1308,8 @@ void mouse_move(GLFWwindow* w, double xpos, double ypos) {
     // move perturb or camera
     mjtNum xchange = dx / height;
     mjtNum ychange = dy / height;
+    // printf("xchange: %f ychange: %f active: %i scale: %f\n", xchange, ychange, v->pert.active, v->pert.scale);
+    printf("localpos: %f %f %f\n", v->pert.localpos[0], v->pert.localpos[1], v->pert.localpos[2]);
     if (v->pert.active != 0) {
         mjv_movePerturb_fp(v->m, v->d, action, xchange, ychange, &v->scn, &v->pert);
     } else {
@@ -1397,6 +1405,7 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
                 mjtNum tmp[3];
                 mju_sub3_fp(tmp, selpnt, v->d->qpos+3*selbody);
                 mju_mulMatTVec_fp(v->pert.localpos, v->d->xmat+9*selbody, tmp, 3, 3);
+                printf("localpos: %f %f %f\n", v->pert.localpos[0], v->pert.localpos[1], v->pert.localpos[2]);
 
                 // record selection
                 v->pert.select = selbody;
@@ -1825,6 +1834,7 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     // v->cam.fixedcamid = 0;
     mjv_defaultCamera_fp(&v->cam);
     mjv_defaultOption_fp(&v->opt);
+    v->opt.flags[11] = v->opt.flags[12];    // Render applied forces
     mjr_defaultContext_fp(&v->con);
     mjv_defaultScene_fp(&v->scn);
     mjv_makeScene_fp(initial_model, &v->scn, 1000);
@@ -1888,7 +1898,7 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
         return false;
     }
     // clear old perturbations, apply new
-    mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
+    // mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     if (v->pert.select > 0) {
        mjv_applyPerturbPose_fp(v->m, v->d, &v->pert, 0); // move mocap bodies only
        mjv_applyPerturbForce_fp(v->m, v->d, &v->pert);

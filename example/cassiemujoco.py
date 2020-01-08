@@ -124,6 +124,16 @@ class CassieVis:
     def ispaused(self):
         return cassie_vis_paused(self.v)
 
+    # Applies the inputted force to the inputted body. "xfrc_apply" should contain the force/torque to 
+    # apply in Cartesian coords as a 6-long array (first 3 are force, last 3 are torque). "body_name" 
+    # should be a string matching a body name in the XML file. If "body_name" doesn't match an existing
+    # body name, then no force will be applied. 
+    def apply_force(self, xfrc_apply, body_name):
+        xfrc_array = (ctypes.c_double * 6)()
+        for i in range(len(xfrc_apply)):
+            xfrc_array[i] = xfrc_apply[i]
+        cassie_vis_apply_force(self.v, xfrc_array, body_name.encode())
+
     def __del__(self):
         cassie_vis_free(self.v)
 
