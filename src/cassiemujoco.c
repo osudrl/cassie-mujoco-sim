@@ -937,7 +937,6 @@ void cassie_sim_step_ethercat(cassie_sim_t *c,
     // Step the MuJoCo simulation forward
     const int mjsteps = round(5e-4 / c->m->opt.timestep);
     for (int i = 0; i < mjsteps; ++i) {
-      //   printf("taking mj_step!\n");
         mj_step1_fp(c->m, c->d);
         mj_step2_fp(c->m, c->d);
     }
@@ -1308,8 +1307,6 @@ void mouse_move(GLFWwindow* w, double xpos, double ypos) {
     // move perturb or camera
     mjtNum xchange = dx / height;
     mjtNum ychange = dy / height;
-    // printf("xchange: %f ychange: %f active: %i scale: %f\n", xchange, ychange, v->pert.active, v->pert.scale);
-    printf("localpos: %f %f %f\n", v->pert.localpos[0], v->pert.localpos[1], v->pert.localpos[2]);
     if (v->pert.active != 0) {
         mjv_movePerturb_fp(v->m, v->d, action, xchange, ychange, &v->scn, &v->pert);
     } else {
@@ -1405,7 +1402,6 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
                 mjtNum tmp[3];
                 mju_sub3_fp(tmp, selpnt, v->d->qpos+3*selbody);
                 mju_mulMatTVec_fp(v->pert.localpos, v->d->xmat+9*selbody, tmp, 3, 3);
-                printf("localpos: %f %f %f\n", v->pert.localpos[0], v->pert.localpos[1], v->pert.localpos[2]);
 
                 // record selection
                 v->pert.select = selbody;
