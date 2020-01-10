@@ -195,6 +195,9 @@ void cassie_sim_release(cassie_sim_t *sim);
 // to enable the motors, which is the default state.
 void cassie_sim_radio(cassie_sim_t *sim, double channels[16]);
 
+// Does a "full reset", i.e. sets qpos to a starting position and zeros
+// out all other data used for computation (like velocities, accelerations, forces)
+void cassie_sim_full_reset(cassie_sim_t *sim);
 
 /*******************************************************************************
  * Cassie visualizer functions
@@ -227,6 +230,10 @@ bool cassie_vis_slowmo(cassie_vis_t *vis);
 
 // Apply inputted perturbation to any body in the vis's mjData
 void cassie_vis_apply_force(cassie_vis_t *vis, double xfrc[6], const char* name);
+
+// Does a "full reset", i.e. sets qpos to a starting position and zeros
+// out all other data used for computation (like velocities, accelerations, forces)
+void cassie_vis_full_reset(cassie_vis_t *sim);
 
 /*******************************************************************************
  * Cassie simulation state functions

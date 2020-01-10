@@ -106,6 +106,9 @@ class CassieSim:
         self.foot_force(force)
         return force[[2, 8]]
 
+    def reset(self):
+        cassie_sim_full_reset(self.c)
+
     def __del__(self):
         cassie_sim_free(self.c)
 
@@ -133,6 +136,9 @@ class CassieVis:
         for i in range(len(xfrc_apply)):
             xfrc_array[i] = xfrc_apply[i]
         cassie_vis_apply_force(self.v, xfrc_array, body_name.encode())
+
+    def reset(self):
+        cassie_vis_full_reset(self.v)
 
     def __del__(self):
         cassie_vis_free(self.v)

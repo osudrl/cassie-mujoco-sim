@@ -1262,18 +1262,65 @@ void cassie_sim_radio(cassie_sim_t *c, double channels[16])
         c->cassie_out.pelvis.radio.channel[i] = channels[i];
 }
 
+void cassie_sim_full_reset(cassie_sim_t *c)
+{
+    double qpos_init[35] = {0, 0, 1.01, 1, 0, 0, 0,
+        0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
+        -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
+
+    double ctrl_zero[c->m->nu];
+    memset(ctrl_zero, 0, c->m->nu*sizeof(double));
+    double xfrc_zero[c->m->nbody*6];
+    memset(xfrc_zero, 0, c->m->nbody*sizeof(double));
+    mju_copy_fp(c->d->qpos, qpos_init, 35);
+    mju_zero_fp(c->d->qvel, c->m->nv);
+    mju_zero_fp(c->d->ctrl, c->m->nu);
+    mju_zero_fp(c->d->qfrc_applied, c->m->nv);
+    mju_zero_fp(c->d->xfrc_applied, 6 * c->m->nbody);
+    mju_zero_fp(c->d->qacc, c->m->nv);
+
+    for(int i = 0; i < TORQUE_DELAY_CYCLES; i++) {
+        for (int j = 0; j < NUM_DRIVES; j++) {
+            c->torque_delay[j][i] = 0;
+        }
+    }
+    state_output_setup(c->estimator);
+}
+
+void cassie_vis_full_reset(cassie_vis_t *v)
+{
+    double qpos_init[35] = {0, 0, 1.01, 1, 0, 0, 0,
+        0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
+        -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
+
+    double qvel_zero[32] = {0};
+    double ctrl_zero[v->m->nu];
+    memset(ctrl_zero, 0, v->m->nu*sizeof(double));
+    double xfrc_zero[v->m->nbody*6];
+    memset(xfrc_zero, 0, v->m->nbody*sizeof(double));
+    mju_copy_fp(v->d->qpos, qpos_init, 35);
+    mju_copy_fp(v->d->qvel, qvel_zero, v->m->nv);
+    mju_zero_fp(v->d->ctrl, v->m->nu);
+    mju_zero_fp(v->d->qfrc_applied, v->m->nv);
+    mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
+    mju_zero_fp(v->d->qacc, v->m->nv);
+}
+
 void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
 {
     int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
     mju_copy_fp(&v->d->xfrc_applied[6 * body_id], xfrc, 6);
 }
 
-void scroll(GLFWwindow* window, double xoffset, double yoffset) {
+void scroll(GLFWwindow* window, double xoffset, double yoffset)
+{
     cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);
-
     // scroll: emulate vertical mouse motion = 5% of window height
     mjv_moveCamera_fp(v->m, mjMOUSE_ZOOM, 0.0, -0.05 * yoffset, &v->scn, &v->cam);
-
 }
 
 void mouse_move(GLFWwindow* w, double xpos, double ypos) {
