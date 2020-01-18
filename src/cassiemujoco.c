@@ -984,6 +984,11 @@ double *cassie_sim_qvel(cassie_sim_t *c)
     return c->d->qvel;
 }
 
+double *cassie_sim_qacc(cassie_sim_t *c)
+{
+    return c->d->qacc;
+}
+
 int cassie_sim_forward(cassie_sim_t *c)
 {
    mj_forward_fp(c->m, c->d);
@@ -1215,9 +1220,10 @@ void cassie_vis_foot_forces(const cassie_vis_t *c, double cfrc[12])
 }
 
 
-void cassie_sim_apply_force(cassie_sim_t *c, double xfrc[6], int body)
+void cassie_sim_apply_force(cassie_sim_t *c, double xfrc[6], const char* name)
 {
-    mju_copy_fp(&c->d->xfrc_applied[6 * body], xfrc, 6);
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    mju_copy_fp(&c->d->xfrc_applied[6 * body_id], xfrc, 6);
 }
 
 

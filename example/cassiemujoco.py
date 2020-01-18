@@ -58,6 +58,10 @@ class CassieSim:
         qvelp = cassie_sim_qvel(self.c)
         return qvelp[:32]
 
+    def qacc(self):
+        qaccp = cassie_sim_qacc(self.c)
+        return qaccp[:32]
+
     def set_time(self, time):
         timep = cassie_sim_time(self.c)
         timep[0] = time
@@ -78,11 +82,11 @@ class CassieSim:
     def release(self):
         cassie_sim_release(self.c)
 
-    def apply_force(self, xfrc, body=1):
+    def apply_force(self, xfrc, body_name="cassie-pelvis"):
         xfrc_array = (ctypes.c_double * 6)()
         for i in range(len(xfrc)):
             xfrc_array[i] = xfrc[i]
-        cassie_sim_apply_force(self.c, xfrc_array, body)
+        cassie_sim_apply_force(self.c, xfrc_array, body_name.encode())
 
     def foot_force(self, force):
         frc_array = (ctypes.c_double * 12)()
