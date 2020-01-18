@@ -16,6 +16,7 @@
 
 #include "cassiemujoco.h"
 #include <stddef.h>
+#include <stdio.h>
 
 
 int main(void)
@@ -26,12 +27,28 @@ int main(void)
 
     state_out_t y;
     pd_in_t u = {0};
-
-    do {
-        if (!cassie_vis_paused(v)) {    
+    bool draw_state = cassie_vis_draw(v, c);
+    int count = 0;
+    double apply_force[6] = {0, 0, 100, 0, 0, 0};
+    while (draw_state) {
+        if (!cassie_vis_paused(v)) {   
+            if (count > 500) {
+                printf("applying perturb\n");
+                cassie_vis_apply_force(v, apply_force, "cassie-pelvis");                
+            }
+            // printf("count: %i\n", count); 
             cassie_sim_step_pd(c, &y, &u);
+            count += 1;
         }
-    } while (cassie_vis_draw(v, c));
+        draw_state = cassie_vis_draw(v, c);
+        
+    }
+
+    // do {
+    //     if (!cassie_vis_paused(v)) {    
+    //         cassie_sim_step_pd(c, &y, &u);
+    //     }
+    // } while (cassie_vis_draw(v, c));
 
     return 0;
 }

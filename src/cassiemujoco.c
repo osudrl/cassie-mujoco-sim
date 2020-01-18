@@ -70,6 +70,7 @@ mjvFigure figsensor;
     X(mj_copyData)                              \
     X(mj_deleteData)                            \
     X(mj_forward)                               \
+    X(mj_fwdPosition)                           \
     X(mj_step1)                                 \
     X(mj_step2)                                 \
     X(mj_step)                                  \
@@ -935,7 +936,6 @@ void cassie_sim_step_ethercat(cassie_sim_t *c,
     // Step the MuJoCo simulation forward
     const int mjsteps = round(5e-4 / c->m->opt.timestep);
     for (int i = 0; i < mjsteps; ++i) {
-      //   printf("taking mj_step!\n");
         mj_step1_fp(c->m, c->d);
         mj_step2_fp(c->m, c->d);
     }
@@ -981,6 +981,11 @@ double *cassie_sim_qpos(cassie_sim_t *c)
 double *cassie_sim_qvel(cassie_sim_t *c)
 {
     return c->d->qvel;
+}
+
+double *cassie_sim_qacc(cassie_sim_t *c)
+{
+    return c->d->qacc;
 }
 
 int cassie_sim_forward(cassie_sim_t *c)
@@ -1117,6 +1122,12 @@ void cassie_sim_foot_positions(const cassie_sim_t *c, double cpos[6])
         cpos[i]     = c->d->xpos[3 * left_foot_body_id + i];
         cpos[3 + i] = c->d->xpos[3 * right_foot_body_id + i];
     }
+
+    // cassie mechanical model offset
+    // double offset_footJoint2midFoot = sqrt(pow((0.052821 + 0.069746)/2, 2) + pow((0.092622 + 0.010224)/2, 2));
+    double offset_footJoint2midFoot = sqrt(pow(0.01762, 2) + pow(0.05219, 2)); // from cassie agility doc
+    cpos[2] = cpos[2] - offset_footJoint2midFoot; // foot pos are negative
+    cpos[5] = cpos[5] - offset_footJoint2midFoot;
 }
 
 void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12])
@@ -1208,9 +1219,10 @@ void cassie_vis_foot_forces(const cassie_vis_t *c, double cfrc[12])
 }
 
 
-void cassie_sim_apply_force(cassie_sim_t *c, double xfrc[6], int body)
+void cassie_sim_apply_force(cassie_sim_t *c, double xfrc[6], const char* name)
 {
-    mju_copy_fp(&c->d->xfrc_applied[6 * body], xfrc, 6);
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    mju_copy_fp(&c->d->xfrc_applied[6 * body_id], xfrc, 6);
 }
 
 
@@ -1255,12 +1267,65 @@ void cassie_sim_radio(cassie_sim_t *c, double channels[16])
         c->cassie_out.pelvis.radio.channel[i] = channels[i];
 }
 
-void scroll(GLFWwindow* window, double xoffset, double yoffset) {
-    cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);
+void cassie_sim_full_reset(cassie_sim_t *c)
+{
+    double qpos_init[35] = {0, 0, 1.01, 1, 0, 0, 0,
+        0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
+        -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
 
+    double ctrl_zero[c->m->nu];
+    memset(ctrl_zero, 0, c->m->nu*sizeof(double));
+    double xfrc_zero[c->m->nbody*6];
+    memset(xfrc_zero, 0, c->m->nbody*sizeof(double));
+    mju_copy_fp(c->d->qpos, qpos_init, 35);
+    mju_zero_fp(c->d->qvel, c->m->nv);
+    mju_zero_fp(c->d->ctrl, c->m->nu);
+    mju_zero_fp(c->d->qfrc_applied, c->m->nv);
+    mju_zero_fp(c->d->xfrc_applied, 6 * c->m->nbody);
+    mju_zero_fp(c->d->qacc, c->m->nv);
+
+    for(int i = 0; i < TORQUE_DELAY_CYCLES; i++) {
+        for (int j = 0; j < NUM_DRIVES; j++) {
+            c->torque_delay[j][i] = 0;
+        }
+    }
+    state_output_setup(c->estimator);
+}
+
+void cassie_vis_full_reset(cassie_vis_t *v)
+{
+    double qpos_init[35] = {0, 0, 1.01, 1, 0, 0, 0,
+        0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
+        -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
+
+    double qvel_zero[32] = {0};
+    double ctrl_zero[v->m->nu];
+    memset(ctrl_zero, 0, v->m->nu*sizeof(double));
+    double xfrc_zero[v->m->nbody*6];
+    memset(xfrc_zero, 0, v->m->nbody*sizeof(double));
+    mju_copy_fp(v->d->qpos, qpos_init, 35);
+    mju_copy_fp(v->d->qvel, qvel_zero, v->m->nv);
+    mju_zero_fp(v->d->ctrl, v->m->nu);
+    mju_zero_fp(v->d->qfrc_applied, v->m->nv);
+    mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
+    mju_zero_fp(v->d->qacc, v->m->nv);
+}
+
+void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
+{
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    mju_copy_fp(&v->d->xfrc_applied[6 * body_id], xfrc, 6);
+}
+
+void scroll(GLFWwindow* window, double xoffset, double yoffset)
+{
+    cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);
     // scroll: emulate vertical mouse motion = 5% of window height
     mjv_moveCamera_fp(v->m, mjMOUSE_ZOOM, 0.0, -0.05 * yoffset, &v->scn, &v->cam);
-
 }
 
 void mouse_move(GLFWwindow* w, double xpos, double ypos) {
@@ -1415,6 +1480,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (action == GLFW_RELEASE) {
         return;
     } else if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_P && mods == 0) {
+            printf("attaching camera to pelvis\n");
+            v->cam.type = mjCAMERA_TRACKING;
+            v->cam.trackbodyid = 1;
+            v->cam.fixedcamid = -1;
+            mjv_moveCamera_fp(v->m, mjMOUSE_ZOOM, 0.0, -0.05*8, &v->scn, &v->cam);
+            mjv_moveCamera_fp(v->m, action, 0, -.15, &v->scn, &v->cam);
+        }
         // control keys
         if (mods == GLFW_MOD_CONTROL) {
             if (key == GLFW_KEY_A) {
@@ -1809,6 +1882,7 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     // v->cam.fixedcamid = 0;
     mjv_defaultCamera_fp(&v->cam);
     mjv_defaultOption_fp(&v->opt);
+    v->opt.flags[11] = v->opt.flags[12];    // Render applied forces
     mjr_defaultContext_fp(&v->con);
     mjv_defaultScene_fp(&v->scn);
     mjv_makeScene_fp(initial_model, &v->scn, 1000);
@@ -1871,9 +1945,8 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
         cassie_vis_close(v);
         return false;
     }
-    
     // clear old perturbations, apply new
-    mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
+    // mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     if (v->pert.select > 0) {
        mjv_applyPerturbPose_fp(v->m, v->d, &v->pert, 0); // move mocap bodies only
        mjv_applyPerturbForce_fp(v->m, v->d, &v->pert);
@@ -1964,11 +2037,13 @@ bool cassie_vis_valid(cassie_vis_t *v)
     return v && v->window;
 }
 
-bool cassie_vis_paused(cassie_vis_t *v) {
+bool cassie_vis_paused(cassie_vis_t *v)
+{
     return v->paused;
 }
 
-bool cassie_vis_slowmo(cassie_vis_t *v) {
+bool cassie_vis_slowmo(cassie_vis_t *v)
+{
     return v->slowmotion;
 }
 
