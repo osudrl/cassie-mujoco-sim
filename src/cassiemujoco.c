@@ -1094,7 +1094,7 @@ float *cassie_sim_geom_rgba(cassie_sim_t *c)
 
 void cassie_sim_set_geom_rgba(cassie_sim_t *c, float *rgba)
 {
-    for (int i = 0; i < c->m->ngeom; i++)
+    for (int i = 0; i < c->m->ngeom * 4; i++)
     {
         c->m->geom_rgba[i] = rgba[i];
     }
