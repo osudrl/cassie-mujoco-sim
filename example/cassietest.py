@@ -23,28 +23,32 @@ vis = CassieVis(sim, "../model/cassie.xml")
 
 # Set control parameters
 u = pd_in_t()
-u.leftLeg.motorPd.torque[3] = 0 # Feedforward torque
-u.leftLeg.motorPd.pTarget[3] = -2
-u.leftLeg.motorPd.pGain[3] = 100
-u.leftLeg.motorPd.dTarget[3] = -2
-u.leftLeg.motorPd.dGain[3] = 10
-u.rightLeg.motorPd = u.leftLeg.motorPd
+# u.leftLeg.motorPd.torque[3] = 0 # Feedforward torque
+# u.leftLeg.motorPd.pTarget[3] = -2
+# u.leftLeg.motorPd.pGain[3] = 100
+# u.leftLeg.motorPd.dTarget[3] = -2
+# u.leftLeg.motorPd.dGain[3] = 10
+# u.rightLeg.motorPd = u.leftLeg.motorPd
 
 # Hold pelvis in place
-sim.hold()
+# sim.hold()
 
 # Record time
 t = time.monotonic()
+count = 0
 
 # Run until window is closed or vis is quit
 draw_state = vis.draw(sim)
 while draw_state:
     if not vis.ispaused():
-        for _ in range(33):
-            y = sim.step_pd(u)
+        if count > 500:
+            vis.apply_force([0, 0, 500, 0, 0, 0], "cassie-pelvis")
+            print("applying force")
+        y = sim.step_pd(u)
+        count += 1
 
     draw_state = vis.draw(sim)
 
-    while time.monotonic() - t < 1/60:
-        time.sleep(0.001)
-    t = time.monotonic()
+    # while time.monotonic() - t < 1/60:
+    time.sleep(0.0001)
+    # t = time.monotonic()

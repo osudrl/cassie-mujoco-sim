@@ -157,6 +157,8 @@ double *cassie_sim_qpos(cassie_sim_t *sim);
 // [31] Right foot            (Motor [9], Joint [5])
 double *cassie_sim_qvel(cassie_sim_t *sim);
 
+double *cassie_sim_qacc(cassie_sim_t *c);
+
 // Returns the mjModel* used by the simulator
 void *cassie_sim_mjmodel(cassie_sim_t *sim);
 
@@ -179,7 +181,7 @@ bool cassie_sim_check_self_collision(const cassie_sim_t *sim);
 void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12]);
 
 // Applies an external force to a specified body.
-void cassie_sim_apply_force(cassie_sim_t *sim, double xfrc[6], int body);
+void cassie_sim_apply_force(cassie_sim_t *sim, double xfrc[6], const char* name);
 
 // Sets all external forces to zero.
 void cassie_sim_clear_forces(cassie_sim_t *sim);
@@ -195,6 +197,9 @@ void cassie_sim_release(cassie_sim_t *sim);
 // to enable the motors, which is the default state.
 void cassie_sim_radio(cassie_sim_t *sim, double channels[16]);
 
+// Does a "full reset", i.e. sets qpos to a starting position and zeros
+// out all other data used for computation (like velocities, accelerations, forces)
+void cassie_sim_full_reset(cassie_sim_t *sim);
 
 /*******************************************************************************
  * Cassie visualizer functions
@@ -224,6 +229,13 @@ bool cassie_vis_paused(cassie_vis_t *vis);
 
 // Returns value of vis->slowmotion
 bool cassie_vis_slowmo(cassie_vis_t *vis);
+
+// Apply inputted perturbation to any body in the vis's mjData
+void cassie_vis_apply_force(cassie_vis_t *vis, double xfrc[6], const char* name);
+
+// Does a "full reset", i.e. sets qpos to a starting position and zeros
+// out all other data used for computation (like velocities, accelerations, forces)
+void cassie_vis_full_reset(cassie_vis_t *sim);
 
 /*******************************************************************************
  * Cassie simulation state functions

@@ -58,6 +58,10 @@ class CassieSim:
         qvelp = cassie_sim_qvel(self.c)
         return qvelp[:32]
 
+    def qacc(self):
+        qaccp = cassie_sim_qacc(self.c)
+        return qaccp[:32]
+
     def set_time(self, time):
         timep = cassie_sim_time(self.c)
         timep[0] = time
@@ -78,11 +82,11 @@ class CassieSim:
     def release(self):
         cassie_sim_release(self.c)
 
-    def apply_force(self, xfrc, body=1):
+    def apply_force(self, xfrc, body_name="cassie-pelvis"):
         xfrc_array = (ctypes.c_double * 6)()
         for i in range(len(xfrc)):
             xfrc_array[i] = xfrc[i]
-        cassie_sim_apply_force(self.c, xfrc_array, body)
+        cassie_sim_apply_force(self.c, xfrc_array, body_name.encode())
 
     def foot_force(self, force):
         frc_array = (ctypes.c_double * 12)()
@@ -106,6 +110,9 @@ class CassieSim:
         self.foot_force(force)
         return force[[2, 8]]
 
+    def reset(self):
+        cassie_sim_full_reset(self.c)
+
     def __del__(self):
         cassie_sim_free(self.c)
 
@@ -123,6 +130,19 @@ class CassieVis:
 
     def ispaused(self):
         return cassie_vis_paused(self.v)
+
+    # Applies the inputted force to the inputted body. "xfrc_apply" should contain the force/torque to 
+    # apply in Cartesian coords as a 6-long array (first 3 are force, last 3 are torque). "body_name" 
+    # should be a string matching a body name in the XML file. If "body_name" doesn't match an existing
+    # body name, then no force will be applied. 
+    def apply_force(self, xfrc_apply, body_name):
+        xfrc_array = (ctypes.c_double * 6)()
+        for i in range(len(xfrc_apply)):
+            xfrc_array[i] = xfrc_apply[i]
+        cassie_vis_apply_force(self.v, xfrc_array, body_name.encode())
+
+    def reset(self):
+        cassie_vis_full_reset(self.v)
 
     def __del__(self):
         cassie_vis_free(self.v)
