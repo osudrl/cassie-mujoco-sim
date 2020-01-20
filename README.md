@@ -67,5 +67,5 @@ The F1 key will display a help screen that lists the most useful of the followin
 * Add full mujoco 2.00 ui functionality?
 
 ## Citation
-To cite this software package use the following format:
+To cite this software package use the following format:\
 Agility Robotics. cassie-mujoco-sim. (2018) [Online]. Available: https://github.com/osudrl/cassie-mujoco-sim
