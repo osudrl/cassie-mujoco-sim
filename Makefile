@@ -2,7 +2,7 @@
 PLATFORM := LINUX
 
 # Compilation settings
-INC     := -Iinclude -I$${HOME}/.mujoco/mujoco200_linux/include
+INC     := -Iinclude -I$(HOME)/.mujoco/mujoco200_linux/include
 CFLAGS  := -std=gnu11 -Wall -Wextra -O3 -march=sandybridge -flto
 LDFLAGS := -shared -Lsrc
 
@@ -28,6 +28,7 @@ clean:
 	rm -rf test/
 
 $(LIBOUT): src/*.c
+	echo src/*.c $(INC) $(CFLAGS) -o $(LIBOUT) $(LDFLAGS) $(LIBS)
 	$(CC) src/*.c $(INC) $(CFLAGS) -o $(LIBOUT) $(LDFLAGS) $(LIBS)
 
 build: $(LIBOUT)

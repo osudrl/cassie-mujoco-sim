@@ -69,7 +69,9 @@ mjvFigure figsensor;
     X(mj_makeData)                              \
     X(mj_copyData)                              \
     X(mj_deleteData)                            \
+    X(mj_resetData)                             \
     X(mj_forward)                               \
+    X(mj_setConst)                              \
     X(mj_fwdPosition)                           \
     X(mj_step1)                                 \
     X(mj_step2)                                 \
@@ -776,7 +778,6 @@ bool cassie_mujoco_init(const char *file_input)
             //printf("env variable doesn't exist\n");
             modelfile = file_input;
         }
-        printf("loading model file: %s\n", modelfile);
         char error[1000] = "Could not load XML model";
         initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
         if (!initial_model) {
@@ -954,6 +955,7 @@ void cassie_sim_step(cassie_sim_t *c, cassie_out_t *y, const cassie_user_in_t *u
 }
 
 
+int test = 0;
 void cassie_sim_step_pd(cassie_sim_t *c, state_out_t *y, const pd_in_t *u)
 {
     // Run PD controller system
@@ -1066,6 +1068,37 @@ void cassie_sim_set_ground_friction(cassie_sim_t *c, double *fric)
         c->m->geom_friction[i] = fric[i];
     }
 }
+
+void cassie_sim_set_const(cassie_sim_t *c)
+{
+    mj_setConst_fp(c->m, c->d);
+    double qpos_init[35] =
+        {0, 0, 1.01, 1, 0, 0, 0,
+        0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
+        -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
+    double qvel_zero[32] = {0};
+
+    mju_copy_fp(c->d->qpos, qpos_init, 35);
+    mju_copy_fp(c->d->qvel, qvel_zero, c->m->nv);
+
+    c->d->time = 0.0;
+    mj_forward_fp(c->m, c->d);
+}
+
+float *cassie_sim_geom_rgba(cassie_sim_t *c)
+{
+    return c->m->geom_rgba;
+}
+
+void cassie_sim_set_geom_rgba(cassie_sim_t *c, float *rgba)
+{
+    for (int i = 0; i < c->m->ngeom * 4; i++)
+    {
+        c->m->geom_rgba[i] = rgba[i];
+    }
+}    
 
 int *cassie_sim_params(cassie_sim_t *c)
 {
@@ -1873,8 +1906,8 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     glfwMakeContextCurrent_fp(v->window);
     glfwSwapInterval_fp(0);
 
-    printf("Refresh Rate: %i\n", v->refreshrate);
-    printf("Resolution: %ix%i\n", 1200, 900);
+    //printf("Refresh Rate: %i\n", v->refreshrate);
+    //printf("Resolution: %ix%i\n", 1200, 900);
 
     sensorinit(v);
     grfinit(v);
