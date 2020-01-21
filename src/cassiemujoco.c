@@ -1014,6 +1014,12 @@ double *cassie_sim_ctrl(cassie_sim_t *c)
     return c->d->ctrl;
 }
 
+double* cassie_sim_xquat(cassie_sim_t *c, const char* name)
+{
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    return &(c->d->xquat[4*body_id]);
+}
+
 double *cassie_sim_dof_damping(cassie_sim_t *c)
 {
     return c->m->dof_damping;
