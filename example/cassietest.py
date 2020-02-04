@@ -41,16 +41,18 @@ count = 0
 draw_state = vis.draw(sim)
 while draw_state:
     if not vis.ispaused():
-        # if count > 500:
-        #     vis.apply_force([0, 0, 500, 0, 0, 0], "cassie-pelvis")
-        #     print("applying force")
+        if 50 < count < 80:
+            vis.apply_force([0, 0, 500, 0, 0, 0], "cassie-pelvis")
+            print("applying force", count)
+        # else:
+        #     vis.apply_force([0, 0, 0, 0, 0, 0], "cassie-pelvis")
         for i in range(60):
             y = sim.step_pd(u)
-        print("left foot quat: ", sim.xquat("cassie-pelvis"))
+        # print("left foot quat: ", sim.xquat("cassie-pelvis"))
         count += 1
 
     draw_state = vis.draw(sim)
 
     # while time.monotonic() - t < 1/60:
-    time.sleep(0.0001)
+    time.sleep(1/30)
     # t = time.monotonic()

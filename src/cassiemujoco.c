@@ -268,6 +268,9 @@ struct cassie_vis {
 
     int framenum;
     int lastframenum;
+
+    int perturb_body;   // Body to apply perturb force to in vis_draw
+    double perturb_force[6];    // Perturb force to apply
     
     // GLFW  handle
     GLFWwindow *window;
@@ -1358,7 +1361,11 @@ void cassie_vis_full_reset(cassie_vis_t *v)
 void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
 {
     int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
-    mju_copy_fp(&v->d->xfrc_applied[6 * body_id], xfrc, 6);
+    // mju_copy_fp(&v->d->xfrc_applied[6 * body_id], xfrc, 6);
+    v->perturb_body = body_id;
+    for (int i = 0; i < 6; i++) {
+        v->perturb_force[i] = xfrc[i];
+    }
 }
 
 void scroll(GLFWwindow* window, double xoffset, double yoffset)
@@ -1435,16 +1442,23 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
 
     // set perturbation
     int newperturb = 0;
-    if (act == GLFW_PRESS && mods == GLFW_MOD_CONTROL && v->pert.select > 0) {
-        // right: translate;  left: rotate
-        if (v->button_right) {
-            newperturb = mjPERT_TRANSLATE;
-        } else if (v->button_left) {
-            newperturb = mjPERT_ROTATE;
-        }
-        // perturbation onset: reset reference
-        if (newperturb > 0 && v->pert.active == 0) {
-            mjv_initPerturb_fp(v->m, v->d, &v->scn, &v->pert);
+    if (mods == GLFW_MOD_CONTROL && v->pert.select > 0) {
+        if (act == GLFW_PRESS) {
+            // Disable vis perturb force when using mouse perturb, only want to vis perturb object
+            v->opt.flags[11] = 0;   
+            // right: translate;  left: rotate
+            if (v->button_right) {
+                newperturb = mjPERT_TRANSLATE;
+            } else if (v->button_left) {
+                newperturb = mjPERT_ROTATE;
+            }
+            // perturbation onset: reset reference
+            if (newperturb > 0 && v->pert.active == 0) {
+                mjv_initPerturb_fp(v->m, v->d, &v->scn, &v->pert);
+            }
+        } else {
+            // Enable vis perturb force again
+            v->opt.flags[11] = 1;   
         }
     }
     v->pert.active = newperturb;
@@ -1906,6 +1920,8 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     v->lastframenum = 0;
     v->m = c->m;
     v->d = c->d;
+    v->perturb_body = 1;
+    memset(v->perturb_force, 0.0, 6*sizeof(double));
 
     // Create window
     v->window = glfwCreateWindow_fp(1200, 900, "Cassie", NULL, NULL);
@@ -1922,7 +1938,7 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     // v->cam.fixedcamid = 0;
     mjv_defaultCamera_fp(&v->cam);
     mjv_defaultOption_fp(&v->opt);
-    v->opt.flags[11] = v->opt.flags[12];    // Render applied forces
+    v->opt.flags[11] = 1;//v->opt.flags[12];    // Render applied forces
     mjr_defaultContext_fp(&v->con);
     mjv_defaultScene_fp(&v->scn);
     mjv_makeScene_fp(initial_model, &v->scn, 1000);
@@ -1986,33 +2002,25 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
         return false;
     }
     // clear old perturbations, apply new
-    // mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
+    mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     if (v->pert.select > 0) {
        mjv_applyPerturbPose_fp(v->m, v->d, &v->pert, 0); // move mocap bodies only
        mjv_applyPerturbForce_fp(v->m, v->d, &v->pert);
     }
+    // Add applied forces to qfrc array
+    for (int i = 0; i < 6; i++) {
+        v->d->xfrc_applied[6*v->perturb_body + i] += v->perturb_force[i];
+    }
     mj_forward_fp(v->m, v->d);
+    // Reset xfrc applied to zero
+    memset(v->perturb_force, 0, 6*sizeof(double));
     // Set up for rendering
     glfwMakeContextCurrent_fp(v->window);
     mjrRect viewport = {0, 0, 0, 0};
     glfwGetFramebufferSize_fp(v->window, &viewport.width, &viewport.height);
     mjrRect smallrect = viewport;
     // Render scene
-    // printf("before scene update\n");
-    // printf("sim data: %p\n", c->d);
-    // printf("vis data: %p\n", v->d);
-    // printf("vis model: %p\n", v->m);
-    // printf("sim model: %p\n", c->m);
-    // printf("sim data: %p\n", c->d);
-    // printf("sim qpos: %p\n", c->d->qpos);
-    // printf("sim xpos: %p\n", c->d->xpos);
-    // printf("vis opt: %p\n", &v->opt);
-    // printf("vis pert: %p\n", &v->pert);
-    // printf("vis cam: %p\n", &v->cam.lookat);
-    // printf("vis scn: %p\n", &v->scn);
 
-
-    // printf("mjCat_all: %i\n", mjCAT_ALL);
     mjv_updateScene_fp(v->m, v->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
     mjr_render_fp(viewport, &v->scn, &v->con);
     if (v->showsensor) {
