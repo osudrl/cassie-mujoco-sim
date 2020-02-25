@@ -1064,7 +1064,7 @@ void cassie_sim_set_body_ipos(cassie_sim_t *c, double *ipos)
 
 void cassie_sim_set_ground_friction(cassie_sim_t *c, double *fric)
 {
-    for (int i = 0; i < 3; i++){
+    for (int i = 0; i < c->m->ngeom*3; i++){
         c->m->geom_friction[i] = fric[i];
     }
 }
@@ -1099,6 +1099,19 @@ void cassie_sim_set_geom_rgba(cassie_sim_t *c, float *rgba)
         c->m->geom_rgba[i] = rgba[i];
     }
 }    
+
+double *cassie_sim_geom_quat(cassie_sim_t *c)
+{
+    return c->m->geom_quat;
+}
+
+void cassie_sim_set_geom_quat(cassie_sim_t *c, double *quat)
+{
+    for (int i = 0; i < c->m->ngeom * 4; i++)
+    {
+        c->m->geom_quat[i] = quat[i];
+    }
+}
 
 int *cassie_sim_params(cassie_sim_t *c)
 {
@@ -1357,6 +1370,7 @@ void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
 
 void scroll(GLFWwindow* window, double xoffset, double yoffset)
 {
+    (void)xoffset;
     cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);
     // scroll: emulate vertical mouse motion = 5% of window height
     mjv_moveCamera_fp(v->m, mjMOUSE_ZOOM, 0.0, -0.05 * yoffset, &v->scn, &v->cam);
@@ -1510,6 +1524,7 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    (void)scancode;
     cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);
     if (action == GLFW_RELEASE) {
         return;
@@ -1967,6 +1982,7 @@ void cassie_vis_free(cassie_vis_t *v)
 
 bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
 {
+    (void)c;
     if (!glfw_initialized)
         return false;
 
@@ -2053,7 +2069,7 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     glfwSwapBuffers_fp(v->window);
     glfwPollEvents_fp();
 
-    double cfrc[12];
+    //double cfrc[12];
     // cassie_sim_foot_forces(c, cfrc);
     // printf("foot forces:\n");
     // for (int i = 0; i < 12; i++) {
