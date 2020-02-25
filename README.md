@@ -61,7 +61,14 @@ The F1 key will display a help screen that lists the most useful of the followin
     * 't': Make the model transparent
     * 'm': Show the center of mass of the entire model
   * F4 will bring up and overlayed graph of the current ground reaction forces (z foot contact forces).
+* Additional functions and changes:
+  * The function `cassie_sim_apply_force` now takes in a char array of the body name to perturb rather than the body id for user convenience. So the user only has to input the string of body name (i.e. "cassie-pelvis") rather than having to find out what integer body id corresponds to the desired body. The body names correspond to the body names defined in the .xml model file. These changes have been reflected in `cassiemujoco.py` and `cassiemujoco_ctypes.py` as well
+  * There is a new `cassie_vis_apply_force` function that will apply **__and__** visualize a force. Note that `cassie_sim_apply_force` will still apply the force in the simulation, but when rendering the arrow showing the direction and magnitude of the force will not be shown. To visualize this arrow, you should use `cassie_vis_apply_force`. The force will be cleared out after the next call to `cassie_vis_draw`. So when using this function in python and dealing with varying execution and rendering frequencies, you can call `cassie_vis_apply_force` and then call `cassie_sim_step_pd` multiple times, all of which will be taken with the applied force. However, once `cassie_vis_draw` is called, subsequent simulations forward will not have the force applied (since the `xfrc_applied` field is set to zero in `cassie_vis_draw`). To continue applying the force, you must call `cassie_vis_apply_force` again.
 
 ## Features to be added:
 * Slowmotion functionality? (requires changes to `cassiemujoco.py` and using GLFW in python when executing policies)
 * Add full mujoco 2.00 ui functionality?
+
+## Citation
+To cite this software package use the following format:\
+Agility Robotics. cassie-mujoco-sim. (2018) [Online]. Available: https://github.com/osudrl/cassie-mujoco-sim

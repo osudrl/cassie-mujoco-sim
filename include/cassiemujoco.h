@@ -201,6 +201,8 @@ void cassie_sim_radio(cassie_sim_t *sim, double channels[16]);
 // out all other data used for computation (like velocities, accelerations, forces)
 void cassie_sim_full_reset(cassie_sim_t *sim);
 
+double* cassie_sim_xquat(cassie_sim_t *c, const char* name);
+
 /*******************************************************************************
  * Cassie visualizer functions
  ******************************************************************************/
