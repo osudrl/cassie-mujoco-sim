@@ -1038,7 +1038,7 @@ double *cassie_sim_body_ipos(cassie_sim_t *c)
     return c->m->body_ipos;
 }
 
-double *cassie_sim_ground_friction(cassie_sim_t *c)
+double *cassie_sim_geom_friction(cassie_sim_t *c)
 {
     return c->m->geom_friction;
 }
@@ -1071,7 +1071,7 @@ void cassie_sim_set_body_ipos(cassie_sim_t *c, double *ipos)
     }
 }
 
-void cassie_sim_set_ground_friction(cassie_sim_t *c, double *fric)
+void cassie_sim_set_geom_friction(cassie_sim_t *c, double *fric)
 {
     for (int i = 0; i < 3; i++){
         c->m->geom_friction[i] = fric[i];
