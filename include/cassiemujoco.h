@@ -203,6 +203,10 @@ void cassie_sim_full_reset(cassie_sim_t *sim);
 
 double* cassie_sim_xquat(cassie_sim_t *c, const char* name);
 
+void cassie_sim_set_geom_name_quat(cassie_sim_t *c, const char* name, double *quat);
+
+void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double *fric);
+
 /*******************************************************************************
  * Cassie visualizer functions
  ******************************************************************************/

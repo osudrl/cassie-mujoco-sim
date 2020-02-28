@@ -12,7 +12,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from .cassiemujoco_ctypes import *
+from cassiemujoco_ctypes import *
 import os
 import ctypes
 import numpy as np
@@ -21,7 +21,9 @@ import numpy as np
 _dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize libcassiesim
-cassie_mujoco_init(str.encode(_dir_path+"/cassie.xml"))
+# cassie_mujoco_init(str.encode(_dir_path+"/cassie.xml"))
+cassie_mujoco_init(str.encode("../model/cassie.xml"))
+
 
 # Interface classes
 class CassieSim:
@@ -203,47 +205,60 @@ class CassieSim:
 
         cassie_sim_set_body_ipos(self.c, c_arr)
 
-    def set_geom_friction(self, data):
-        c_arr = (ctypes.c_double * 3)()
+    def set_geom_friction(self, data, name=None):
+        if name is None:
+            c_arr = (ctypes.c_double * 3)()
 
-        if len(data) != 3:
-           print("SIZE MISMATCH SET_GEOM_FRICTION()")
-           exit(1)
+            if len(data) != 3:
+                print("SIZE MISMATCH SET_GEOM_FRICTION()")
+                exit(1)
 
-        for i in range(3):
-          c_arr[i] = data[i]
+            for i in range(3):
+                c_arr[i] = data[i]
 
-        cassie_sim_set_geom_friction(self.c, c_arr)
+            cassie_sim_set_geom_friction(self.c, c_arr)
+        else:
+            fric_array = (ctypes.c_double * 3)()
+            for i in range(3):
+                fric_array[i] = data[i]
+            cassie_sim_set_geom_name_friction(self.c, name.encode(), fric_array)
+
 
     def set_geom_rgba(self, data):
         ngeom = self.ngeom * 4
 
         if len(data) != ngeom:
-           print("SIZE MISMATCH SET_GEOM_RGBA()")
-           exit(1)
+            print("SIZE MISMATCH SET_GEOM_RGBA()")
+            exit(1)
 
         c_arr = (ctypes.c_float * ngeom)()
 
         for i in range(ngeom):
-          c_arr[i] = data[i]
+            c_arr[i] = data[i]
 
         cassie_sim_set_geom_rgba(self.c, c_arr)
     
-    def set_geom_quat(self, data):
-        ngeom = self.ngeom * 4
+    def set_geom_quat(self, data, name=None):
+        if name is None:
+            ngeom = self.ngeom * 4
 
-        if len(data) != ngeom:
-           print("SIZE MISMATCH SET_GEOM_QUAT()")
-           exit(1)
+            if len(data) != ngeom:
+                print("SIZE MISMATCH SET_GEOM_QUAT()")
+                exit(1)
 
-        c_arr = (ctypes.c_double * ngeom)()
-        #print("SETTING:")
-        #print(c_arr, data)
+            c_arr = (ctypes.c_double * ngeom)()
+            #print("SETTING:")
+            #print(c_arr, data)
 
-        for i in range(ngeom):
-          c_arr[i] = data[i]
+            for i in range(ngeom):
+                c_arr[i] = data[i]
 
-        cassie_sim_set_geom_quat(self.c, c_arr)
+            cassie_sim_set_geom_quat(self.c, c_arr)
+        else:
+            quat_array = (ctypes.c_double * 4)()
+            for i in range(4):
+                quat_array[i] = data[i]
+            cassie_sim_set_geom_name_quat(self.c, name.encode(), quat_array)
 
     
     def set_const(self):

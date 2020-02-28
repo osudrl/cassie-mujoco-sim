@@ -1078,6 +1078,12 @@ void cassie_sim_set_geom_friction(cassie_sim_t *c, double *fric)
     }
 }
 
+void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double *fric)
+{
+    int geom_id = mj_name2id_fp(initial_model, mjOBJ_GEOM, name);
+    mju_copy_fp(&c->m->geom_friction[geom_id], fric, 3);
+}
+
 void cassie_sim_set_const(cassie_sim_t *c)
 {
     mj_setConst_fp(c->m, c->d);
@@ -1120,6 +1126,12 @@ void cassie_sim_set_geom_quat(cassie_sim_t *c, double *quat)
     {
         c->m->geom_quat[i] = quat[i];
     }
+}
+
+void cassie_sim_set_geom_name_quat(cassie_sim_t *c, const char* name, double *quat)
+{
+    int geom_id = mj_name2id_fp(initial_model, mjOBJ_GEOM, name);
+    mju_copy_fp(&c->m->geom_quat[4 * geom_id], quat, 4);
 }
 
 int *cassie_sim_params(cassie_sim_t *c)
