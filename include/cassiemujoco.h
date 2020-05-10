@@ -201,7 +201,29 @@ void cassie_sim_radio(cassie_sim_t *sim, double channels[16]);
 // out all other data used for computation (like velocities, accelerations, forces)
 void cassie_sim_full_reset(cassie_sim_t *sim);
 
+// Get the absolute body position (3 vars)
+double* cassie_sim_xpos(cassie_sim_t *c, const char* name);
+
+// Get the absolute body quaternion (4 vars)
 double* cassie_sim_xquat(cassie_sim_t *c, const char* name);
+
+// Get the absolute linear and angular velocity (6 vars)
+void cassie_sim_objectVelocity(cassie_sim_t *c, const char* name, double cpos[6]);
+
+// Get the magnitude of action at all actuated joints
+double* cassie_sim_ctrl(cassie_sim_t *c);
+
+// Get the global options of mjModel
+void cassie_sim_get_mjModelopts(cassie_sim_t *c, double cpos[20]);
+
+// Get the properties of a body in mjModel
+void cassie_sim_get_mjModelbody(cassie_sim_t *c, const char* name, double cpos[18]);
+
+// get the properties of a joint in mjModel
+void cassie_sim_get_mjModeljnt(cassie_sim_t *c, const char* name, double cpos[18]);
+
+// get the properties of each actuator in mjModel
+void cassie_sim_get_mjModelactuator(cassie_sim_t *c, const char* name, double cpos[34]);
 
 void cassie_sim_set_geom_name_quat(cassie_sim_t *c, const char* name, double *quat);
 

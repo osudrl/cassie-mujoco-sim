@@ -373,9 +373,31 @@ cassie_sim_foot_positions.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_dou
 cassie_sim_apply_force = _libraries['./libcassiemujoco.so'].cassie_sim_apply_force
 cassie_sim_apply_force.restype = None
 cassie_sim_apply_force.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6, ctypes.c_char_p]
+cassie_sim_xpos = _libraries['./libcassiemujoco.so'].cassie_sim_xpos
+cassie_sim_xpos.restype = POINTER_T(ctypes.c_double)
+cassie_sim_xpos.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
 cassie_sim_xquat = _libraries['./libcassiemujoco.so'].cassie_sim_xquat
 cassie_sim_xquat.restype = POINTER_T(ctypes.c_double)
 cassie_sim_xquat.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
+cassie_sim_objectVelocity = _libraries['./libcassiemujoco.so'].cassie_sim_objectVelocity
+cassie_sim_objectVelocity.restype = None
+cassie_sim_objectVelocity.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, ctypes.c_double * 6]
+cassie_sim_ctrl = _libraries['./libcassiemujoco.so'].cassie_sim_ctrl
+cassie_sim_ctrl.restype = POINTER_T(ctypes.c_double)
+cassie_sim_ctrl.argtypes = [POINTER_T(struct_cassie_sim)]
+cassie_sim_get_mjModelopts = _libraries['./libcassiemujoco.so'].cassie_sim_get_mjModelopts
+cassie_sim_get_mjModelopts.restype = None
+cassie_sim_get_mjModelopts.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 20]
+cassie_sim_get_mjModelbody = _libraries['./libcassiemujoco.so'].cassie_sim_get_mjModelbody
+cassie_sim_get_mjModelbody.restype = None
+cassie_sim_get_mjModelbody.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, ctypes.c_double * 18]
+cassie_sim_get_mjModeljnt = _libraries['./libcassiemujoco.so'].cassie_sim_get_mjModeljnt
+cassie_sim_get_mjModeljnt.restype = None
+cassie_sim_get_mjModeljnt.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, ctypes.c_double * 20]
+cassie_sim_get_mjModelactuator = _libraries['./libcassiemujoco.so'].cassie_sim_get_mjModelactuator
+cassie_sim_get_mjModelactuator.restype = None
+cassie_sim_get_mjModelactuator.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, ctypes.c_double * 34]
+
 cassie_sim_clear_forces = _libraries['./libcassiemujoco.so'].cassie_sim_clear_forces
 cassie_sim_clear_forces.restype = None
 cassie_sim_clear_forces.argtypes = [POINTER_T(struct_cassie_sim)]
@@ -752,7 +774,9 @@ __all__ = \
     'cassie_sim_foot_positions', 'struct_c__SA_state_foot_out_t',
     'pd_input_t', 'pack_cassie_user_in_t', 'cassie_state_duplicate',
     'state_pelvis_out_t', 'struct_c__SA_state_terrain_out_t',
-    'cassie_sim_free', 'cassie_sim_xquat', 'ssize_t', 'state_output_copy',
+    'cassie_sim_free', 'cassie_sim_xpos', 'cassie_sim_xquat', 'cassie_sim_objectVelocity',
+    'cassie_sim_ctrl', 'cassie_sim_get_mjModelopts', 'cassie_sim_get_mjModelbody',
+    'cassie_sim_get_mjModeljnt', 'cassie_sim_get_mjModelactuator', 'ssize_t', 'state_output_copy',
     'cassie_sim_radio', 'cassie_vis_close', 'cassie_vis_paused', 'radio_out_t',
     'state_output_step', 'struct_c__SA_state_motor_out_t',
     'struct_cassie_state', 'cassie_state_time', 'cassie_sim_qvel',

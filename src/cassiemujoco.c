@@ -78,6 +78,7 @@ mjvFigure figsensor;
     X(mj_step)                                  \
     X(mj_contactForce)                          \
     X(mj_name2id)                               \
+    X(mj_id2name)                               \
     X(mju_copy)                                 \
     X(mju_zero)                                 \
     X(mju_rotVecMatT)                           \
@@ -102,7 +103,9 @@ mjvFigure figsensor;
     X(mjr_freeContext)                          \
     X(mjr_render)                               \
     X(mjr_overlay)                              \
-    X(mjr_figure)
+    X(mjr_figure)                               \
+    X(mj_objectVelocity)                        \
+    X(mju_n2d)                              
 
 // Loaded GLFW functions
 #define GLFW_FUNCTION_LIST                      \
@@ -229,6 +232,56 @@ typedef struct joint_filter {
 #define NUM_DRIVES 10
 #define NUM_JOINTS 6
 #define TORQUE_DELAY_CYCLES 6
+
+struct mjModelopts {
+    double timestep[1];
+    double gravity[3];
+    double wind[3];
+    double magnetic[3];
+    double density[1];
+    double viscosity[1];
+    double impratio[1];
+    double o_margin[1];
+    double o_solref[3];
+    double collision[3];
+};
+struct mjModelbody {
+    double mass[1];
+    double pos[3];
+    double quat[4];
+    double inertia[3];
+    double ipos[3];
+    double iquat[4];
+};
+
+struct mjModeljnt {
+    double type[4]; // one hot encoding of joint type
+    double limited[1]; // char copied to 1st byte of double
+    double axis[3];
+    double pos[3];
+    double solimp[3];
+    double solref[2];
+    double stiffness[1];
+    double range[2];
+    double margin[1];
+}; // total size 20
+
+struct mjModelactuator {
+    double biastype[3]; // one hot encoding of actuator bias type
+    double gaintype[2]; // one hot encoding of gain type
+    double dyntype[4]; // one hot encoding of dyn type
+    double forcelimited[1]; // char copied to 1st byte of double
+    double ctrllimited[1]; // char copied to 1st byte of double
+    double biasrpm[3];
+    double cranklength[1];
+    double ctrlrange[2];
+    double dynrpm[3];
+    double forcerange[2];
+    double gainrpm[3];
+    double gear[6];
+    double length0[1];
+    double lengthrange[2];
+}; // total size 34
 
 struct cassie_sim {
     mjModel *m;
@@ -1011,16 +1064,207 @@ double *cassie_sim_qfrc(cassie_sim_t *c)
     return c->d->qfrc_applied;
 }
 
-
-double *cassie_sim_ctrl(cassie_sim_t *c)
+double* cassie_sim_xpos(cassie_sim_t *c, const char* name)
 {
-    return c->d->ctrl;
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    return &(c->d->xpos[3*body_id]);
 }
 
 double* cassie_sim_xquat(cassie_sim_t *c, const char* name)
 {
     int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
     return &(c->d->xquat[4*body_id]);
+}
+
+void cassie_sim_objectVelocity(cassie_sim_t *c, const char* name, double cpos[6])
+{
+    // Zero the output body velocities
+    mju_zero_fp(cpos, 6);
+
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_XBODY, name);
+    mj_objectVelocity_fp(c->m, c->d, mjOBJ_XBODY, body_id, cpos, false);
+}
+
+double *cassie_sim_ctrl(cassie_sim_t *c)
+{
+    return c->d->ctrl;
+}
+
+void cassie_sim_get_mjModelopts(cassie_sim_t *c, double cpos[20])
+{
+
+    struct mjModelopts out;
+
+    mju_copy_fp(out.timestep, &c->m->opt.timestep, 1);
+    mju_copy_fp(out.gravity , c->m->opt.gravity, 3);
+    mju_copy_fp(out.wind , c->m->opt.wind, 3);
+    mju_copy_fp(out.magnetic , c->m->opt.magnetic, 3);
+    mju_copy_fp(out.density , &(c->m->opt.density), 1);
+    mju_copy_fp(out.viscosity , &(c->m->opt.viscosity), 1);
+    mju_copy_fp(out.impratio , &(c->m->opt.impratio), 1);
+    mju_copy_fp(out.o_margin , &(c->m->opt.o_margin), 1);
+    mju_copy_fp(out.o_solref , c->m->opt.o_solref, 3);
+
+    switch (c->m->opt.collision)
+    {
+    case 0:
+        out.collision[0] = 1.0; out.collision[1] = 0.0; out.collision[2] = 0.0; 
+        break;
+    case 1:
+        out.collision[0] = 0.0; out.collision[1] = 1.0; out.collision[2] = 0.0; 
+        break;
+    case 2:
+        out.collision[0] = 0.0; out.collision[1] = 0.0; out.collision[2] = 1.0; 
+        break;
+    default:
+        break;
+    }
+
+    memcpy(cpos, &out, 20 * sizeof(double));
+    // memcpy(cpos+20, &((double) c->m->opt.disableflags), sizeof(double));
+    // memcpy(cpos+21, &((double) c->m->opt.enableflags), sizeof(double));
+
+    // printf("timestep: %f\n", c->m->opt.timestep);
+    // printf("gravity: %f %f %f\n", c->m->opt.gravity[0], c->m->opt.gravity[1], c->m->opt.gravity[2]);
+    // printf("wind: %f %f %f\n", c->m->opt.wind[0], c->m->opt.wind[1], c->m->opt.wind[2]);
+    // printf("magnetic: %f %f %f\n", c->m->opt.magnetic[0], c->m->opt.magnetic[1], c->m->opt.magnetic[2]);
+    // printf("density: %f\n", c->m->opt.density);
+    // printf("viscosity: %f\n", c->m->opt.viscosity);
+    // printf("impratio: %f\n", c->m->opt.impratio);
+    // printf("o_margin: %f\n", c->m->opt.o_margin);
+    // printf("o_solref: %f %f %f\n", c->m->opt.o_solref[0], c->m->opt.o_solref[1], c->m->opt.o_solref[2]);
+    // printf("collision: %d\n", c->m->opt.collision); // make this one-hot encoding. 0 = 100 = mjCOL_ALL, 1 = 010 = mjCOL_PAIR, 2 = 001 = mjCOL_DYNAMIC 
+    // printf("disableflags: %d\n", c->m->opt.disableflags);
+    // printf("enableflags: %d\n", c->m->opt.enableflags);
+}
+
+// get the mass, pos, quat, inertia, ipos, iquat for a body
+// Should this be using mjOBJ_XBODY instead?
+void cassie_sim_get_mjModelbody(cassie_sim_t *c, const char* name, double cpos[18])
+{
+
+    struct mjModelbody out;
+
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+
+    mju_copy_fp(out.mass, &(c->m->body_mass[body_id * 1]), 1);
+    mju_copy_fp(out.pos, &(c->m->body_pos[body_id * 3]), 3);
+    mju_copy_fp(out.quat, &(c->m->body_quat[body_id * 4]), 4);
+    mju_copy_fp(out.inertia, &(c->m->body_inertia[body_id * 3]), 3);
+    mju_copy_fp(out.ipos, &(c->m->body_ipos[body_id * 3]), 3);
+    mju_copy_fp(out.iquat, &(c->m->body_iquat[body_id * 4]), 4);
+
+    memcpy(cpos, &out, 18 * sizeof(double));
+}
+
+void cassie_sim_get_mjModeljnt(cassie_sim_t *c, const char* name, double cpos[20])
+{
+
+    struct mjModeljnt out;
+    memset(&out, 0, 20*sizeof(double));
+
+    int joint_id = mj_name2id_fp(initial_model, mjOBJ_JOINT, name);
+    
+    switch (c->m->jnt_type[joint_id])
+    {
+    case 0 : 
+        out.type[0] = 1.0; out.type[1] = 0.0; out.type[2] = 0.0; out.type[3] = 0.0;
+        break;
+    case 1 :
+        out.type[0] = 0.0; out.type[1] = 1.0; out.type[2] = 0.0; out.type[3] = 0.0; 
+        break;
+    case 2 :
+        out.type[0] = 0.0; out.type[1] = 0.0; out.type[2] = 1.0; out.type[3] = 0.0; 
+        break;
+    case 3 :
+        out.type[0] = 0.0; out.type[1] = 0.0; out.type[2] = 0.0; out.type[3] = 1.0;
+        break;
+    default:
+        break;
+    }
+    printf("%s : %s \n", mj_id2name_fp(initial_model, mjOBJ_JOINT, joint_id), mj_id2name_fp(initial_model, mjOBJ_BODY, c->m->jnt_bodyid[joint_id * 1]));
+    // printf("%f %f %f\n", c->m->jnt_pos[joint_id * 3], c->m->jnt_pos[joint_id * 3 + 1], c->m->jnt_pos[joint_id * 3 + 2]);
+    mju_copy_fp(out.axis, &(c->m->jnt_axis[joint_id * 3]), 3);
+    mju_copy_fp(out.pos, &(c->m->jnt_pos[joint_id * 3]), 3);
+    mju_copy_fp(out.solimp, &(c->m->jnt_solimp[joint_id * 3]), 3);
+    mju_copy_fp(out.solref, &(c->m->jnt_solref[joint_id * 2]), 2);
+    mju_copy_fp(out.stiffness, &(c->m->jnt_stiffness[joint_id * 1]), 1);
+    memcpy(out.limited, &(c->m->jnt_limited[joint_id * 1]), sizeof(char)); // need to use memcpy cause limited is char (1 byte). memset above takes care of rest of double field
+    mju_copy_fp(out.range, &(c->m->jnt_range[joint_id * 2]), 2);
+    mju_copy_fp(out.margin, &(c->m->jnt_margin[joint_id * 1]), 1);
+
+    memcpy(cpos, &out, 20 * sizeof(double));
+
+}
+
+void cassie_sim_get_mjModelactuator(cassie_sim_t *c, const char* name, double cpos[34])
+{
+
+    struct mjModelactuator out;
+    memset(&out, 0, 34*sizeof(double));
+
+    int actuator_id = mj_name2id_fp(initial_model, mjOBJ_ACTUATOR, name);
+    int joint_id = mj_name2id_fp(initial_model, mjOBJ_JOINT, name);
+    
+    switch (c->m->actuator_biastype[actuator_id])
+    {
+    case 0 : 
+        out.biastype[0] = 1.0; out.biastype[1] = 0.0; out.biastype[2] = 0.0;
+        break;
+    case 1 :
+        out.biastype[0] = 0.0; out.biastype[1] = 1.0; out.biastype[2] = 0.0;
+        break;
+    case 2 :
+        out.biastype[0] = 0.0; out.biastype[1] = 0.0; out.biastype[2] = 1.0;
+        break;
+    default:
+        break;
+    }
+    switch (c->m->actuator_dyntype[actuator_id])
+    {
+    case 0 : 
+        out.dyntype[0] = 1.0; out.dyntype[1] = 0.0; out.dyntype[2] = 0.0; out.dyntype[3] = 0.0; 
+        break;
+    case 1 :
+        out.dyntype[0] = 0.0; out.dyntype[1] = 1.0; out.dyntype[2] = 0.0; out.dyntype[3] = 0.0; 
+        break;
+    case 2 :
+        out.dyntype[0] = 0.0; out.dyntype[1] = 0.0; out.dyntype[2] = 1.0; out.dyntype[3] = 0.0; 
+        break;
+    case 3 :
+        out.dyntype[0] = 0.0; out.dyntype[1] = 0.0; out.dyntype[2] = 0.0; out.dyntype[3] = 1.0; 
+        break;
+    default:
+        break;
+    }
+    switch (c->m->actuator_gaintype[actuator_id])
+    {
+    case 0 : 
+        out.gaintype[0] = 1.0; out.gaintype[1] = 0.0;
+        break;
+    case 1 :
+        out.gaintype[0] = 0.0; out.gaintype[1] = 1.0;
+        break;
+    default:
+        break;
+    }
+    printf("%s : %s \n", mj_id2name_fp(initial_model, mjOBJ_JOINT, joint_id), mj_id2name_fp(initial_model, mjOBJ_BODY, c->m->jnt_bodyid[joint_id * 1]));
+    mju_copy_fp(out.biasrpm, &(c->m->actuator_biasprm[actuator_id * 3]), 3);
+    mju_copy_fp(out.cranklength, &(c->m->actuator_cranklength[actuator_id * 1]), 1);
+    memset(out.ctrllimited, 0.0, sizeof(double));
+    memcpy(out.ctrllimited, &(c->m->actuator_ctrllimited[actuator_id * 1]), sizeof(char)); // need to use memcpy cause limited is char (1 byte). memset above takes care of rest of double field
+    memset(out.forcelimited, 0.0, sizeof(double));
+    memcpy(out.forcelimited, &(c->m->actuator_forcelimited[actuator_id * 1]), sizeof(char)); // need to use memcpy cause limited is char (1 byte). memset above takes care of rest of double field
+    mju_copy_fp(out.ctrlrange, &(c->m->actuator_ctrlrange[actuator_id * 2]), 2);
+    mju_copy_fp(out.dynrpm, &(c->m->actuator_dynprm[actuator_id * 3]), 3);
+    mju_copy_fp(out.forcerange, &(c->m->actuator_forcerange[actuator_id * 2]), 2);
+    mju_copy_fp(out.gainrpm, &(c->m->actuator_gainprm[actuator_id * 3]), 3);
+    mju_copy_fp(out.gear, &(c->m->actuator_gear[actuator_id * 6]), 6);
+    mju_copy_fp(out.length0, &(c->m->actuator_length0[actuator_id * 1]), 1);
+    mju_copy_fp(out.lengthrange, &(c->m->actuator_lengthrange[actuator_id * 2]), 2);
+
+    memcpy(cpos, &out, 34 * sizeof(double));
+
 }
 
 double *cassie_sim_dof_damping(cassie_sim_t *c)

@@ -19,6 +19,14 @@ import time
 import numpy as np
 import math
 
+import torch
+from torch_geometric.data import Data
+from torch_geometric.utils.convert import to_networkx
+
+import matplotlib.pyplot as plt
+import networkx as nx
+
+
 def euler2quat(z=0, y=0, x=0):
 
     z = z/2.0
@@ -64,7 +72,43 @@ count = 0
 sim.set_geom_friction([.1, 1e-3, 1e-4], "floor")
 
 # Run until window is closed or vis is quit
+
 draw_state = vis.draw(sim)
+
+static_x = sim.staticNodeFeatureTensor
+static_edge_index = sim.EdgeConnectionTensor
+static_edge_attr = sim.staticEdgeFeatureTensor
+static_global_features = sim.staticGlobalFeatureTensor
+
+staticG = Data(x=static_x, edge_index=static_edge_index, edge_attr=static_edge_attr, u=static_global_features)
+
+staticViz = to_networkx(staticG, node_attrs=['x'], edge_attrs=['edge_attr'])
+nx.draw(staticViz, node_size=100)
+plt.show()
+
+print("Static Graph")
+print(staticG)
+print("directed?: ", staticG.is_directed())
+print("undirected?: ", staticG.is_undirected())
+print("num edge features: ", staticG.num_edge_features)
+print("num node features: ", staticG.num_features)
+print("num global features: ", staticG.u.shape[0])
+
+dyn_x = sim.dynamicNodeFeatureTensor
+dyn_edge_index = sim.EdgeConnectionTensor
+dyn_edge_attr = sim.dynamicEdgeFeatureTensor
+
+dynG = Data(x=dyn_x, edge_index=dyn_edge_index, edge_attr=dyn_edge_attr)
+
+print("Dynamic Graph:")
+print(dynG)
+print("directed?: ", dynG.is_directed())
+print("undirected?: ", dynG.is_undirected())
+print("num edge features: ", dynG.num_edge_features)
+print("num node features: ", dynG.num_features)
+
+input("Press enter to start sim")
+
 while draw_state:
     if not vis.ispaused():
         # if 50 < count < 80:
@@ -80,5 +124,13 @@ while draw_state:
     draw_state = vis.draw(sim)
 
     # while time.monotonic() - t < 1/60:
-    # time.sleep(1/40)
-    # t = time.monotonic()
+    time.sleep(1/2000)
+
+    sim.updateDynamicGraph()
+
+    dyn_x = sim.dynamicNodeFeatureTensor
+    dyn_edge_index = sim.EdgeConnectionTensor
+    dyn_edge_attr = sim.dynamicEdgeFeatureTensor
+    dynG = Data(x=dyn_x, edge_index=dyn_edge_index, edge_attr=dyn_edge_attr)
+
+    print(dynG.x[0])

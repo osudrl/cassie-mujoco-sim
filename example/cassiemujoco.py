@@ -17,6 +17,8 @@ import os
 import ctypes
 import numpy as np
 
+import torch
+
 # Get base directory
 _dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -33,6 +35,33 @@ class CassieSim:
         self.nbody = 26
         self.nq = 35
         self.ngeom = 35
+        
+        ## Graph Conversion
+        self.numNodes = 25
+        self.numEdges = 22
+
+        # all mujoco bodies, all joints, all actuated joints
+        self.body_names =   ["cassie-pelvis"] + \
+                            ["left-hip-roll", "left-hip-yaw", "left-hip-pitch", "left-achilles-rod", "left-knee", "left-knee-spring", "left-shin", "left-tarsus", "left-heel-spring", "left-foot-crank", "left-plantar-rod", "left-foot"] + \
+                            ["right-hip-roll", "right-hip-yaw", "right-hip-pitch", "right-achilles-rod", "right-knee", "right-knee-spring", "right-shin", "right-tarsus", "right-heel-spring", "right-foot-crank", "right-plantar-rod", "right-foot"]
+        self.joint_names =  ["left-hip-roll", "left-hip-yaw", "left-hip-pitch", "left-achilles-rod", "left-knee", "left-shin", "left-tarsus", "left-heel-spring", "left-foot-crank", "left-plantar-rod", "left-foot"] + \
+                            ["right-hip-roll", "right-hip-yaw", "right-hip-pitch", "right-achilles-rod", "right-knee", "right-shin", "right-tarsus", "right-heel-spring", "right-foot-crank", "right-plantar-rod", "right-foot"]
+        self.motor_names =  ("left-hip-roll", "left-hip-yaw", "left-hip-pitch", "left-knee", "left-foot", \
+                            "right-hip-roll", "right-hip-yaw", "right-hip-pitch", "right-knee", "right-foot")
+        
+        # node feature tensor shape : (25, 13) : for each body, absolute position (3), quaternion (4), linear vel (3), angular vel (3)
+        # edge feature tensor shape : (22, 1) : the magnitude of the action for each actuated joint, 0 for each unactuated joint
+        self.EdgeConnectionTensor = self.createEdgeConnections(self.body_names, self.joint_names)
+
+        self.dynamicNodeFeatureTensor = torch.zeros([self.numNodes, 13])
+        self.dynamicEdgeFeatureTensor = torch.zeros([self.numEdges, 1])
+        self.dynamicEdgeConnectionTensor = self.EdgeConnectionTensor
+        self.updateDynamicGraph()
+
+        self.staticGlobalFeatureTensor = torch.zeros([self.numNodes, 18])
+        self.staticNodeFeatureTensor = torch.zeros([self.numNodes, 18])
+        self.staticEdgeFeatureTensor = torch.zeros([self.numEdges, 55])
+        self.createStaticGraph()
 
     def step(self, u):
         y = cassie_out_t()
@@ -68,11 +97,123 @@ class CassieSim:
         qaccp = cassie_sim_qacc(self.c)
         return qaccp[:32]
 
+    def xpos(self, body_name):
+        # print("in xquat")
+        xposp = cassie_sim_xpos(self.c, body_name.encode())
+        # print("got pointer")
+        return xposp[:3]
+
     def xquat(self, body_name):
         # print("in xquat")
         xquatp = cassie_sim_xquat(self.c, body_name.encode())
         # print("got pointer")
         return xquatp[:4]
+
+    def objectVelocity(self, body_name):
+        sz = 6
+        vel = np.zeros(sz)
+        vel_array = (ctypes.c_double * sz)()
+        # print("in xquat")
+        xvelocityp = cassie_sim_objectVelocity(self.c, body_name.encode(), vel_array)
+        for i in range(sz):
+            vel[i] = vel_array[i]
+        return vel
+
+    def ctrl(self):
+        ctrl = cassie_sim_ctrl(self.c)
+        return ctrl[:10]
+
+    # TODO: look into ways to make these more efficient
+    # update tensors for dynamic graph nodes and edges
+    # node feature tensor shape : (25, 13) : for each body, absolute position (3), quaternion (4), linear vel (3), angular vel (3)
+    # edge feature tensor shape : (22, 1) : the magnitude of the action for each actuated joint, 0 for each unactuated joint
+    def updateDynamicGraph(self):
+        for i in range(self.numNodes):
+            self.dynamicNodeFeatureTensor[i] = torch.cat([torch.Tensor(self.xpos(self.body_names[i]) + self.xquat(self.body_names[i])) , torch.Tensor(self.objectVelocity(self.body_names[i]))])
+        ctrls = self.ctrl()
+        j = 0
+        for i in range(self.numEdges):
+            if self.joint_names[i] in self.motor_names:
+                self.dynamicEdgeFeatureTensor[i] = ctrls[j]
+                j += 1
+            else:
+                self.dynamicEdgeFeatureTensor[i] = 0.0
+        self.dynamicEdgeFeatureTensor[i].type(torch.float)
+
+    # get the mjModel.opts.{timestep, gravity, wind, magnetic, density, viscosity, impratio, o_margin, o_solref, o_solimp,
+    # collision type (and encode it as one-hot), enableflags (bit array), disableflags (bit array)}
+    def mjModelopts(self):
+        sz = 20
+        ops = np.zeros(sz)
+        opts_array = (ctypes.c_double * sz)()
+        cassie_sim_get_mjModelopts(self.c, opts_array)
+        for i in range(sz):
+            ops[i] = opts_array[i]
+        return ops
+
+    # get the mjModel.body_{mass, pos, quat, inertia, ipos, iquat} for each body
+    def mjModelbody(self):
+        body = []
+        sz = 18
+        for body_name in self.body_names:
+            body_props = np.zeros(sz)
+            props_array = (ctypes.c_double * sz)()
+            cassie_sim_get_mjModelbody(self.c, body_name.encode(), props_array)
+            for i in range(sz):
+                body_props[i] = props_array[i]
+            # print("{} : {}".format(body_name, body_props[4:8]))
+            body.append(body_props)
+        return torch.Tensor(body)
+    
+    # get the mjModel.jnt_{type, axis, pos, solimp, solref, stiffness, limited, range, margin} for joint_name
+    def mjModeljnt(self, joint_name):
+        sz = 20
+        joint_props = np.ones(sz)
+        props_array = (ctypes.c_double * sz)()
+        cassie_sim_get_mjModeljnt(self.c, joint_name.encode(), props_array)
+        for i in range(sz):
+            joint_props[i] = props_array[i]
+        # print("{} : {}".format(joint_name, joint_props[4:8]))
+        return torch.Tensor(joint_props)
+
+    # get the mjModel.actuator_{{biastype (one-hot), biasprm, cranklength, ctrllimited, ctrlrange, dyntype
+    #                           (one-hot), dynprm, forcelimited, forcerange, gaintype (one-hot), gainprm, gear, length0, lengthrange}
+    def mjModelactuator(self, actuator_name):
+        sz = 34
+        actuator_props = np.zeros(sz)
+        props_array = (ctypes.c_double * sz)()
+        cassie_sim_get_mjModelactuator(self.c, actuator_name.encode(), props_array)
+        for i in range(sz):
+            actuator_props[i] = props_array[i]
+        # print("{} : {}".format(joint_name, joint_props[4:8]))
+        return torch.Tensor(actuator_props)
+
+    # this only needs to be done once, it won't change at all
+    # update tensors for static graph nodes and edges
+    # global feature tensor shape :  (20, 1) : mjModelopt
+    # node feature tensor shape   : (25, 18) : for each body, absolute position (3), quaternion (4), linear vel (3), angular vel (3)
+    # edge feature tensor shape   : (22, 1+20+34) : the magnitude of the action for each actuated joint, 0 for each unactuated joint
+    def createStaticGraph(self):
+        self.staticGlobalFeatureTensor = self.mjModelopts()
+        self.staticNodeFeatureTensor = self.mjModelbody()
+        for i in range(self.numEdges):
+            # if it's actuated
+            if self.joint_names[i] in self.motor_names:
+                self.staticEdgeFeatureTensor[i][0] = 1.0 # motorized flag
+                self.staticEdgeFeatureTensor[i][1:21] = torch.zeros(20)
+                self.staticEdgeFeatureTensor[i][21:] = self.mjModelactuator(self.joint_names[i])
+            # it's not actuated
+            else:
+                self.staticEdgeFeatureTensor[i][0] = 0.0 # motorized flag
+                self.staticEdgeFeatureTensor[i][1:21] = self.mjModeljnt(self.joint_names[i])
+                self.staticEdgeFeatureTensor[i][21:] = torch.zeros(34)
+
+    # TODO: figure out if edges should be directed, how to properly connect pelvis
+    # return a tensor of shape [2, self.numEdges]
+    def createEdgeConnections(self, node_names, edge_names):
+        # initialize output tensor
+        return torch.tensor([[0,1,2,3,3,5,7,8, 8, 8,10, 0,13,14,15,15,17,19,20,20,20,22],
+                             [1,2,3,4,5,7,8,9,10,12,11,13,14,15,16,17,19,20,21,22,24,23]], dtype=torch.long)
 
     def set_time(self, time):
         timep = cassie_sim_time(self.c)
@@ -269,6 +410,16 @@ class CassieSim:
 
     def __del__(self):
         cassie_sim_free(self.c)
+
+
+class CassieGraph:
+    def __init__(self, c):
+        self.c = c
+        self.nv = 32
+        self.nbody = 26
+        self.nq = 35
+        self.ngeom = 35
+
 
 class CassieVis:
     def __init__(self, c, modelfile):
