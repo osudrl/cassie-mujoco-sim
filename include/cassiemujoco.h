@@ -180,6 +180,10 @@ bool cassie_sim_check_self_collision(const cassie_sim_t *sim);
 // cfrc[9-11]: Currently zero, reserved for torque acting on the right foot
 void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12]);
 
+// Returns CoM velocities of the feet. Returns 12 long array, with 6 values for
+// each foot (left then right) in order of 3D rotation and then 3D translation
+void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12]);
+
 // Applies an external force to a specified body.
 void cassie_sim_apply_force(cassie_sim_t *sim, double xfrc[6], const char* name);
 

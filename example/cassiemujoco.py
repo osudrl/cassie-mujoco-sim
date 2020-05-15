@@ -116,6 +116,12 @@ class CassieSim:
         for i in range(6):
             pos[i] = pos_array[i]
 
+    def foot_vel(self, vel):
+        vel_array = (ctypes.c_double * 12)()
+        cassie_sim_foot_velocities(self.c, vel_array)
+        for i in range(12):
+            vel[i] = vel_array[i]
+
     def clear_forces(self):
         cassie_sim_clear_forces(self.c)
 

@@ -73,6 +73,7 @@ mjvFigure figsensor;
     X(mj_forward)                               \
     X(mj_setConst)                              \
     X(mj_fwdPosition)                           \
+    X(mj_comVel)                                \
     X(mj_step1)                                 \
     X(mj_step2)                                 \
     X(mj_step)                                  \
@@ -1196,6 +1197,21 @@ void cassie_sim_foot_positions(const cassie_sim_t *c, double cpos[6])
     double offset_footJoint2midFoot = sqrt(pow(0.01762, 2) + pow(0.05219, 2)); // from cassie agility doc
     cpos[2] = cpos[2] - offset_footJoint2midFoot; // foot pos are negative
     cpos[5] = cpos[5] - offset_footJoint2midFoot;
+}
+
+void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12])
+{
+    // Calculate body CoM velocities
+    mj_comVel_fp(c->m, c->d);
+    // Zero the output foot velocities 
+    mju_zero_fp(cvel, 12);
+
+    for (int i = 0; i < 6; ++i) {
+        // Get foot xyz (global coords)
+        cvel[i]     = c->d->cvel[6 * left_foot_body_id + i];
+        cvel[6 + i] = c->d->cvel[6 * right_foot_body_id + i];
+    }
+
 }
 
 void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12])
