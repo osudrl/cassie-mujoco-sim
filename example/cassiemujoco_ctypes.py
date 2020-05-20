@@ -318,7 +318,7 @@ cassie_reload_xml.restype = ctypes.c_bool
 cassie_reload_xml.argtypes = [ctypes.c_char_p]
 cassie_sim_init = _libraries['./libcassiemujoco.so'].cassie_sim_init
 cassie_sim_init.restype = POINTER_T(struct_cassie_sim)
-cassie_sim_init.argtypes = [ctypes.c_char_p]
+cassie_sim_init.argtypes = [ctypes.c_char_p, ctypes.c_bool]
 cassie_sim_duplicate = _libraries['./libcassiemujoco.so'].cassie_sim_duplicate
 cassie_sim_duplicate.restype = POINTER_T(struct_cassie_sim)
 cassie_sim_duplicate.argtypes = [POINTER_T(struct_cassie_sim)]
@@ -772,6 +772,6 @@ __all__ = \
     'cassie_sim_geom_friction', 'cassie_sim_set_geom_friction',
     'cassie_sim_set_const', 'cassie_sim_geom_rgba', 'cassie_sim_set_geom_rgba',
     'cassie_sim_geom_quat', 'cassie_sim_set_geom_quat', 'cassie_sim_set_geom_name_quat',
-    'cassie_sim_set_geom_name_friction', 'cassie_reload_xml']
+    'cassie_sim_set_geom_name_friction', 'cassie_reload_xml', 'cassie_vis_apply_force']
 
 # 'cassie_sim_set_cassiestate'

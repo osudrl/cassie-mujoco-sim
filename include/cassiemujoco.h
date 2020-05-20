@@ -50,13 +50,17 @@ void cassie_cleanup(void);
  ******************************************************************************/
 
 // Reloads the xml file used for the cassie mujoco model. Overwrites the 
-// previously used model. Returns whether successful or not.
+// previously used model. Returns whether successful or not. This is used for overwriting
+// the global mjModel that all new cassie sim objects will use by default (reinit set to false)
 bool cassie_reload_xml(const char *modelfile);
 
 // Creates an instance of the Cassie simulator. If called before
 // cassie_mujoco_init, cassie_mujoco_init is called with the parameter
-// NULL.
-cassie_sim_t *cassie_sim_init(const char *modelfile);
+// NULL. The "reinit" arg allows for the created cassie sim object to use a 
+// different mjModel than the global one loaded by cassie_mujoco_init. If reinit
+// is true, then a new mjModel is made using the inputted "modelfile" arg. Note that
+// in this case the global "initial_model" that is used by default is not changed.
+cassie_sim_t *cassie_sim_init(const char *modelfile, bool reinit);
 
 // Creates an instance of the Cassie simulator with the same state as
 // an existing instance.

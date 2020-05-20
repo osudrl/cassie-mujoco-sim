@@ -27,8 +27,8 @@ cassie_mujoco_init(str.encode("../model/cassie.xml"))
 
 # Interface classes
 class CassieSim:
-    def __init__(self, modelfile):
-        self.c = cassie_sim_init(modelfile.encode('utf-8'))
+    def __init__(self, modelfile, reinit=False):
+        self.c = cassie_sim_init(modelfile.encode('utf-8'), reinit)
         self.nv = 32
         self.nbody = 26
         self.nq = 35
@@ -69,9 +69,7 @@ class CassieSim:
         return qaccp[:32]
 
     def xquat(self, body_name):
-        # print("in xquat")
         xquatp = cassie_sim_xquat(self.c, body_name.encode())
-        # print("got pointer")
         return xquatp[:4]
 
     def set_time(self, time):
@@ -87,9 +85,6 @@ class CassieSim:
         qvelp = cassie_sim_qvel(self.c)
         for i in range(min(len(qvel), 32)):
             qvelp[i] = qvel[i]
-
-    # def set_cassie_state(self, copy_state):
-    #     cassie_sim_set_cassiestate(self.c, copy_state)
 
     def hold(self):
         cassie_sim_hold(self.c)
@@ -108,7 +103,6 @@ class CassieSim:
         cassie_sim_foot_forces(self.c, frc_array)
         for i in range(12):
             force[i] = frc_array[i]
-        #print(force)
 
     def foot_pos(self, pos):
         pos_array = (ctypes.c_double * 6)()
@@ -253,8 +247,6 @@ class CassieSim:
                 exit(1)
 
             c_arr = (ctypes.c_double * ngeom)()
-            #print("SETTING:")
-            #print(c_arr, data)
 
             for i in range(ngeom):
                 c_arr[i] = data[i]
@@ -282,7 +274,6 @@ class CassieVis:
 
     def draw(self, c):
         state = cassie_vis_draw(self.v, c.c)
-        # print("vis draw state:", state)
         return state
 
     def valid(self):
