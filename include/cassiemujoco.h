@@ -49,6 +49,10 @@ void cassie_cleanup(void);
  * Cassie simulator functions
  ******************************************************************************/
 
+// Reloads the xml file used for the cassie mujoco model. Overwrites the 
+// previously used model. Returns whether successful or not.
+bool cassie_reload_xml(const char *modelfile);
+
 // Creates an instance of the Cassie simulator. If called before
 // cassie_mujoco_init, cassie_mujoco_init is called with the parameter
 // NULL.
