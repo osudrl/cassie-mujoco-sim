@@ -897,7 +897,6 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
     // Filters initialized to zero
 
     if (reinit) {
-        printf("Making cassie sim with reinit model\n");
         char error[1000] = "Could not load XML model";
         mjModel *new_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
         if (!new_model) {
