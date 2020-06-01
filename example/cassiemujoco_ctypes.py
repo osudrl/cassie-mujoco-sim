@@ -313,9 +313,12 @@ cassie_mujoco_init.argtypes = [POINTER_T(ctypes.c_char)]
 cassie_cleanup = _libraries['./libcassiemujoco.so'].cassie_cleanup
 cassie_cleanup.restype = None
 cassie_cleanup.argtypes = []
+cassie_reload_xml = _libraries['./libcassiemujoco.so'].cassie_reload_xml
+cassie_reload_xml.restype = ctypes.c_bool
+cassie_reload_xml.argtypes = [ctypes.c_char_p]
 cassie_sim_init = _libraries['./libcassiemujoco.so'].cassie_sim_init
 cassie_sim_init.restype = POINTER_T(struct_cassie_sim)
-cassie_sim_init.argtypes = [ctypes.c_char_p]
+cassie_sim_init.argtypes = [ctypes.c_char_p, ctypes.c_bool]
 cassie_sim_duplicate = _libraries['./libcassiemujoco.so'].cassie_sim_duplicate
 cassie_sim_duplicate.restype = POINTER_T(struct_cassie_sim)
 cassie_sim_duplicate.argtypes = [POINTER_T(struct_cassie_sim)]
@@ -370,6 +373,9 @@ cassie_sim_foot_forces.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double
 cassie_sim_foot_positions = _libraries['./libcassiemujoco.so'].cassie_sim_foot_positions
 cassie_sim_foot_positions.restype = None
 cassie_sim_foot_positions.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6]
+cassie_sim_foot_velocities = _libraries['./libcassiemujoco.so'].cassie_sim_foot_velocities
+cassie_sim_foot_velocities.restype = None
+cassie_sim_foot_velocities.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 12]
 cassie_sim_apply_force = _libraries['./libcassiemujoco.so'].cassie_sim_apply_force
 cassie_sim_apply_force.restype = None
 cassie_sim_apply_force.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6, ctypes.c_char_p]
@@ -749,7 +755,7 @@ __all__ = \
     'cassie_leg_out_t', 'wait_for_packet',
     'struct_c__SA_cassie_leg_in_t', 'struct_c__SA_state_joint_out_t',
     'process_packet_header', 'cassie_sim_release', 'cassie_sim_foot_forces', 
-    'cassie_sim_foot_positions', 'struct_c__SA_state_foot_out_t',
+    'cassie_sim_foot_positions', 'cassie_sim_foot_velocities', 'struct_c__SA_state_foot_out_t',
     'pd_input_t', 'pack_cassie_user_in_t', 'cassie_state_duplicate',
     'state_pelvis_out_t', 'struct_c__SA_state_terrain_out_t',
     'cassie_sim_free', 'cassie_sim_xquat', 'ssize_t', 'state_output_copy',
@@ -766,6 +772,6 @@ __all__ = \
     'cassie_sim_geom_friction', 'cassie_sim_set_geom_friction',
     'cassie_sim_set_const', 'cassie_sim_geom_rgba', 'cassie_sim_set_geom_rgba',
     'cassie_sim_geom_quat', 'cassie_sim_set_geom_quat', 'cassie_sim_set_geom_name_quat',
-    'cassie_sim_set_geom_name_friction']
+    'cassie_sim_set_geom_name_friction', 'cassie_reload_xml', 'cassie_vis_apply_force']
 
 # 'cassie_sim_set_cassiestate'
