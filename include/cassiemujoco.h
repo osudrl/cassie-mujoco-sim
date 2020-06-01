@@ -49,10 +49,18 @@ void cassie_cleanup(void);
  * Cassie simulator functions
  ******************************************************************************/
 
+// Reloads the xml file used for the cassie mujoco model. Overwrites the 
+// previously used model. Returns whether successful or not. This is used for overwriting
+// the global mjModel that all new cassie sim objects will use by default (reinit set to false)
+bool cassie_reload_xml(const char *modelfile);
+
 // Creates an instance of the Cassie simulator. If called before
 // cassie_mujoco_init, cassie_mujoco_init is called with the parameter
-// NULL.
-cassie_sim_t *cassie_sim_init(const char *modelfile);
+// NULL. The "reinit" arg allows for the created cassie sim object to use a 
+// different mjModel than the global one loaded by cassie_mujoco_init. If reinit
+// is true, then a new mjModel is made using the inputted "modelfile" arg. Note that
+// in this case the global "initial_model" that is used by default is not changed.
+cassie_sim_t *cassie_sim_init(const char *modelfile, bool reinit);
 
 // Creates an instance of the Cassie simulator with the same state as
 // an existing instance.
@@ -180,6 +188,10 @@ bool cassie_sim_check_self_collision(const cassie_sim_t *sim);
 // cfrc[9-11]: Currently zero, reserved for torque acting on the right foot
 void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12]);
 
+// Returns CoM velocities of the feet. Returns 12 long array, with 6 values for
+// each foot (left then right) in order of 3D rotation and then 3D translation
+void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12]);
+
 // Applies an external force to a specified body.
 void cassie_sim_apply_force(cassie_sim_t *sim, double xfrc[6], const char* name);
 
@@ -202,6 +214,10 @@ void cassie_sim_radio(cassie_sim_t *sim, double channels[16]);
 void cassie_sim_full_reset(cassie_sim_t *sim);
 
 double* cassie_sim_xquat(cassie_sim_t *c, const char* name);
+
+void cassie_sim_set_geom_name_quat(cassie_sim_t *c, const char* name, double *quat);
+
+void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double *fric);
 
 /*******************************************************************************
  * Cassie visualizer functions

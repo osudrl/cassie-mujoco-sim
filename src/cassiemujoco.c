@@ -73,6 +73,7 @@ mjvFigure figsensor;
     X(mj_forward)                               \
     X(mj_setConst)                              \
     X(mj_fwdPosition)                           \
+    X(mj_comVel)                                \
     X(mj_step1)                                 \
     X(mj_step2)                                 \
     X(mj_step)                                  \
@@ -381,6 +382,14 @@ const char help_title[] =
         c->pd = pd_input_alloc();               \
     } while (0)
 
+#define CASSIE_SIM_ALLOC_POINTER(c)                 \
+    do {                                        \
+        c->d = mj_makeData_fp(c->m);   \
+        c->core = cassie_core_sim_alloc();      \
+        c->estimator = state_output_alloc();    \
+        c->pd = pd_input_alloc();               \
+    } while (0)
+
 #define CASSIE_FREE_POINTER(c)                  \
     do {                                        \
         mj_deleteData_fp(c->d);                 \
@@ -408,6 +417,13 @@ const char help_title[] =
         pd_input_copy(dst->pd, src->pd);                    \
     } while (0)
 
+#define CASSIE_SIM_COPY_POINTER(dst, src)                       \
+    do {                                                    \
+        mj_copyData_fp(dst->d, src->m, src->d);      \
+        cassie_core_sim_copy(dst->core, src->core);         \
+        state_output_copy(dst->estimator, src->estimator);  \
+        pd_input_copy(dst->pd, src->pd);                    \
+    } while (0)
 
 /*******************************************************************************
  * Private functions
@@ -733,9 +749,9 @@ static void cassie_motor_data(cassie_sim_t *c, const cassie_in_t *cassie_in)
  * Public functions
  ******************************************************************************/
 
-#define ID_NAME_LOOKUP(idvar, objtype, name)                            \
+#define ID_NAME_LOOKUP(model, idvar, objtype, name)                            \
     do {                                                                \
-        idvar = mj_name2id_fp(initial_model, objtype, #name);           \
+        idvar = mj_name2id_fp(model, objtype, #name);                   \
         if (-1 == idvar) {                                              \
             fprintf(stderr, "Could not find body named " #name "\n");   \
             return false;                                               \
@@ -792,8 +808,8 @@ bool cassie_mujoco_init(const char *file_input)
             initial_model->sensor_objid[i] = sens_objid[i];
         }
         // Look up relevant IDs based on names
-        ID_NAME_LOOKUP(left_foot_body_id, mjOBJ_BODY, left-foot);
-        ID_NAME_LOOKUP(right_foot_body_id, mjOBJ_BODY, right-foot);
+        ID_NAME_LOOKUP(initial_model, left_foot_body_id, mjOBJ_BODY, left-foot);
+        ID_NAME_LOOKUP(initial_model, right_foot_body_id, mjOBJ_BODY, right-foot);
 
         mujoco_initialized = true;
     }
@@ -846,8 +862,25 @@ void cassie_cleanup()
     }
 }
 
+bool cassie_reload_xml(const char* modelfile) {
 
-cassie_sim_t *cassie_sim_init(const char* modelfile)
+    char error[1000] = "Could not load XML model";
+    initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
+    if (!initial_model) {
+        fprintf(stderr, "Load model error: %s\n", error);
+        return false;
+    }
+    int sens_objid[20] = {0, 1, 2, 3, 4, 9, 10, 14, 5, 6, 7, 8, 9, 20, 21, 25, 0, 0, 0, 0};
+    for (int i = 0; i < 20; i++) {
+        initial_model->sensor_objid[i] = sens_objid[i];
+    }
+    // Look up relevant IDs based on names
+    ID_NAME_LOOKUP(initial_model, left_foot_body_id, mjOBJ_BODY, left-foot);
+    ID_NAME_LOOKUP(initial_model, right_foot_body_id, mjOBJ_BODY, right-foot);
+    return true;
+}
+
+cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
 {
     // Make sure MuJoCo is initialized and the model is loaded
     if (!mujoco_initialized) {
@@ -863,11 +896,28 @@ cassie_sim_t *cassie_sim_init(const char* modelfile)
 
     // Filters initialized to zero
 
-    // Initialize mjModel
-    c->m = mj_copyModel_fp(NULL, initial_model);
+    if (reinit) {
+        char error[1000] = "Could not load XML model";
+        mjModel *new_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
+        if (!new_model) {
+            fprintf(stderr, "Load model error: %s\n", error);
+            return NULL;
+        }
+        int sens_objid[20] = {0, 1, 2, 3, 4, 9, 10, 14, 5, 6, 7, 8, 9, 20, 21, 25, 0, 0, 0, 0};
+        for (int i = 0; i < 20; i++) {
+            new_model->sensor_objid[i] = sens_objid[i];
+        }
+        // Look up relevant IDs based on names
+        ID_NAME_LOOKUP(new_model, left_foot_body_id, mjOBJ_BODY, left-foot);
+        ID_NAME_LOOKUP(new_model, right_foot_body_id, mjOBJ_BODY, right-foot);
+        c->m =  mj_copyModel_fp(NULL, new_model);
+    } else {
+        // Initialize mjModel
+        c->m = mj_copyModel_fp(NULL, initial_model);
+    }
 
     // Allocate pointer types
-    CASSIE_ALLOC_POINTER(c);
+    CASSIE_SIM_ALLOC_POINTER(c);
 
     // Set initial joint configuration
     double qpos_init[] =
@@ -890,7 +940,7 @@ cassie_sim_t *cassie_sim_duplicate(const cassie_sim_t *src)
 {
     // Allocate storage
     cassie_sim_t *c = malloc(sizeof (cassie_sim_t));
-    CASSIE_ALLOC_POINTER(c);
+    CASSIE_SIM_ALLOC_POINTER(c);
 
     // Copy data
     cassie_sim_copy(c, src);
@@ -906,7 +956,7 @@ void cassie_sim_copy(cassie_sim_t *dst, const cassie_sim_t *src)
 
     // Copy pointer types
     mj_copyModel_fp(dst->m, src->m);
-    CASSIE_COPY_POINTER(dst, src);
+    CASSIE_SIM_COPY_POINTER(dst, src);
 }
 
 
@@ -1019,7 +1069,7 @@ double *cassie_sim_ctrl(cassie_sim_t *c)
 
 double* cassie_sim_xquat(cassie_sim_t *c, const char* name)
 {
-    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    int body_id = mj_name2id_fp(c->m, mjOBJ_BODY, name);
     return &(c->d->xquat[4*body_id]);
 }
 
@@ -1038,7 +1088,7 @@ double *cassie_sim_body_ipos(cassie_sim_t *c)
     return c->m->body_ipos;
 }
 
-double *cassie_sim_ground_friction(cassie_sim_t *c)
+double *cassie_sim_geom_friction(cassie_sim_t *c)
 {
     return c->m->geom_friction;
 }
@@ -1071,11 +1121,17 @@ void cassie_sim_set_body_ipos(cassie_sim_t *c, double *ipos)
     }
 }
 
-void cassie_sim_set_ground_friction(cassie_sim_t *c, double *fric)
+void cassie_sim_set_geom_friction(cassie_sim_t *c, double *fric)
 {
     for (int i = 0; i < c->m->ngeom*3; i++){
         c->m->geom_friction[i] = fric[i];
     }
+}
+
+void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double *fric)
+{
+    int geom_id = mj_name2id_fp(initial_model, mjOBJ_GEOM, name);
+    mju_copy_fp(&c->m->geom_friction[geom_id], fric, 3);
 }
 
 void cassie_sim_set_const(cassie_sim_t *c)
@@ -1120,6 +1176,12 @@ void cassie_sim_set_geom_quat(cassie_sim_t *c, double *quat)
     {
         c->m->geom_quat[i] = quat[i];
     }
+}
+
+void cassie_sim_set_geom_name_quat(cassie_sim_t *c, const char* name, double *quat)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    mju_copy_fp(&c->m->geom_quat[4 * geom_id], quat, 4);
 }
 
 int *cassie_sim_params(cassie_sim_t *c)
@@ -1184,6 +1246,21 @@ void cassie_sim_foot_positions(const cassie_sim_t *c, double cpos[6])
     double offset_footJoint2midFoot = sqrt(pow(0.01762, 2) + pow(0.05219, 2)); // from cassie agility doc
     cpos[2] = cpos[2] - offset_footJoint2midFoot; // foot pos are negative
     cpos[5] = cpos[5] - offset_footJoint2midFoot;
+}
+
+void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12])
+{
+    // Calculate body CoM velocities
+    mj_comVel_fp(c->m, c->d);
+    // Zero the output foot velocities 
+    mju_zero_fp(cvel, 12);
+
+    for (int i = 0; i < 6; ++i) {
+        // Get foot xyz (global coords)
+        cvel[i]     = c->d->cvel[6 * left_foot_body_id + i];
+        cvel[6 + i] = c->d->cvel[6 * right_foot_body_id + i];
+    }
+
 }
 
 void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12])
@@ -1277,7 +1354,7 @@ void cassie_vis_foot_forces(const cassie_vis_t *c, double cfrc[12])
 
 void cassie_sim_apply_force(cassie_sim_t *c, double xfrc[6], const char* name)
 {
-    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    int body_id = mj_name2id_fp(c->m, mjOBJ_BODY, name);
     mju_copy_fp(&c->d->xfrc_applied[6 * body_id], xfrc, 6);
 }
 
@@ -1373,7 +1450,7 @@ void cassie_vis_full_reset(cassie_vis_t *v)
 
 void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
 {
-    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    int body_id = mj_name2id_fp(v->m, mjOBJ_BODY, name);
     // mju_copy_fp(&v->d->xfrc_applied[6 * body_id], xfrc, 6);
     v->perturb_body = body_id;
     for (int i = 0; i < 6; i++) {
@@ -1956,8 +2033,8 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     v->opt.flags[11] = 1;//v->opt.flags[12];    // Render applied forces
     mjr_defaultContext_fp(&v->con);
     mjv_defaultScene_fp(&v->scn);
-    mjv_makeScene_fp(initial_model, &v->scn, 1000);
-    mjr_makeContext_fp(initial_model, &v->con, fontscale);
+    mjv_makeScene_fp(c->m, &v->scn, 1000);
+    mjr_makeContext_fp(c->m, &v->con, fontscale);
 
     // Set callback for user-initiated window close events
     glfwSetWindowUserPointer_fp(v->window, v);
