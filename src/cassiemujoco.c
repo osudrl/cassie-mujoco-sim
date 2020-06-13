@@ -84,6 +84,7 @@ mjvFigure figsensor;
     X(mju_rotVecMatT)                           \
     X(mju_sub3)                                 \
     X(mju_mulMatTVec)                           \
+    X(mju_mat2Quat)                             \
     X(mju_printMat)                             \
     X(mjv_makeScene)                            \
     X(mjv_defaultScene)                         \
@@ -1114,6 +1115,12 @@ void cassie_sim_set_body_mass(cassie_sim_t *c, double *mass)
     }
 }
 
+void cassie_sim_set_body_name_mass(cassie_sim_t *c, const char* name, double mass)
+{
+    int mass_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    c->m->body_mass[mass_id] = mass;
+}
+
 void cassie_sim_set_body_ipos(cassie_sim_t *c, double *ipos)
 {
     for (int i = 0; i < c->m->nbody; i++) {
@@ -1260,6 +1267,29 @@ void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12])
         cvel[i]     = c->d->cvel[6 * left_foot_body_id + i];
         cvel[6 + i] = c->d->cvel[6 * right_foot_body_id + i];
     }
+
+}
+
+void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name)
+{
+    // Calculate body CoM velocities
+    mj_comVel_fp(c->m, c->d);
+    // Zero the output foot velocities 
+    mju_zero_fp(cvel, 6);
+    int body_id = mj_name2id_fp(c->m, mjOBJ_BODY, name);
+    mju_copy_fp(cvel, &c->d->cvel[6 * body_id], 6);
+    // for (int i = 0; i < 6; ++i) {
+    //     cvel[i]     = c->d->cvel[6 * body_id + i];
+    // }
+
+}
+
+void cassie_sim_foot_orient(const cassie_sim_t *c, double corient[4])
+{
+    int right_id = mj_name2id_fp(c->m, mjOBJ_SITE, "right-foot-middle");
+    double right_rot_mat[9];
+    mju_copy_fp(right_rot_mat, &c->d->site_xmat[9 * right_id], 9);
+    mju_mat2Quat_fp(corient, right_rot_mat);
 
 }
 

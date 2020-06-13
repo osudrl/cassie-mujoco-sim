@@ -116,6 +116,18 @@ class CassieSim:
         for i in range(12):
             vel[i] = vel_array[i]
 
+    def body_vel(self, vel, body_name):
+        vel_array = (ctypes.c_double * 6)()
+        cassie_sim_body_vel(self.c, vel_array, body_name.encode())
+        for i in range(6):
+            vel[i] = vel_array[i]
+
+    def foot_quat(self, quat):
+        quat_array = (ctypes.c_double * 4)()
+        cassie_sim_foot_quat(self.c, quat_array)
+        for i in range(4):
+            quat[i] = quat_array[i]
+
     def clear_forces(self):
         cassie_sim_clear_forces(self.c)
 
@@ -180,17 +192,24 @@ class CassieSim:
 
         cassie_sim_set_dof_damping(self.c, c_arr)
 
-    def set_body_mass(self, data):
-        c_arr = (ctypes.c_double * self.nbody)()
+    def set_body_mass(self, data, name=None):
+        # If no name is provided, set ALL body masses and assume "data" is array
+        # containing masses for every body
+        if name is None:
+            c_arr = (ctypes.c_double * self.nbody)()
 
-        if len(data) != self.nbody:
-          print("SIZE MISMATCH SET_BODY_MASS()")
-          exit(1)
-        
-        for i in range(self.nbody):
-          c_arr[i] = data[i]
+            if len(data) != self.nbody:
+                print("SIZE MISMATCH SET_BODY_MASS()")
+                exit(1)
+            
+            for i in range(self.nbody):
+                c_arr[i] = data[i]
 
-        cassie_sim_set_body_mass(self.c, c_arr)
+            cassie_sim_set_body_mass(self.c, c_arr)
+        # If name is provided, only set mass for specified body and assume
+        # "data" is a single double
+        else:
+            cassie_sim_set_body_name_mass(self.c, name.encode(), ctypes.c_double(data))
 
     def set_body_ipos(self, data):
         nbody = self.nbody * 3

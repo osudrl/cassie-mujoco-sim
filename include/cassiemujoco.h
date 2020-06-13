@@ -192,6 +192,8 @@ void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12]);
 // each foot (left then right) in order of 3D rotation and then 3D translation
 void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12]);
 
+void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name);
+
 // Applies an external force to a specified body.
 void cassie_sim_apply_force(cassie_sim_t *sim, double xfrc[6], const char* name);
 
@@ -215,9 +217,13 @@ void cassie_sim_full_reset(cassie_sim_t *sim);
 
 double* cassie_sim_xquat(cassie_sim_t *c, const char* name);
 
+void cassie_sim_foot_orient(const cassie_sim_t *c, double corient[4]);
+
 void cassie_sim_set_geom_name_quat(cassie_sim_t *c, const char* name, double *quat);
 
 void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double *fric);
+
+void cassie_sim_set_body_name_mass(cassie_sim_t *c, const char* name, double mass);
 
 /*******************************************************************************
  * Cassie visualizer functions

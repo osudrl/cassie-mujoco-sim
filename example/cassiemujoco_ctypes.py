@@ -376,6 +376,12 @@ cassie_sim_foot_positions.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_dou
 cassie_sim_foot_velocities = _libraries['./libcassiemujoco.so'].cassie_sim_foot_velocities
 cassie_sim_foot_velocities.restype = None
 cassie_sim_foot_velocities.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 12]
+cassie_sim_foot_quat = _libraries['./libcassiemujoco.so'].cassie_sim_foot_orient
+cassie_sim_foot_quat.restype = None
+cassie_sim_foot_quat.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 4]
+cassie_sim_body_vel = _libraries['./libcassiemujoco.so'].cassie_sim_body_velocities
+cassie_sim_body_vel.restype = None
+cassie_sim_body_vel.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6, ctypes.c_char_p]
 cassie_sim_apply_force = _libraries['./libcassiemujoco.so'].cassie_sim_apply_force
 cassie_sim_apply_force.restype = None
 cassie_sim_apply_force.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6, ctypes.c_char_p]
@@ -466,6 +472,10 @@ cassie_sim_body_mass.argtypes = [POINTER_T(struct_cassie_sim)]
 cassie_sim_set_body_mass = _libraries['./libcassiemujoco.so'].cassie_sim_set_body_mass
 cassie_sim_set_body_mass.restype = None
 cassie_sim_set_body_mass.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double)]
+
+cassie_sim_set_body_name_mass = _libraries['./libcassiemujoco.so'].cassie_sim_set_body_name_mass
+cassie_sim_set_body_name_mass.restype = None
+cassie_sim_set_body_name_mass.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, ctypes.c_double]
 
 cassie_sim_body_ipos = _libraries['./libcassiemujoco.so'].cassie_sim_body_ipos
 cassie_sim_body_ipos.restype = POINTER_T(ctypes.c_double)
@@ -772,6 +782,7 @@ __all__ = \
     'cassie_sim_geom_friction', 'cassie_sim_set_geom_friction',
     'cassie_sim_set_const', 'cassie_sim_geom_rgba', 'cassie_sim_set_geom_rgba',
     'cassie_sim_geom_quat', 'cassie_sim_set_geom_quat', 'cassie_sim_set_geom_name_quat',
-    'cassie_sim_set_geom_name_friction', 'cassie_reload_xml', 'cassie_vis_apply_force']
+    'cassie_sim_set_geom_name_friction', 'cassie_reload_xml', 'cassie_vis_apply_force',
+    'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass']
 
 # 'cassie_sim_set_cassiestate'
