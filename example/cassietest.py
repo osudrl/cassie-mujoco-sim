@@ -43,10 +43,10 @@ def euler2quat(z=0, y=0, x=0):
 sim = CassieSim("../model/cassie.xml")
 vis = CassieVis(sim, "../model/cassie.xml")
 
-cassie_reload_xml(str.encode("../model/cassie_noise_terrain.xml"))
-sim2 = CassieSim("../model/cassie_noise_terrain.xml")
-vis2 = CassieVis(sim2, "../model/cassie_noise_terrain.xml")
-draw_state2 = vis2.draw(sim2)
+# cassie_reload_xml(str.encode("../model/cassie_noise_terrain.xml"))
+# sim2 = CassieSim("../model/cassie_noise_terrain.xml")
+# vis2 = CassieVis(sim2, "../model/cassie_noise_terrain.xml")
+# draw_state2 = vis2.draw(sim2)
 
 # Set control parameters
 u = pd_in_t()
@@ -71,7 +71,9 @@ sim.set_geom_friction([.1, 1e-3, 1e-4], "floor")
 # Run until window is closed or vis is quit
 draw_state = vis.draw(sim)
 feet_vel = np.zeros(12)
-while draw_state and draw_state2:
+vis.set_cam("cassie-pelvis", 3, 90, -20)
+# (90,0) size view
+while draw_state:# and draw_state2:
     if not vis.ispaused():
         # if 50 < count < 80:
         #     vis.apply_force([0, 0, 500, 0, 0, 0], "cassie-pelvis")
@@ -81,13 +83,13 @@ while draw_state and draw_state2:
         for i in range(60):
             y = sim.step_pd(u)
         # print("left foot quat: ", sim.xquat("left-foot"))
-        sim.foot_vel(feet_vel)
-        print("left foot vel: ", feet_vel[3:6])
-        print("right foot vel: ", feet_vel[9:12])
-        count += 1
+        # sim.foot_vel(feet_vel)
+        # print("left foot vel: ", feet_vel[3:6])
+        # print("right foot vel: ", feet_vel[9:12])
+        # count += 1
 
     draw_state = vis.draw(sim)
-    draw_state2 = vis2.draw(sim2)
+    # draw_state2 = vis2.draw(sim2)
 
     # while time.monotonic() - t < 1/60:
     time.sleep(1/30)

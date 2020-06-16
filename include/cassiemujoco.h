@@ -225,6 +225,9 @@ void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double
 
 void cassie_sim_set_body_name_mass(cassie_sim_t *c, const char* name, double mass);
 
+void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, double azi, double elev);
+
+
 /*******************************************************************************
  * Cassie visualizer functions
  ******************************************************************************/

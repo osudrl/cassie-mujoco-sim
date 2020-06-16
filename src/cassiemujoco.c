@@ -1650,6 +1650,21 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
     
 }
 
+void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, double azi, double elev){
+    // 
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, body_name);
+    v->cam.type = mjCAMERA_TRACKING;
+    v->cam.trackbodyid = body_id;
+    v->cam.fixedcamid = -1;
+    v->cam.distance = zoom;
+    v->cam.azimuth = azi;
+    v->cam.elevation = elev;
+    // mjv_moveCamera_fp(v->m, mjMOUSE_ZOOM, 0.0, zoom, &v->scn, &v->cam);
+    // printf("xpos: %f\typos: %f\n", xpos, ypos);
+    // mjv_moveCamera_fp(v->m, GLFW_PRESS, xpos, ypos, &v->scn, &v->cam);
+    
+}
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     (void)scancode;
     cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);

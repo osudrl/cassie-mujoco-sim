@@ -314,6 +314,9 @@ class CassieVis:
     def reset(self):
         cassie_vis_full_reset(self.v)
 
+    def set_cam(self, body_name, zoom, azimuth, elevation):
+        cassie_vis_set_cam(self.v, body_name.encode(), zoom, azimuth, elevation)
+
     def __del__(self):
         cassie_vis_free(self.v)
 
