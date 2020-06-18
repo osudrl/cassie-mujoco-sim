@@ -433,6 +433,9 @@ cassie_vis_free.argtypes = [POINTER_T(struct_cassie_vis)]
 cassie_vis_draw = _libraries['./libcassiemujoco.so'].cassie_vis_draw
 cassie_vis_draw.restype = ctypes.c_bool
 cassie_vis_draw.argtypes = [POINTER_T(struct_cassie_vis), POINTER_T(struct_cassie_sim)]
+cassie_vis_set_cam = _libraries['./libcassiemujoco.so'].cassie_vis_set_cam
+cassie_vis_set_cam.restype = None
+cassie_vis_set_cam.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_char_p, ctypes.c_double, ctypes.c_double, ctypes.c_double]
 cassie_vis_valid = _libraries['./libcassiemujoco.so'].cassie_vis_valid
 cassie_vis_valid.restype = ctypes.c_bool
 cassie_vis_valid.argtypes = [POINTER_T(struct_cassie_vis)]
@@ -804,5 +807,6 @@ __all__ = \
     'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass',
     'cassie_sim_get_hfield_nrow', 'cassie_sim_get_hfield_ncol', 'cassie_sim_get_nhfielddata',
     'cassie_sim_get_hfield_size', 'cassie_sim_set_hfield_size', 'cassie_sim_hfielddata']
+    'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass', 'cassie_vis_set_cam']
 
 # 'cassie_sim_set_cassiestate'

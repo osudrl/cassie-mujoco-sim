@@ -237,6 +237,8 @@ void cassie_sim_set_hfield_size(cassie_sim_t *c, double* size);
 
 float* cassie_sim_hfielddata(cassie_sim_t *c);
 
+void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, double azi, double elev);
+
 
 /*******************************************************************************
  * Cassie visualizer functions
