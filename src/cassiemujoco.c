@@ -2190,8 +2190,6 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     glfwGetFramebufferSize_fp(v->window, &viewport.width, &viewport.height);
     mjrRect smallrect = viewport;
     // Render scene
-    printf("vis m: %p\n", v->m);
-    printf("sim m: %p\n", c->m);
     mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
     mjr_render_fp(viewport, &v->scn, &v->con);
     if (v->showsensor) {
