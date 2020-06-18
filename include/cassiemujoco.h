@@ -225,6 +225,19 @@ void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double
 
 void cassie_sim_set_body_name_mass(cassie_sim_t *c, const char* name, double mass);
 
+int cassie_sim_get_hfield_nrow(cassie_sim_t *c);
+
+int cassie_sim_get_hfield_ncol(cassie_sim_t *c);
+
+int cassie_sim_get_nhfielddata(cassie_sim_t *c);
+
+double* cassie_sim_get_hfield_size(cassie_sim_t *c);
+
+void cassie_sim_set_hfield_size(cassie_sim_t *c, double* size);
+
+float* cassie_sim_hfielddata(cassie_sim_t *c);
+
+
 /*******************************************************************************
  * Cassie visualizer functions
  ******************************************************************************/

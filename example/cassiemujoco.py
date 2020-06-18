@@ -22,10 +22,13 @@ _dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize libcassiesim
 # cassie_mujoco_init(str.encode(_dir_path+"/cassie.xml"))
-cassie_mujoco_init(str.encode("../model/cassie.xml"))
+cassie_mujoco_init(str.encode("../model/cassie_hfield.xml"))
 
 
 # Interface classes
+# TODO: hard setting nbody and ngeom is not safe, much less safe than hard setting nv. If adding random geoms/bodies
+# like of obstacles or just for visual purpose, will mess things up. Either make getting functions and get the values
+# in the init or switch functions that nbody and ngeom to take in a name instead of letting you set all values at once
 class CassieSim:
     def __init__(self, modelfile, reinit=False):
         self.c = cassie_sim_init(modelfile.encode('utf-8'), reinit)
@@ -283,6 +286,52 @@ class CassieSim:
 
     def full_reset(self):
         cassie_sim_full_reset(self.c)
+
+    def get_hfield_nrow(self):
+        return cassie_sim_get_hfield_nrow(self.c)
+
+    def get_hfield_ncol(self):
+        return cassie_sim_get_hfield_ncol(self.c)
+
+    def get_nhfielddata(self):
+        return cassie_sim_get_nhfielddata(self.c)
+
+    def get_hfield_size(self):
+        ret = np.zeros(4)
+        ptr = cassie_sim_get_hfield_size(self.c)
+        for i in range(4):
+            ret[i] = ptr[i]
+        return ret
+
+    # Note that data has to be a flattened array. If flattening 2d numpy array, rows are y axis
+    # and cols are x axis. The data must also be normalized to (0-1)
+    def set_hfield_data(self, data):
+        nhfielddata = self.get_nhfielddata()
+        if len(data) != nhfielddata:
+            print("SIZE MISMATCH SET_HFIELD_DATA")
+            exit(1)
+        ptr = cassie_sim_hfielddata(self.c)
+        data_arr = (ctypes.c_float * nhfielddata)(*data)
+        for i in range(nhfielddata):
+            ptr[i] = data_arr[i]
+    
+    def get_hfield_data(self):
+        nhfielddata = self.get_nhfielddata()
+        ret = np.zeros(nhfielddata)
+        ptr = cassie_sim_hfielddata(self.c)
+        for i in range(nhfielddata):
+            ret[i] = ptr[i]
+        return ret
+
+    def set_hfield_size(self, data):
+        if len(data) != 4:
+            print("SIZE MISMATCH SET_HFIELD_SIZE")
+            exit(1)
+        size_array = (ctypes.c_double * 4)()
+        for i in range(4):
+            size_array[i] = data[i]
+        cassie_sim_set_hfield_size(self.c, size_array)
+
 
     def __del__(self):
         cassie_sim_free(self.c)
