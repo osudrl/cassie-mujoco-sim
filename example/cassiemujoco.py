@@ -21,7 +21,7 @@ import numpy as np
 _dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize libcassiesim
-# cassie_mujoco_init(str.encode(_dir_path+"/cassie.xml"))
+# cassie_mujoco_init(str.encode(_dir_path+"/cassie_hfield.xml"))
 cassie_mujoco_init(str.encode("../model/cassie_hfield.xml"))
 
 
@@ -310,10 +310,8 @@ class CassieSim:
         if len(data) != nhfielddata:
             print("SIZE MISMATCH SET_HFIELD_DATA")
             exit(1)
-        ptr = cassie_sim_hfielddata(self.c)
         data_arr = (ctypes.c_float * nhfielddata)(*data)
-        for i in range(nhfielddata):
-            ptr[i] = data_arr[i]
+        cassie_sim_set_hfielddata(self.c, ctypes.cast(data_arr, ctypes.POINTER(ctypes.c_float)))
     
     def get_hfield_data(self):
         nhfielddata = self.get_nhfielddata()

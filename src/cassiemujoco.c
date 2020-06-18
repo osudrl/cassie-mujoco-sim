@@ -1483,6 +1483,12 @@ float* cassie_sim_hfielddata(cassie_sim_t *c) {
     return c->m->hfield_data;
 }
 
+void cassie_sim_set_hfielddata(cassie_sim_t *c, float* data) {
+    for (int i = 0; i < c->m->nhfielddata; i++) {
+        c->m->hfield_data[i] = data[i];
+    }
+}
+
 void cassie_vis_full_reset(cassie_vis_t *v)
 {
     double qpos_init[35] = {0, 0, 1.01, 1, 0, 0, 0,
@@ -2184,8 +2190,9 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     glfwGetFramebufferSize_fp(v->window, &viewport.width, &viewport.height);
     mjrRect smallrect = viewport;
     // Render scene
-
-    mjv_updateScene_fp(v->m, v->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
+    printf("vis m: %p\n", v->m);
+    printf("sim m: %p\n", c->m);
+    mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
     mjr_render_fp(viewport, &v->scn, &v->con);
     if (v->showsensor) {
         if (!v->paused) {

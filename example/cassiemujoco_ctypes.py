@@ -421,6 +421,9 @@ cassie_sim_set_hfield_size.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_do
 cassie_sim_hfielddata = _libraries['./libcassiemujoco.so'].cassie_sim_hfielddata
 cassie_sim_hfielddata.restype = POINTER_T(ctypes.c_float)
 cassie_sim_hfielddata.argtypes = [POINTER_T(struct_cassie_sim)]
+cassie_sim_set_hfielddata = _libraries['./libcassiemujoco.so'].cassie_sim_set_hfielddata
+cassie_sim_set_hfielddata.restype = None
+cassie_sim_set_hfielddata.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_float)]
 cassie_vis_init = _libraries['./libcassiemujoco.so'].cassie_vis_init
 cassie_vis_init.restype = POINTER_T(struct_cassie_vis)
 cassie_vis_init.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
@@ -806,7 +809,7 @@ __all__ = \
     'cassie_sim_set_geom_name_friction', 'cassie_reload_xml', 'cassie_vis_apply_force',
     'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass',
     'cassie_sim_get_hfield_nrow', 'cassie_sim_get_hfield_ncol', 'cassie_sim_get_nhfielddata',
-    'cassie_sim_get_hfield_size', 'cassie_sim_set_hfield_size', 'cassie_sim_hfielddata']
+    'cassie_sim_get_hfield_size', 'cassie_sim_set_hfield_size', 'cassie_sim_hfielddata', 'cassie_sim_set_hfielddata',
     'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass', 'cassie_vis_set_cam']
 
 # 'cassie_sim_set_cassiestate'
