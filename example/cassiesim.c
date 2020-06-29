@@ -287,6 +287,11 @@ int main(int argc, char *argv[])
           sim_deltat  = sim_end - sim_start;
         } while(sim_deltat > cpu_deltat);
 
+        if(cpu_deltat > sim_deltat + 1e-4){
+          printf("SLOWER THAN REAL TIME BY %6.5fs\n", cpu_deltat - sim_deltat);
+
+        }
+
         
         //printf("%6.5f vs %6.5f\n", cpu_deltat, sim_deltat);
 
