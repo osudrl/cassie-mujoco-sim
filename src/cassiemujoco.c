@@ -79,6 +79,7 @@ mjvFigure figsensor;
     X(mj_step)                                  \
     X(mj_contactForce)                          \
     X(mj_name2id)                               \
+    X(mj_fullM)                                 \
     X(mju_copy)                                 \
     X(mju_zero)                                 \
     X(mju_rotVecMatT)                           \
@@ -881,6 +882,31 @@ bool cassie_reload_xml(const char* modelfile) {
     return true;
 }
 
+void cassie_sim_set_const(cassie_sim_t *c)
+{
+    mj_setConst_fp(c->m, c->d);
+    double qpos_init[35] =
+        {0, 0, 1.01, 1, 0, 0, 0,
+        0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
+        -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
+    double qvel_zero[c->m->nv];
+    double qacc_zero[c->m->nv];
+    for(int i = 0; i < c->m->nv; i++) {
+      qvel_zero[i] = 0.0f;
+      qacc_zero[i] = 0.0f;
+    }
+
+    mju_copy_fp(c->d->qpos, qpos_init, 35);
+    mju_copy_fp(c->d->qvel, qvel_zero, c->m->nv);
+    mju_copy_fp(c->d->qacc, qacc_zero, c->m->nv);
+
+    c->d->time = 0.0;
+    mj_forward_fp(c->m, c->d);
+}
+
+
 cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
 {
     // Make sure MuJoCo is initialized and the model is loaded
@@ -921,6 +947,7 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
     CASSIE_SIM_ALLOC_POINTER(c);
 
     // Set initial joint configuration
+#if 1
     double qpos_init[] =
         { 0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
          -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
@@ -928,6 +955,9 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
          -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
     mju_copy_fp(&c->d->qpos[7], qpos_init, 28);
     mj_forward_fp(c->m, c->d);
+#else
+    cassie_sim_set_const(c);
+#endif
 
     // Intialize systems
     cassie_core_sim_setup(c->core);
@@ -1139,24 +1169,6 @@ void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double
 {
     int geom_id = mj_name2id_fp(initial_model, mjOBJ_GEOM, name);
     mju_copy_fp(&c->m->geom_friction[geom_id], fric, 3);
-}
-
-void cassie_sim_set_const(cassie_sim_t *c)
-{
-    mj_setConst_fp(c->m, c->d);
-    double qpos_init[35] =
-        {0, 0, 1.01, 1, 0, 0, 0,
-        0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
-        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
-        -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
-        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
-    double qvel_zero[32] = {0};
-
-    mju_copy_fp(c->d->qpos, qpos_init, 35);
-    mju_copy_fp(c->d->qvel, qvel_zero, c->m->nv);
-
-    c->d->time = 0.0;
-    mj_forward_fp(c->m, c->d);
 }
 
 float *cassie_sim_geom_rgba(cassie_sim_t *c)
