@@ -16,10 +16,65 @@
 
 from cassiemujoco import *
 import time
+import numpy as np
+import math
+
+def euler2quat(z=0, y=0, x=0):
+
+    z = z/2.0
+    y = y/2.0
+    x = x/2.0
+    cz = math.cos(z)
+    sz = math.sin(z)
+    cy = math.cos(y)
+    sy = math.sin(y)
+    cx = math.cos(x)
+    sx = math.sin(x)
+    result =  np.array([
+             cx*cy*cz - sx*sy*sz,
+             cx*sy*sz + cy*cz*sx,
+             cx*cz*sy - sx*cy*sz,
+             cx*cy*sz + sx*cz*sy])
+    if result[0] < 0:
+    	result = -result
+    return result
 
 # Initialize cassie simulation
-sim = CassieSim("../model/cassie.xml")
-vis = CassieVis(sim, "../model/cassie.xml")
+sim = CassieSim("../model/cassie_hfield.xml")
+
+<<<<<<< HEAD
+
+print(sim.get_hfield_ncol())
+print(sim.get_hfield_nrow())
+print(sim.get_nhfielddata())
+print(sim.get_hfield_size())
+data = np.ones((10, 10))
+# data = np.random.rand(10, 10)
+data[:, 0] = 0
+print(data)
+sim.set_hfield_data(data.flatten())
+hfield_data = sim.get_hfield_data()
+# print(hfield_data)
+vis = CassieVis(sim, "../model/cassie_hfield.xml")
+
+
+# sim.set_hfield_size([100, 100, .15, .001])
+# print(sim.get_hfield_size())
+
+# cassie_reload_xml(str.encode("../model/cassie_noise_terrain.xml"))
+# sim2 = CassieSim("../model/cassie_noise_terrain.xml", reinit=True)
+# vis2 = CassieVis(sim2, "../model/cassie_noise_terrain.xml")
+# draw_state2 = vis2.draw(sim2)
+
+# sim3 = CassieSim("../model/cassie_noise_terrain.xml", reinit=False)
+# vis3 = CassieVis(sim3, "../model/cassie_noise_terrain.xml")
+# draw_state3 = vis3.draw(sim3)
+=======
+# cassie_reload_xml(str.encode("../model/cassie_noise_terrain.xml"))
+# sim2 = CassieSim("../model/cassie_noise_terrain.xml")
+# vis2 = CassieVis(sim2, "../model/cassie_noise_terrain.xml")
+# draw_state2 = vis2.draw(sim2)
+>>>>>>> fdcb0e5a3f963f38cf3a406056ceba76611d7c93
 
 # Set control parameters
 u = pd_in_t()
@@ -37,21 +92,66 @@ u = pd_in_t()
 t = time.monotonic()
 count = 0
 
+# quat_set = euler2quat(z=0, y=np.pi/180*5, x=np.pi/180*5)
+# sim.set_geom_quat(quat_set, "floor")
+# sim.set_geom_friction([.1, 1e-3, 1e-4], "floor")
+
 # Run until window is closed or vis is quit
 draw_state = vis.draw(sim)
+feet_vel = np.zeros(12)
+<<<<<<< HEAD
+rfoot_quat = np.zeros(4)
+rfoot_body_quat = np.zeros(4)
+pel_vel = np.zeros(6)
+sim.hold()
+sim.set_body_mass(5, name="right-foot")
 while draw_state:
+=======
+vis.set_cam("cassie-pelvis", 3, 90, -20)
+# (90,0) size view
+while draw_state:# and draw_state2:
+>>>>>>> fdcb0e5a3f963f38cf3a406056ceba76611d7c93
     if not vis.ispaused():
-        if 50 < count < 80:
-            vis.apply_force([0, 0, 500, 0, 0, 0], "cassie-pelvis")
-            print("applying force", count)
+        # if 50 < count < 80:
+        #     vis.apply_force([0, 0, 500, 0, 0, 0], "cassie-pelvis")
+        #     print("applying force", count)
         # else:
         #     vis.apply_force([0, 0, 0, 0, 0, 0], "cassie-pelvis")
         for i in range(60):
             y = sim.step_pd(u)
-        # print("left foot quat: ", sim.xquat("cassie-pelvis"))
-        count += 1
+        sim.hold()
+
+        # print("left foot quat: ", sim.xquat("left-foot"))
+<<<<<<< HEAD
+        # qvel = sim.qvel()
+        # sim.foot_vel(feet_vel)
+        # sim.foot_quat(rfoot_quat)
+        # rfoot_body_quat = sim.xquat("right-foot")
+        # sim.body_vel(pel_vel, 'cassie-pelvis')
+        # print("r foot quat: ", rfoot_quat)
+        # print("rfoot_body_quat: ", rfoot_body_quat)
+        # print("state est quat: ", y.rightFoot.orientation[:])
+        # print("left foot vel: ", feet_vel[3:6])
+        # print("right foot vel: ", feet_vel[9:12])
+        # print("state est vel: ", y.rightFoot.footTranslationalVelocity[:])
+        # print("diff: ", np.linalg.norm(feet_vel[9:12]-y.rightFoot.footTranslationalVelocity[:]))
+        # print("pel com vel: ", pel_vel[3:])
+        # print("pel qvel: ", qvel[0:3])
+        # print("state est pel vel: ", y.pelvis.translationalVelocity[:])
+        # print("diff: ", np.linalg.norm(np.array(y.pelvis.translationalVelocity[:])-qvel[0:3]))
+=======
+        # sim.foot_vel(feet_vel)
+        # print("left foot vel: ", feet_vel[3:6])
+        # print("right foot vel: ", feet_vel[9:12])
+>>>>>>> fdcb0e5a3f963f38cf3a406056ceba76611d7c93
+        # count += 1
 
     draw_state = vis.draw(sim)
+    # draw_state2 = vis2.draw(sim2)
+<<<<<<< HEAD
+    # draw_state3 = vis3.draw(sim3)
+=======
+>>>>>>> fdcb0e5a3f963f38cf3a406056ceba76611d7c93
 
     # while time.monotonic() - t < 1/60:
     time.sleep(1/30)
