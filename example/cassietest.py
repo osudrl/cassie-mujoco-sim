@@ -42,16 +42,17 @@ def euler2quat(z=0, y=0, x=0):
 # Initialize cassie simulation
 sim = CassieSim("../model/cassie_hfield.xml")
 
-<<<<<<< HEAD
 
 print(sim.get_hfield_ncol())
 print(sim.get_hfield_nrow())
 print(sim.get_nhfielddata())
 print(sim.get_hfield_size())
-data = np.ones((10, 10))
-# data = np.random.rand(10, 10)
-data[:, 0] = 0
-print(data)
+# data = np.ones((10, 10))
+size = 250
+mid = int(size/2)
+data = np.random.rand(size, size)
+data[mid-5:mid+5, mid-5:mid+5] = 0
+# print(data)
 sim.set_hfield_data(data.flatten())
 hfield_data = sim.get_hfield_data()
 # print(hfield_data)
@@ -66,15 +67,6 @@ vis = CassieVis(sim, "../model/cassie_hfield.xml")
 # vis2 = CassieVis(sim2, "../model/cassie_noise_terrain.xml")
 # draw_state2 = vis2.draw(sim2)
 
-# sim3 = CassieSim("../model/cassie_noise_terrain.xml", reinit=False)
-# vis3 = CassieVis(sim3, "../model/cassie_noise_terrain.xml")
-# draw_state3 = vis3.draw(sim3)
-=======
-# cassie_reload_xml(str.encode("../model/cassie_noise_terrain.xml"))
-# sim2 = CassieSim("../model/cassie_noise_terrain.xml")
-# vis2 = CassieVis(sim2, "../model/cassie_noise_terrain.xml")
-# draw_state2 = vis2.draw(sim2)
->>>>>>> fdcb0e5a3f963f38cf3a406056ceba76611d7c93
 
 # Set control parameters
 u = pd_in_t()
@@ -99,18 +91,14 @@ count = 0
 # Run until window is closed or vis is quit
 draw_state = vis.draw(sim)
 feet_vel = np.zeros(12)
-<<<<<<< HEAD
 rfoot_quat = np.zeros(4)
 rfoot_body_quat = np.zeros(4)
 pel_vel = np.zeros(6)
-sim.hold()
-sim.set_body_mass(5, name="right-foot")
-while draw_state:
-=======
-vis.set_cam("cassie-pelvis", 3, 90, -20)
+# sim.hold()
+# sim.set_body_mass(5, name="right-foot")
+# vis.set_cam("cassie-pelvis", 3, 90, -20)
 # (90,0) size view
 while draw_state:# and draw_state2:
->>>>>>> fdcb0e5a3f963f38cf3a406056ceba76611d7c93
     if not vis.ispaused():
         # if 50 < count < 80:
         #     vis.apply_force([0, 0, 500, 0, 0, 0], "cassie-pelvis")
@@ -119,10 +107,9 @@ while draw_state:# and draw_state2:
         #     vis.apply_force([0, 0, 0, 0, 0, 0], "cassie-pelvis")
         for i in range(60):
             y = sim.step_pd(u)
-        sim.hold()
+        # sim.hold()
 
         # print("left foot quat: ", sim.xquat("left-foot"))
-<<<<<<< HEAD
         # qvel = sim.qvel()
         # sim.foot_vel(feet_vel)
         # sim.foot_quat(rfoot_quat)
@@ -139,19 +126,10 @@ while draw_state:# and draw_state2:
         # print("pel qvel: ", qvel[0:3])
         # print("state est pel vel: ", y.pelvis.translationalVelocity[:])
         # print("diff: ", np.linalg.norm(np.array(y.pelvis.translationalVelocity[:])-qvel[0:3]))
-=======
-        # sim.foot_vel(feet_vel)
-        # print("left foot vel: ", feet_vel[3:6])
-        # print("right foot vel: ", feet_vel[9:12])
->>>>>>> fdcb0e5a3f963f38cf3a406056ceba76611d7c93
         # count += 1
 
     draw_state = vis.draw(sim)
     # draw_state2 = vis2.draw(sim2)
-<<<<<<< HEAD
-    # draw_state3 = vis3.draw(sim3)
-=======
->>>>>>> fdcb0e5a3f963f38cf3a406056ceba76611d7c93
 
     # while time.monotonic() - t < 1/60:
     time.sleep(1/30)

@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 
     // Create cassie simulation
     const char modelfile[] = "../model/cassie.xml";
-    cassie_sim_t *sim = cassie_sim_init(modelfile);
+    cassie_sim_t *sim = cassie_sim_init(modelfile, false);
     cassie_vis_t *vis;
     if (visualize)
         vis = cassie_vis_init(sim, modelfile);
