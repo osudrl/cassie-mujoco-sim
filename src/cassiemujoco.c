@@ -79,11 +79,13 @@ mjvFigure figsensor;
     X(mj_step)                                  \
     X(mj_contactForce)                          \
     X(mj_name2id)                               \
+    X(mj_fullM)                                 \
     X(mju_copy)                                 \
     X(mju_zero)                                 \
     X(mju_rotVecMatT)                           \
     X(mju_sub3)                                 \
     X(mju_mulMatTVec)                           \
+    X(mju_mat2Quat)                             \
     X(mju_printMat)                             \
     X(mjv_makeScene)                            \
     X(mjv_defaultScene)                         \
@@ -880,6 +882,31 @@ bool cassie_reload_xml(const char* modelfile) {
     return true;
 }
 
+void cassie_sim_set_const(cassie_sim_t *c)
+{
+    mj_setConst_fp(c->m, c->d);
+    double qpos_init[35] =
+        {0, 0, 1.01, 1, 0, 0, 0,
+        0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
+        -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
+    double qvel_zero[c->m->nv];
+    double qacc_zero[c->m->nv];
+    for(int i = 0; i < c->m->nv; i++) {
+      qvel_zero[i] = 0.0f;
+      qacc_zero[i] = 0.0f;
+    }
+
+    mju_copy_fp(c->d->qpos, qpos_init, 35);
+    mju_copy_fp(c->d->qvel, qvel_zero, c->m->nv);
+    mju_copy_fp(c->d->qacc, qacc_zero, c->m->nv);
+
+    c->d->time = 0.0;
+    mj_forward_fp(c->m, c->d);
+}
+
+
 cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
 {
     // Make sure MuJoCo is initialized and the model is loaded
@@ -920,6 +947,7 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
     CASSIE_SIM_ALLOC_POINTER(c);
 
     // Set initial joint configuration
+#if 1
     double qpos_init[] =
         { 0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
          -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
@@ -927,6 +955,9 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
          -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
     mju_copy_fp(&c->d->qpos[7], qpos_init, 28);
     mj_forward_fp(c->m, c->d);
+#else
+    cassie_sim_set_const(c);
+#endif
 
     // Intialize systems
     cassie_core_sim_setup(c->core);
@@ -1114,6 +1145,12 @@ void cassie_sim_set_body_mass(cassie_sim_t *c, double *mass)
     }
 }
 
+void cassie_sim_set_body_name_mass(cassie_sim_t *c, const char* name, double mass)
+{
+    int mass_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    c->m->body_mass[mass_id] = mass;
+}
+
 void cassie_sim_set_body_ipos(cassie_sim_t *c, double *ipos)
 {
     for (int i = 0; i < c->m->nbody; i++) {
@@ -1132,24 +1169,6 @@ void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double
 {
     int geom_id = mj_name2id_fp(initial_model, mjOBJ_GEOM, name);
     mju_copy_fp(&c->m->geom_friction[geom_id], fric, 3);
-}
-
-void cassie_sim_set_const(cassie_sim_t *c)
-{
-    mj_setConst_fp(c->m, c->d);
-    double qpos_init[35] =
-        {0, 0, 1.01, 1, 0, 0, 0,
-        0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
-        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
-        -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
-        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
-    double qvel_zero[32] = {0};
-
-    mju_copy_fp(c->d->qpos, qpos_init, 35);
-    mju_copy_fp(c->d->qvel, qvel_zero, c->m->nv);
-
-    c->d->time = 0.0;
-    mj_forward_fp(c->m, c->d);
 }
 
 float *cassie_sim_geom_rgba(cassie_sim_t *c)
@@ -1260,6 +1279,29 @@ void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12])
         cvel[i]     = c->d->cvel[6 * left_foot_body_id + i];
         cvel[6 + i] = c->d->cvel[6 * right_foot_body_id + i];
     }
+
+}
+
+void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name)
+{
+    // Calculate body CoM velocities
+    mj_comVel_fp(c->m, c->d);
+    // Zero the output foot velocities 
+    mju_zero_fp(cvel, 6);
+    int body_id = mj_name2id_fp(c->m, mjOBJ_BODY, name);
+    mju_copy_fp(cvel, &c->d->cvel[6 * body_id], 6);
+    // for (int i = 0; i < 6; ++i) {
+    //     cvel[i]     = c->d->cvel[6 * body_id + i];
+    // }
+
+}
+
+void cassie_sim_foot_orient(const cassie_sim_t *c, double corient[4])
+{
+    int right_id = mj_name2id_fp(c->m, mjOBJ_SITE, "right-foot-middle");
+    double right_rot_mat[9];
+    mju_copy_fp(right_rot_mat, &c->d->site_xmat[9 * right_id], 9);
+    mju_mat2Quat_fp(corient, right_rot_mat);
 
 }
 
@@ -1425,6 +1467,38 @@ void cassie_sim_full_reset(cassie_sim_t *c)
         }
     }
     state_output_setup(c->estimator);
+}
+
+int cassie_sim_get_hfield_nrow(cassie_sim_t *c) {
+    return c->m->hfield_nrow[0];
+}
+
+int cassie_sim_get_hfield_ncol(cassie_sim_t *c) {
+    return c->m->hfield_nrow[0];
+}
+
+int cassie_sim_get_nhfielddata(cassie_sim_t *c) {
+    return c->m->nhfielddata;
+}
+
+double* cassie_sim_get_hfield_size(cassie_sim_t *c) {
+    return c->m->hfield_size;
+}
+
+void cassie_sim_set_hfield_size(cassie_sim_t *c, double size[4]) {
+    for (int i=0; i<4; i++) {
+        c->m->hfield_size[i] = size[i];
+    }
+}
+
+float* cassie_sim_hfielddata(cassie_sim_t *c) {
+    return c->m->hfield_data;
+}
+
+void cassie_sim_set_hfielddata(cassie_sim_t *c, float* data) {
+    for (int i = 0; i < c->m->nhfielddata; i++) {
+        c->m->hfield_data[i] = data[i];
+    }
 }
 
 void cassie_vis_full_reset(cassie_vis_t *v)
@@ -1617,6 +1691,21 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
         v->lastbutton = button;
         v->lastclicktm = time(0);
     }
+    
+}
+
+void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, double azi, double elev){
+    // 
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, body_name);
+    v->cam.type = mjCAMERA_TRACKING;
+    v->cam.trackbodyid = body_id;
+    v->cam.fixedcamid = -1;
+    v->cam.distance = zoom;
+    v->cam.azimuth = azi;
+    v->cam.elevation = elev;
+    // mjv_moveCamera_fp(v->m, mjMOUSE_ZOOM, 0.0, zoom, &v->scn, &v->cam);
+    // printf("xpos: %f\typos: %f\n", xpos, ypos);
+    // mjv_moveCamera_fp(v->m, GLFW_PRESS, xpos, ypos, &v->scn, &v->cam);
     
 }
 
@@ -2113,8 +2202,9 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     glfwGetFramebufferSize_fp(v->window, &viewport.width, &viewport.height);
     mjrRect smallrect = viewport;
     // Render scene
-
-    mjv_updateScene_fp(v->m, v->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
+    printf("vis m: %p\n", v->m);
+    printf("sim m: %p\n", c->m);
+    mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
     mjr_render_fp(viewport, &v->scn, &v->con);
     if (v->showsensor) {
         if (!v->paused) {

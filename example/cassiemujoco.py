@@ -21,11 +21,14 @@ import numpy as np
 _dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize libcassiesim
-# cassie_mujoco_init(str.encode(_dir_path+"/cassie.xml"))
-cassie_mujoco_init(str.encode("../model/cassie.xml"))
+# cassie_mujoco_init(str.encode(_dir_path+"/cassie_hfield.xml"))
+cassie_mujoco_init(str.encode("../model/cassie_hfield.xml"))
 
 
 # Interface classes
+# TODO: hard setting nbody and ngeom is not safe, much less safe than hard setting nv. If adding random geoms/bodies
+# like of obstacles or just for visual purpose, will mess things up. Either make getting functions and get the values
+# in the init or switch functions that nbody and ngeom to take in a name instead of letting you set all values at once
 class CassieSim:
     def __init__(self, modelfile, reinit=False):
         self.c = cassie_sim_init(modelfile.encode('utf-8'), reinit)
@@ -116,6 +119,18 @@ class CassieSim:
         for i in range(12):
             vel[i] = vel_array[i]
 
+    def body_vel(self, vel, body_name):
+        vel_array = (ctypes.c_double * 6)()
+        cassie_sim_body_vel(self.c, vel_array, body_name.encode())
+        for i in range(6):
+            vel[i] = vel_array[i]
+
+    def foot_quat(self, quat):
+        quat_array = (ctypes.c_double * 4)()
+        cassie_sim_foot_quat(self.c, quat_array)
+        for i in range(4):
+            quat[i] = quat_array[i]
+
     def clear_forces(self):
         cassie_sim_clear_forces(self.c)
 
@@ -180,17 +195,24 @@ class CassieSim:
 
         cassie_sim_set_dof_damping(self.c, c_arr)
 
-    def set_body_mass(self, data):
-        c_arr = (ctypes.c_double * self.nbody)()
+    def set_body_mass(self, data, name=None):
+        # If no name is provided, set ALL body masses and assume "data" is array
+        # containing masses for every body
+        if name is None:
+            c_arr = (ctypes.c_double * self.nbody)()
 
-        if len(data) != self.nbody:
-          print("SIZE MISMATCH SET_BODY_MASS()")
-          exit(1)
-        
-        for i in range(self.nbody):
-          c_arr[i] = data[i]
+            if len(data) != self.nbody:
+                print("SIZE MISMATCH SET_BODY_MASS()")
+                exit(1)
+            
+            for i in range(self.nbody):
+                c_arr[i] = data[i]
 
-        cassie_sim_set_body_mass(self.c, c_arr)
+            cassie_sim_set_body_mass(self.c, c_arr)
+        # If name is provided, only set mass for specified body and assume
+        # "data" is a single double
+        else:
+            cassie_sim_set_body_name_mass(self.c, name.encode(), ctypes.c_double(data))
 
     def set_body_ipos(self, data):
         nbody = self.nbody * 3
@@ -265,6 +287,50 @@ class CassieSim:
     def full_reset(self):
         cassie_sim_full_reset(self.c)
 
+    def get_hfield_nrow(self):
+        return cassie_sim_get_hfield_nrow(self.c)
+
+    def get_hfield_ncol(self):
+        return cassie_sim_get_hfield_ncol(self.c)
+
+    def get_nhfielddata(self):
+        return cassie_sim_get_nhfielddata(self.c)
+
+    def get_hfield_size(self):
+        ret = np.zeros(4)
+        ptr = cassie_sim_get_hfield_size(self.c)
+        for i in range(4):
+            ret[i] = ptr[i]
+        return ret
+
+    # Note that data has to be a flattened array. If flattening 2d numpy array, rows are y axis
+    # and cols are x axis. The data must also be normalized to (0-1)
+    def set_hfield_data(self, data):
+        nhfielddata = self.get_nhfielddata()
+        if len(data) != nhfielddata:
+            print("SIZE MISMATCH SET_HFIELD_DATA")
+            exit(1)
+        data_arr = (ctypes.c_float * nhfielddata)(*data)
+        cassie_sim_set_hfielddata(self.c, ctypes.cast(data_arr, ctypes.POINTER(ctypes.c_float)))
+    
+    def get_hfield_data(self):
+        nhfielddata = self.get_nhfielddata()
+        ret = np.zeros(nhfielddata)
+        ptr = cassie_sim_hfielddata(self.c)
+        for i in range(nhfielddata):
+            ret[i] = ptr[i]
+        return ret
+
+    def set_hfield_size(self, data):
+        if len(data) != 4:
+            print("SIZE MISMATCH SET_HFIELD_SIZE")
+            exit(1)
+        size_array = (ctypes.c_double * 4)()
+        for i in range(4):
+            size_array[i] = data[i]
+        cassie_sim_set_hfield_size(self.c, size_array)
+
+
     def __del__(self):
         cassie_sim_free(self.c)
 
@@ -294,6 +360,9 @@ class CassieVis:
 
     def reset(self):
         cassie_vis_full_reset(self.v)
+
+    def set_cam(self, body_name, zoom, azimuth, elevation):
+        cassie_vis_set_cam(self.v, body_name.encode(), zoom, azimuth, elevation)
 
     def __del__(self):
         cassie_vis_free(self.v)
