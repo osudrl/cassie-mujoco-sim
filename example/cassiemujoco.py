@@ -32,10 +32,10 @@ cassie_mujoco_init(str.encode("../model/cassie_hfield.xml"))
 class CassieSim:
     def __init__(self, modelfile, reinit=False):
         self.c = cassie_sim_init(modelfile.encode('utf-8'), reinit)
-        self.nv = 32
-        self.nbody = 26
-        self.nq = 35
-        self.ngeom = 35
+        self.nv = cassie_sim_nv(self.c)
+        self.nbody = cassie_sim_nbody(self.c)
+        self.nq = cassie_sim_nq(self.c)
+        self.ngeom = cassie_sim_ngeom(self.c)
 
     def step(self, u):
         y = cassie_out_t()
@@ -61,15 +61,15 @@ class CassieSim:
 
     def qpos(self):
         qposp = cassie_sim_qpos(self.c)
-        return qposp[:35]
+        return qposp[:self.nq]
 
     def qvel(self):
         qvelp = cassie_sim_qvel(self.c)
-        return qvelp[:32]
+        return qvelp[:self.nv]
 
     def qacc(self):
         qaccp = cassie_sim_qacc(self.c)
-        return qaccp[:32]
+        return qaccp[:self.nv]
 
     def xquat(self, body_name):
         xquatp = cassie_sim_xquat(self.c, body_name.encode())
@@ -81,12 +81,12 @@ class CassieSim:
 
     def set_qpos(self, qpos):
         qposp = cassie_sim_qpos(self.c)
-        for i in range(min(len(qpos), 35)):
+        for i in range(min(len(qpos), self.nq)):
             qposp[i] = qpos[i]
 
     def set_qvel(self, qvel):
         qvelp = cassie_sim_qvel(self.c)
-        for i in range(min(len(qvel), 32)):
+        for i in range(min(len(qvel), self.nv)):
             qvelp[i] = qvel[i]
 
     def hold(self):

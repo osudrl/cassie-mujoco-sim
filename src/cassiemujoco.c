@@ -451,7 +451,7 @@ static bool load_glfw_library(const char *basedir)
     snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/" GLFWLIBNAME, basedir);
     glfw_handle = LOADLIB(buf);
     if (!glfw_handle) {
-        fprintf(stderr, "Failed to load %s\n", buf);
+        //fprintf(stderr, "Failed to load %s\n", buf);
         return false;
     }
 
@@ -802,7 +802,7 @@ bool cassie_mujoco_init(const char *file_input)
         char error[1000] = "Could not load XML model";
         initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
         if (!initial_model) {
-            fprintf(stderr, "Load model error: %s\n", error);
+            //fprintf(stderr, "Load model error: %s\n", error);
             return false;
         }
         int sens_objid[20] = {0, 1, 2, 3, 4, 9, 10, 14, 5, 6, 7, 8, 9, 20, 21, 25, 0, 0, 0, 0};
@@ -869,7 +869,7 @@ bool cassie_reload_xml(const char* modelfile) {
     char error[1000] = "Could not load XML model";
     initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
     if (!initial_model) {
-        fprintf(stderr, "Load model error: %s\n", error);
+        //fprintf(stderr, "Load model error: %s\n", error);
         return false;
     }
     int sens_objid[20] = {0, 1, 2, 3, 4, 9, 10, 14, 5, 6, 7, 8, 9, 20, 21, 25, 0, 0, 0, 0};
@@ -927,7 +927,7 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
         char error[1000] = "Could not load XML model";
         mjModel *new_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
         if (!new_model) {
-            fprintf(stderr, "Load model error: %s\n", error);
+            //fprintf(stderr, "Load model error: %s\n", error);
             return NULL;
         }
         int sens_objid[20] = {0, 1, 2, 3, 4, 9, 10, 14, 5, 6, 7, 8, 9, 20, 21, 25, 0, 0, 0, 0};
@@ -964,6 +964,22 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
     state_output_setup(c->estimator);
     pd_input_setup(c->pd);
     return c;
+}
+
+int cassie_sim_nv(const cassie_sim_t *c){
+  return c->m->nv;
+}
+
+int cassie_sim_nbody(const cassie_sim_t *c){
+  return c->m->nbody;
+}
+
+int cassie_sim_nq(const cassie_sim_t *c){
+  return c->m->nq;
+}
+
+int cassie_sim_ngeom(const cassie_sim_t *c){
+  return c->m->ngeom;
 }
 
 
@@ -1165,6 +1181,7 @@ void cassie_sim_set_geom_friction(cassie_sim_t *c, double *fric)
     }
 }
 
+
 void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double *fric)
 {
     int geom_id = mj_name2id_fp(initial_model, mjOBJ_GEOM, name);
@@ -1203,6 +1220,30 @@ void cassie_sim_set_geom_name_quat(cassie_sim_t *c, const char* name, double *qu
     mju_copy_fp(&c->m->geom_quat[4 * geom_id], quat, 4);
 }
 
+double *cassie_sim_geom_pos(cassie_sim_t *c)
+{
+    return c->m->geom_pos;
+}
+
+void cassie_sim_set_geom_pos(cassie_sim_t *c, double *pos)
+{
+    for (int i = 0; i < c->m->nbody; i++)
+    {
+      printf("SIMPLE %d: %d\n", i, c->m->body_simple[i]);
+    }
+    for (int i = 0; i < c->m->ngeom * 3; i++)
+    {
+        c->m->geom_pos[i] = pos[i];
+    }
+}
+
+void cassie_sim_set_geom_name_pos(cassie_sim_t *c, const char* name, double *pos)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    mju_copy_fp(&c->m->geom_pos[3 * geom_id], pos, 3);
+    //c->m->geom_pos[3 * geom_id] += 0.1f;
+}
+
 int *cassie_sim_params(cassie_sim_t *c)
 {
     int *params = malloc(sizeof(int)*4);
@@ -1217,7 +1258,6 @@ void *cassie_sim_mjmodel(cassie_sim_t *c)
 {
     return c->m;
 }
-
 
 void *cassie_sim_mjdata(cassie_sim_t *c)
 {
@@ -2202,8 +2242,6 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     glfwGetFramebufferSize_fp(v->window, &viewport.width, &viewport.height);
     mjrRect smallrect = viewport;
     // Render scene
-    printf("vis m: %p\n", v->m);
-    printf("sim m: %p\n", c->m);
     mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
     mjr_render_fp(viewport, &v->scn, &v->con);
     if (v->showsensor) {
