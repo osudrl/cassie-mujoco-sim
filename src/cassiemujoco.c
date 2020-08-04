@@ -1193,6 +1193,12 @@ float *cassie_sim_geom_rgba(cassie_sim_t *c)
     return c->m->geom_rgba;
 }
 
+float *cassie_sim_geom_name_rgba(cassie_sim_t *c, const char* name)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    return &c->m->geom_rgba[4 * geom_id];
+}
+
 void cassie_sim_set_geom_rgba(cassie_sim_t *c, float *rgba)
 {
     for (int i = 0; i < c->m->ngeom * 4; i++)
@@ -1201,9 +1207,24 @@ void cassie_sim_set_geom_rgba(cassie_sim_t *c, float *rgba)
     }
 }    
 
+void cassie_sim_set_geom_name_rgba(cassie_sim_t *c, const char* name, float *rgba)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    c->m->geom_rgba[4 * geom_id + 0] = rgba[0];
+    c->m->geom_rgba[4 * geom_id + 1] = rgba[1];
+    c->m->geom_rgba[4 * geom_id + 2] = rgba[2];
+    c->m->geom_rgba[4 * geom_id + 3] = rgba[3];
+}
+
 double *cassie_sim_geom_quat(cassie_sim_t *c)
 {
     return c->m->geom_quat;
+}
+
+double *cassie_sim_geom_name_quat(cassie_sim_t *c, const char* name)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    return &c->m->geom_quat[4 * geom_id];
 }
 
 void cassie_sim_set_geom_quat(cassie_sim_t *c, double *quat)
@@ -1225,12 +1246,14 @@ double *cassie_sim_geom_pos(cassie_sim_t *c)
     return c->m->geom_pos;
 }
 
+double *cassie_sim_geom_name_pos(cassie_sim_t *c, const char* name)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    return &c->m->geom_pos[3 * geom_id];
+}
+
 void cassie_sim_set_geom_pos(cassie_sim_t *c, double *pos)
 {
-    for (int i = 0; i < c->m->nbody; i++)
-    {
-      printf("SIMPLE %d: %d\n", i, c->m->body_simple[i]);
-    }
     for (int i = 0; i < c->m->ngeom * 3; i++)
     {
         c->m->geom_pos[i] = pos[i];
@@ -1241,8 +1264,33 @@ void cassie_sim_set_geom_name_pos(cassie_sim_t *c, const char* name, double *pos
 {
     int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
     mju_copy_fp(&c->m->geom_pos[3 * geom_id], pos, 3);
-    //c->m->geom_pos[3 * geom_id] += 0.1f;
 }
+
+double *cassie_sim_geom_size(cassie_sim_t *c)
+{
+    return c->m->geom_size;
+}
+
+double *cassie_sim_geom_name_size(cassie_sim_t *c, const char* name)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    return &c->m->geom_size[3 * geom_id];
+}
+
+void cassie_sim_set_geom_size(cassie_sim_t *c, double *size)
+{
+    for (int i = 0; i < c->m->ngeom * 3; i++)
+    {
+        c->m->geom_size[i] = size[i];
+    }
+}
+
+void cassie_sim_set_geom_name_size(cassie_sim_t *c, const char* name, double *size)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    mju_copy_fp(&c->m->geom_size[3 * geom_id], size, 3);
+}
+
 
 int *cassie_sim_params(cassie_sim_t *c)
 {
