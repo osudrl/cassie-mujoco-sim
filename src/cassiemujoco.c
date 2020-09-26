@@ -1114,6 +1114,12 @@ double *cassie_sim_ctrl(cassie_sim_t *c)
     return c->d->ctrl;
 }
 
+double* cassie_sim_xpos(cassie_sim_t *c, const char* name)
+{
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    return &(c->d->xpos[3*body_id]);
+}
+
 double* cassie_sim_xquat(cassie_sim_t *c, const char* name)
 {
     int body_id = mj_name2id_fp(c->m, mjOBJ_BODY, name);

@@ -71,6 +71,10 @@ class CassieSim:
         qaccp = cassie_sim_qacc(self.c)
         return qaccp[:self.nv]
 
+    def xpos(self, body_name):
+        xposp = cassie_sim_xpos(self.c, body_name.encode())
+        return xposp[:3]
+
     def xquat(self, body_name):
         xquatp = cassie_sim_xquat(self.c, body_name.encode())
         return xquatp[:4]
