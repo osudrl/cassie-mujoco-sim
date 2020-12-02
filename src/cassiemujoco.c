@@ -709,6 +709,7 @@ static void cassie_sensor_data(cassie_sim_t *c)
     for (int i = 0; i < NUM_JOINTS; ++i)
         joint_encoder(c->m, joints[i], c->d->sensordata,
                       &c->joint_filter[i], joint_sensor_ids[i]);
+    printf("CURRENT SENSOR VALUE: %f\n", c->cassie_out.leftLeg.hipPitchDrive.position);
 
     // IMU
     mju_copy_fp(c->cassie_out.pelvis.vectorNav.orientation,
@@ -1538,6 +1539,12 @@ float* cassie_sim_hfielddata(cassie_sim_t *c) {
 void cassie_sim_set_hfielddata(cassie_sim_t *c, float* data) {
     for (int i = 0; i < c->m->nhfielddata; i++) {
         c->m->hfield_data[i] = data[i];
+    }
+}
+
+void cassie_vis_set_hfielddata(cassie_sim_t *v, float* data) {
+    for (int i = 0; i < v->m->nhfielddata; i++) {
+        v->m->hfield_data[i] = data[i];
     }
 }
 
