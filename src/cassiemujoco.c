@@ -709,7 +709,6 @@ static void cassie_sensor_data(cassie_sim_t *c)
     for (int i = 0; i < NUM_JOINTS; ++i)
         joint_encoder(c->m, joints[i], c->d->sensordata,
                       &c->joint_filter[i], joint_sensor_ids[i]);
-    printf("CURRENT SENSOR VALUE: %f\n", c->cassie_out.leftLeg.hipPitchDrive.position);
 
     // IMU
     mju_copy_fp(c->cassie_out.pelvis.vectorNav.orientation,
@@ -1604,6 +1603,14 @@ void cassie_vis_set_hfielddata(cassie_sim_t *v, float* data) {
 
 void cassie_vis_full_reset(cassie_vis_t *v)
 {
+    mjv_freeScene_fp(&v->scn);
+    mjr_freeContext_fp(&v->con);
+
+    mjr_defaultContext_fp(&v->con);
+    mjv_defaultScene_fp(&v->scn);
+    mjv_makeScene_fp(v->m, &v->scn, 1000);
+    mjr_makeContext_fp(v->m, &v->con, fontscale);
+#if 0
     double qpos_init[35] = {0, 0, 1.01, 1, 0, 0, 0,
         0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
         -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
@@ -1621,6 +1628,7 @@ void cassie_vis_full_reset(cassie_vis_t *v)
     mju_zero_fp(v->d->qfrc_applied, v->m->nv);
     mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     mju_zero_fp(v->d->qacc, v->m->nv);
+#endif
 }
 
 void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
