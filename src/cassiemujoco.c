@@ -79,6 +79,7 @@ mjvFigure figsensor;
     X(mj_step)                                  \
     X(mj_contactForce)                          \
     X(mj_name2id)                               \
+    X(mj_id2name)                               \
     X(mj_fullM)                                 \
     X(mju_copy)                                 \
     X(mju_zero)                                 \
@@ -719,6 +720,10 @@ static void cassie_sensor_data(cassie_sim_t *c)
                 &c->d->sensordata[23], 3);
     mju_copy_fp(c->cassie_out.pelvis.vectorNav.magneticField,
                 &c->d->sensordata[26], 3);
+}
+
+void cassie_sim_read_rangefinder(cassie_sim_t *c, double ranges[6]){
+    mju_copy_fp(ranges, &c->d->sensordata[29], 6);
 }
 
 
