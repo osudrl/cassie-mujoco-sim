@@ -362,6 +362,25 @@ class CassieVis:
             xfrc_array[i] = xfrc_apply[i]
         cassie_vis_apply_force(self.v, xfrc_array, body_name.encode())
 
+    def add_marker(self, pos, size, rgba):
+        pos_array = (ctypes.c_double * 3)()
+        for i in range(len(pos)):
+            pos_array[i] = pos[i]
+        size_array = (ctypes.c_double * 3)()
+        for i in range(len(size)):
+            size_array[i] = size[i]
+        rgba_array = (ctypes.c_double * 4)()
+        for i in range(len(rgba)):
+            rgba_array[i] = rgba[i]
+        cassie_vis_add_marker(self.v, pos_array, size_array, rgba_array)
+
+    def update_marker(self, id, pos):
+        pos_array = (ctypes.c_double * 3)()
+        for i in range(len(pos)):
+            pos_array[i] = pos[i]
+        size_array = (ctypes.c_double * 3)()
+        cassie_vis_update_marker_pos(self.v, id, pos_array)
+
     def reset(self):
         cassie_vis_full_reset(self.v)
 

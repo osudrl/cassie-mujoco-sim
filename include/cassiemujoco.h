@@ -273,6 +273,12 @@ bool cassie_vis_paused(cassie_vis_t *vis);
 // Returns value of vis->slowmotion
 bool cassie_vis_slowmo(cassie_vis_t *vis);
 
+// add a spherical marker for visualization purposes into scene.
+void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], double rgba[4]);
+
+// update existing marker
+void cassie_vis_update_marker_pos(cassie_vis_t* v, int id, double pos[3]);
+
 // Apply inputted perturbation to any body in the vis's mjData
 void cassie_vis_apply_force(cassie_vis_t *vis, double xfrc[6], const char* name);
 

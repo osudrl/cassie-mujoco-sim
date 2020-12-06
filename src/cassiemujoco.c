@@ -234,6 +234,8 @@ typedef struct joint_filter {
 #define NUM_JOINTS 6
 #define TORQUE_DELAY_CYCLES 6
 
+#define MAX_VIS_MARKERS 100
+
 struct cassie_sim {
     mjModel *m;
     mjData *d;
@@ -244,6 +246,23 @@ struct cassie_sim {
     drive_filter_t drive_filter[NUM_DRIVES];
     joint_filter_t joint_filter[NUM_JOINTS];
     double torque_delay[NUM_DRIVES][TORQUE_DELAY_CYCLES];
+};
+
+struct vis_marker_info {
+    int id;
+
+    double pos_x;
+    double pos_y;
+    double pos_z;
+
+    double size_x;
+    double size_y;
+    double size_z;
+
+    double r;
+    double g;
+    double b;
+    double a;
 };
 
 struct cassie_vis {
@@ -276,6 +295,10 @@ struct cassie_vis {
     int perturb_body;   // Body to apply perturb force to in vis_draw
     double perturb_force[6];    // Perturb force to apply
     
+    // Markers
+    size_t marker_num;
+    struct vis_marker_info marker_infos[MAX_VIS_MARKERS];  
+
     // GLFW  handle
     GLFWwindow *window;
 
@@ -1636,6 +1659,50 @@ void cassie_vis_full_reset(cassie_vis_t *v)
 #endif
 }
 
+// add markers to visualization
+void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], double rgba[4])
+{
+    if (v->marker_num + 1 < MAX_VIS_MARKERS)
+    {
+        struct vis_marker_info new_marker;
+        v->marker_infos[v->marker_num].id = v->marker_num;
+        v->marker_infos[v->marker_num].pos_x = pos[0];
+        v->marker_infos[v->marker_num].pos_y = pos[1];
+        v->marker_infos[v->marker_num].pos_z = pos[2];
+        v->marker_infos[v->marker_num].size_x = size[0];
+        v->marker_infos[v->marker_num].size_y = size[1];
+        v->marker_infos[v->marker_num].size_z = size[2];
+        v->marker_infos[v->marker_num].r = rgba[0];
+        v->marker_infos[v->marker_num].g = rgba[1];
+        v->marker_infos[v->marker_num].b = rgba[2];
+        v->marker_infos[v->marker_num].a = rgba[3];
+        // printf("marker with id: %d\n", v->marker_infos[v->marker_num].id);
+        v->marker_num++;
+    }
+    else
+    {
+        printf("max vis markers reached!");
+    } 
+}
+
+// update existing marker position
+void cassie_vis_update_marker_pos(cassie_vis_t* v, int id, double pos[3])
+{
+    if (id > v->marker_num)
+    {
+        printf("%d > %d invalid marker id\n", v->marker_num, id);
+        return;
+    }
+    else
+    {
+        v->marker_infos[id].pos_x = pos[0];
+        v->marker_infos[id].pos_y = pos[1];
+        v->marker_infos[id].pos_z = pos[2];
+        return;
+    }
+}
+
+
 void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
 {
     int body_id = mj_name2id_fp(v->m, mjOBJ_BODY, name);
@@ -2281,9 +2348,54 @@ void cassie_vis_free(cassie_vis_t *v)
     free(v);
 }
 
+// default marker geom
+void v_setMarkerGeom(mjvGeom* geom, struct vis_marker_info info)
+{
+    geom->dataid = -1;
+    geom->objtype = mjOBJ_UNKNOWN;
+    geom->objid = -1;
+    geom->category = mjCAT_DECOR;
+    geom->texid = -1;
+    geom->texuniform = 0;
+    geom->texrepeat[0] = 1;
+    geom->texrepeat[1] = 1;
+    geom->emission = 0;
+    geom->specular = 0.5;
+    geom->shininess = 0.5;
+    geom->reflectance = 0;
+    geom->label[0] = 0;
+    geom->size[0] = info.size_x;
+    geom->size[1] = info.size_y;
+    geom->size[2] = info.size_z;
+    geom->rgba[0] = info.r;
+    geom->rgba[1] = info.g;
+    geom->rgba[2] = info.b;
+    geom->rgba[3] = info.a;
+    geom->pos[0] = info.pos_x;
+    geom->pos[1] = info.pos_y;
+    geom->pos[2] = info.pos_z;
+    geom->type = mjGEOM_SPHERE;
+}
+
+void add_vis_markers(cassie_vis_t* v)
+{
+    for (int i = 0; i < v->marker_num; i++)
+    {
+        if (v->scn.ngeom + v->marker_num < v->scn.maxgeom)
+        {
+            mjvGeom* g = v->scn.geoms + v->scn.ngeom++;
+            v_setMarkerGeom(g, v->marker_infos[i]);
+        }
+        else
+        {
+            printf("vis scn.maxgeom reached\n");
+        }
+    }
+}
 
 bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
 {
+
     (void)c;
     if (!glfw_initialized)
         return false;
@@ -2317,7 +2429,13 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     mjrRect smallrect = viewport;
     // Render scene
     mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
+
+    // Add markers (custom geoms) at end of populated geom list
+    add_vis_markers(v);
+
+    // render
     mjr_render_fp(viewport, &v->scn, &v->con);
+
     if (v->showsensor) {
         if (!v->paused) {
             sensorupdate(v);
@@ -2358,6 +2476,7 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
                     str_paused,
                     buf, &v->con);
     }
+
     // Show updated scene
     glfwSwapBuffers_fp(v->window);
     glfwPollEvents_fp();
