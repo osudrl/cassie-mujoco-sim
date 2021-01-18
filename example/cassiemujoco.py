@@ -374,12 +374,19 @@ class CassieVis:
             rgba_array[i] = rgba[i]
         cassie_vis_add_marker(self.v, pos_array, size_array, rgba_array)
 
-    def update_marker(self, id, pos):
+    def update_marker(self, id_val, pos, size, rgba):
         pos_array = (ctypes.c_double * 3)()
+        size_array = (ctypes.c_double * 3)()
+        rgba_array = (ctypes.c_double * 4)()
         for i in range(len(pos)):
             pos_array[i] = pos[i]
-        size_array = (ctypes.c_double * 3)()
-        cassie_vis_update_marker_pos(self.v, id, pos_array)
+        for i in range(len(size)):
+            size_array[i] = size[i]
+        for i in range(len(rgba)):
+            rgba_array[i] = rgba[i]
+        cassie_vis_update_marker_pos(self.v, ctypes.c_int(id_val), pos_array)
+        cassie_vis_update_marker_size(self.v, ctypes.c_int(id_val), size_array)
+        cassie_vis_update_marker_rgba(self.v, ctypes.c_int(id_val), rgba_array)
 
     def reset(self):
         cassie_vis_full_reset(self.v)

@@ -278,6 +278,8 @@ void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], doubl
 
 // update existing marker
 void cassie_vis_update_marker_pos(cassie_vis_t* v, int id, double pos[3]);
+void cassie_vis_update_marker_size(cassie_vis_t* v, int id, double size[3]);
+void cassie_vis_update_marker_rgba(cassie_vis_t* v, int id, double rgba[4]);
 
 // Apply inputted perturbation to any body in the vis's mjData
 void cassie_vis_apply_force(cassie_vis_t *vis, double xfrc[6], const char* name);

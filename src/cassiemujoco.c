@@ -1676,7 +1676,7 @@ void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], doubl
         v->marker_infos[v->marker_num].g = rgba[1];
         v->marker_infos[v->marker_num].b = rgba[2];
         v->marker_infos[v->marker_num].a = rgba[3];
-        // printf("marker with id: %d\n", v->marker_infos[v->marker_num].id);
+        printf("marker with id: %d\n", v->marker_infos[v->marker_num].id);
         v->marker_num++;
     }
     else
@@ -1702,6 +1702,40 @@ void cassie_vis_update_marker_pos(cassie_vis_t* v, int id, double pos[3])
     }
 }
 
+// update existing marker size
+void cassie_vis_update_marker_size(cassie_vis_t* v, int id, double size[3])
+{
+    if (id > v->marker_num)
+    {
+        printf("%d > %d invalid marker id\n", v->marker_num, id);
+        return;
+    }
+    else
+    {
+        v->marker_infos[id].size_x = size[0];
+        v->marker_infos[id].size_y = size[1];
+        v->marker_infos[id].size_z = size[2];
+        return;
+    }
+}
+
+// update existing marker color
+void cassie_vis_update_marker_rgba(cassie_vis_t* v, int id, double rgba[4])
+{
+    if (id > v->marker_num)
+    {
+        printf("%d > %d invalid marker id\n", v->marker_num, id);
+        return;
+    }
+    else
+    {
+        v->marker_infos[id].r = rgba[0];
+        v->marker_infos[id].g = rgba[1];
+        v->marker_infos[id].b = rgba[2];
+        v->marker_infos[id].a = rgba[3];
+        return;
+    }
+}
 
 void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
 {
@@ -2374,6 +2408,9 @@ void v_setMarkerGeom(mjvGeom* geom, struct vis_marker_info info)
     geom->pos[0] = info.pos_x;
     geom->pos[1] = info.pos_y;
     geom->pos[2] = info.pos_z;
+    geom->mat[0] = 1; geom->mat[1] = 0; geom->mat[2] = 0;
+    geom->mat[3] = 0; geom->mat[4] = 1; geom->mat[5] = 0;
+    geom->mat[6] = 0; geom->mat[7] = 0; geom->mat[8] = 1;
     geom->type = mjGEOM_SPHERE;
 }
 
