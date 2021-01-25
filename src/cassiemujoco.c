@@ -1778,7 +1778,8 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
             // switch to tracking camera
             if (selmode == 3 && selbody >= 0) {
                 v->cam.type = mjCAMERA_TRACKING;
-                v->cam.trackbodyid = selbody;
+                //v->cam.trackbodyid = selbody;
+                v->cam.trackbodyid = 0;
                 v->cam.fixedcamid = -1;
             }
         } else { // set body selection
