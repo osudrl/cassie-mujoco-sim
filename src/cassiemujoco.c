@@ -1664,7 +1664,7 @@ void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], doubl
 {
     if (v->marker_num + 1 < MAX_VIS_MARKERS)
     {
-        struct vis_marker_info new_marker;
+        //struct vis_marker_info new_marker;
         v->marker_infos[v->marker_num].id = v->marker_num;
         v->marker_infos[v->marker_num].pos_x = pos[0];
         v->marker_infos[v->marker_num].pos_y = pos[1];
@@ -1688,9 +1688,9 @@ void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], doubl
 // update existing marker position
 void cassie_vis_update_marker_pos(cassie_vis_t* v, int id, double pos[3])
 {
-    if (id > v->marker_num)
+    if (id > (int)v->marker_num)
     {
-        printf("%d > %d invalid marker id\n", v->marker_num, id);
+        printf("%lu > %d invalid marker id\n", v->marker_num, id);
         return;
     }
     else
@@ -1705,9 +1705,9 @@ void cassie_vis_update_marker_pos(cassie_vis_t* v, int id, double pos[3])
 // update existing marker size
 void cassie_vis_update_marker_size(cassie_vis_t* v, int id, double size[3])
 {
-    if (id > v->marker_num)
+    if (id > (int)v->marker_num)
     {
-        printf("%d > %d invalid marker id\n", v->marker_num, id);
+        printf("%lu > %d invalid marker id\n", v->marker_num, id);
         return;
     }
     else
@@ -1722,9 +1722,9 @@ void cassie_vis_update_marker_size(cassie_vis_t* v, int id, double size[3])
 // update existing marker color
 void cassie_vis_update_marker_rgba(cassie_vis_t* v, int id, double rgba[4])
 {
-    if (id > v->marker_num)
+    if (id > (int)v->marker_num)
     {
-        printf("%d > %d invalid marker id\n", v->marker_num, id);
+        printf("%lu > %d invalid marker id\n", v->marker_num, id);
         return;
     }
     else
@@ -2417,9 +2417,9 @@ void v_setMarkerGeom(mjvGeom* geom, struct vis_marker_info info)
 
 void add_vis_markers(cassie_vis_t* v)
 {
-    for (int i = 0; i < v->marker_num; i++)
+    for (unsigned long i = 0; i < v->marker_num; i++)
     {
-        if (v->scn.ngeom + v->marker_num < v->scn.maxgeom)
+        if (v->scn.ngeom + v->marker_num < (unsigned long)v->scn.maxgeom)
         {
             mjvGeom* g = v->scn.geoms + v->scn.ngeom++;
             v_setMarkerGeom(g, v->marker_infos[i]);
