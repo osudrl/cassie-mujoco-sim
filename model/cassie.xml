@@ -222,6 +222,7 @@
     </body>
 
     <!-- Add any other moving bodies after the Cassie definition -->
+    <!-- Stairs -->
     <geom name='box1' pos='1.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
     <geom name='box2' pos='2.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
     <geom name='box3' pos='3.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>

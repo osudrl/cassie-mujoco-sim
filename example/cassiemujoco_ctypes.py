@@ -451,6 +451,18 @@ cassie_vis_paused.argtypes = [POINTER_T(struct_cassie_vis)]
 cassie_vis_apply_force = _libraries['./libcassiemujoco.so'].cassie_vis_apply_force
 cassie_vis_apply_force.restype = None
 cassie_vis_apply_force.argtypes = [POINTER_T(struct_cassie_vis), POINTER_T(ctypes.c_double), ctypes.c_char_p]
+cassie_vis_add_marker = _libraries['./libcassiemujoco.so'].cassie_vis_add_marker
+cassie_vis_add_marker.restype = None
+cassie_vis_add_marker.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_double * 3, ctypes.c_double * 3, ctypes.c_double * 4]
+cassie_vis_update_marker_pos = _libraries['./libcassiemujoco.so'].cassie_vis_update_marker_pos
+cassie_vis_update_marker_pos.restype = None
+cassie_vis_update_marker_pos.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int, ctypes.c_double * 3]
+cassie_vis_update_marker_size = _libraries['./libcassiemujoco.so'].cassie_vis_update_marker_size
+cassie_vis_update_marker_size.restype = None
+cassie_vis_update_marker_size.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int, ctypes.c_double * 3]
+cassie_vis_update_marker_rgba = _libraries['./libcassiemujoco.so'].cassie_vis_update_marker_rgba
+cassie_vis_update_marker_rgba.restype = None
+cassie_vis_update_marker_rgba.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int, ctypes.c_double * 4]
 cassie_vis_full_reset = _libraries['./libcassiemujoco.so'].cassie_vis_full_reset
 cassie_vis_full_reset.restype = None
 cassie_vis_full_reset.argtypes = [POINTER_T(struct_cassie_vis)]
@@ -826,10 +838,11 @@ __all__ = \
     'cassie_sim_set_const', 'cassie_sim_geom_rgba', 'cassie_sim_set_geom_rgba',
     'cassie_sim_geom_quat', 'cassie_sim_set_geom_quat', 'cassie_sim_set_geom_name_quat',
     'cassie_sim_set_geom_name_friction', 'cassie_reload_xml', 'cassie_vis_apply_force',
+    'cassie_vis_add_marker', 'cassie_vis_update_marker_pos', 'cassie_vis_update_marker_size', 'cassie_vis_update_marker_rgba',
     'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass',
     'cassie_sim_get_hfield_nrow', 'cassie_sim_get_hfield_ncol', 'cassie_sim_get_nhfielddata',
     'cassie_sim_get_hfield_size', 'cassie_sim_set_hfield_size', 'cassie_sim_hfielddata', 'cassie_sim_set_hfielddata',
     'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass', 'cassie_vis_set_cam', 'cassie_sim_nv',
-    'cassie_sim_nbody', 'cassie_sim_nq', 'cassie_sim_ngeom']]
+    'cassie_sim_nbody', 'cassie_sim_nq', 'cassie_sim_ngeom']
 
 # 'cassie_sim_set_cassiestate'

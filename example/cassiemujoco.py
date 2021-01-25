@@ -362,6 +362,32 @@ class CassieVis:
             xfrc_array[i] = xfrc_apply[i]
         cassie_vis_apply_force(self.v, xfrc_array, body_name.encode())
 
+    def add_marker(self, pos, size, rgba):
+        pos_array = (ctypes.c_double * 3)()
+        for i in range(len(pos)):
+            pos_array[i] = pos[i]
+        size_array = (ctypes.c_double * 3)()
+        for i in range(len(size)):
+            size_array[i] = size[i]
+        rgba_array = (ctypes.c_double * 4)()
+        for i in range(len(rgba)):
+            rgba_array[i] = rgba[i]
+        cassie_vis_add_marker(self.v, pos_array, size_array, rgba_array)
+
+    def update_marker(self, id_val, pos, size, rgba):
+        pos_array = (ctypes.c_double * 3)()
+        size_array = (ctypes.c_double * 3)()
+        rgba_array = (ctypes.c_double * 4)()
+        for i in range(len(pos)):
+            pos_array[i] = pos[i]
+        for i in range(len(size)):
+            size_array[i] = size[i]
+        for i in range(len(rgba)):
+            rgba_array[i] = rgba[i]
+        cassie_vis_update_marker_pos(self.v, ctypes.c_int(id_val), pos_array)
+        cassie_vis_update_marker_size(self.v, ctypes.c_int(id_val), size_array)
+        cassie_vis_update_marker_rgba(self.v, ctypes.c_int(id_val), rgba_array)
+
     def reset(self):
         cassie_vis_full_reset(self.v)
 
