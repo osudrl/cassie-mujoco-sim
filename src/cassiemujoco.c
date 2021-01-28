@@ -1682,7 +1682,7 @@ void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], doubl
     else
     {
         printf("max vis markers reached!");
-        exit(1)
+        exit(1);
     } 
 }
 
