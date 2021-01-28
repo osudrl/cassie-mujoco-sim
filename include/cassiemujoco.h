@@ -18,6 +18,8 @@
 #define CASSIEMUJOCO_H
 
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "cassie_out_t.h"
 #include "cassie_in_t.h"
 #include "cassie_user_in_t.h"

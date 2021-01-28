@@ -2317,6 +2317,7 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     v->lastframenum = 0;
     v->m = c->m;
     v->d = c->d;
+    v->marker_num = 0;
     v->perturb_body = 1;
     memset(v->perturb_force, 0.0, 6*sizeof(double));
 
@@ -2426,7 +2427,8 @@ void add_vis_markers(cassie_vis_t* v)
         }
         else
         {
-            printf("vis scn.maxgeom reached\n");
+            printf("vis scn.maxgeom reached: %d + %lu < %lu\n", v->scn.ngeom, v->marker_num, (unsigned long)v->scn.maxgeom);
+            exit(1);
         }
     }
 }
