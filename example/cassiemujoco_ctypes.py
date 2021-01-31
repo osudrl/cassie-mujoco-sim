@@ -427,6 +427,9 @@ cassie_sim_hfielddata.argtypes = [POINTER_T(struct_cassie_sim)]
 cassie_sim_set_hfielddata = _libraries['./libcassiemujoco.so'].cassie_sim_set_hfielddata
 cassie_sim_set_hfielddata.restype = None
 cassie_sim_set_hfielddata.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_float)]
+cassie_vis_set_hfielddata = _libraries['./libcassiemujoco.so'].cassie_vis_set_hfielddata
+cassie_vis_set_hfielddata.restype = None
+cassie_vis_set_hfielddata.argtypes = [POINTER_T(struct_cassie_vis), POINTER_T(ctypes.c_float)]
 cassie_vis_init = _libraries['./libcassiemujoco.so'].cassie_vis_init
 cassie_vis_init.restype = POINTER_T(struct_cassie_vis)
 cassie_vis_init.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
@@ -453,7 +456,7 @@ cassie_vis_apply_force.restype = None
 cassie_vis_apply_force.argtypes = [POINTER_T(struct_cassie_vis), POINTER_T(ctypes.c_double), ctypes.c_char_p]
 cassie_vis_add_marker = _libraries['./libcassiemujoco.so'].cassie_vis_add_marker
 cassie_vis_add_marker.restype = None
-cassie_vis_add_marker.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_double * 3, ctypes.c_double * 3, ctypes.c_double * 4]
+cassie_vis_add_marker.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_double * 3, ctypes.c_double * 3, ctypes.c_double * 4, ctypes.c_double * 9]
 cassie_vis_update_marker_pos = _libraries['./libcassiemujoco.so'].cassie_vis_update_marker_pos
 cassie_vis_update_marker_pos.restype = None
 cassie_vis_update_marker_pos.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int, ctypes.c_double * 3]
@@ -463,6 +466,9 @@ cassie_vis_update_marker_size.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c
 cassie_vis_update_marker_rgba = _libraries['./libcassiemujoco.so'].cassie_vis_update_marker_rgba
 cassie_vis_update_marker_rgba.restype = None
 cassie_vis_update_marker_rgba.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int, ctypes.c_double * 4]
+cassie_vis_update_marker_orient = _libraries['./libcassiemujoco.so'].cassie_vis_update_marker_orient
+cassie_vis_update_marker_orient.restype = None
+cassie_vis_update_marker_orient.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int, ctypes.c_double * 9]
 cassie_vis_full_reset = _libraries['./libcassiemujoco.so'].cassie_vis_full_reset
 cassie_vis_full_reset.restype = None
 cassie_vis_full_reset.argtypes = [POINTER_T(struct_cassie_vis)]
@@ -493,6 +499,10 @@ cassie_get_state.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(struct_cass
 cassie_set_state = _libraries['./libcassiemujoco.so'].cassie_set_state
 cassie_set_state.restype = None
 cassie_set_state.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(struct_cassie_state)]
+
+cassie_sim_read_rangefinder = _libraries['./libcassiemujoco.so'].cassie_sim_read_rangefinder
+cassie_sim_read_rangefinder.restype = None
+cassie_sim_read_rangefinder.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6]
 
 #cassie_sim_foot_positions.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6]
 
@@ -540,13 +550,25 @@ cassie_sim_geom_rgba = _libraries['./libcassiemujoco.so'].cassie_sim_geom_rgba
 cassie_sim_geom_rgba.restype = POINTER_T(ctypes.c_float)
 cassie_sim_geom_rgba.argtypes = [POINTER_T(struct_cassie_sim)]
 
+cassie_sim_geom_name_rgba = _libraries['./libcassiemujoco.so'].cassie_sim_geom_name_rgba
+cassie_sim_geom_name_rgba.restype = POINTER_T(ctypes.c_float)
+cassie_sim_geom_name_rgba.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
+
 cassie_sim_set_geom_rgba = _libraries['./libcassiemujoco.so'].cassie_sim_set_geom_rgba
 cassie_sim_set_geom_rgba.restype = None
 cassie_sim_set_geom_rgba.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_float)]
 
+cassie_sim_set_geom_name_rgba = _libraries['./libcassiemujoco.so'].cassie_sim_set_geom_name_rgba
+cassie_sim_set_geom_name_rgba.restype = None
+cassie_sim_set_geom_name_rgba.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, POINTER_T(ctypes.c_float)]
+
 cassie_sim_geom_quat = _libraries['./libcassiemujoco.so'].cassie_sim_geom_quat
 cassie_sim_geom_quat.restype = POINTER_T(ctypes.c_double)
 cassie_sim_geom_quat.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_geom_name_quat = _libraries['./libcassiemujoco.so'].cassie_sim_geom_name_quat
+cassie_sim_geom_name_quat.restype = POINTER_T(ctypes.c_double)
+cassie_sim_geom_name_quat.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
 
 cassie_sim_set_geom_quat = _libraries['./libcassiemujoco.so'].cassie_sim_set_geom_quat
 cassie_sim_set_geom_quat.restype = None
@@ -555,6 +577,38 @@ cassie_sim_set_geom_quat.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(cty
 cassie_sim_set_geom_name_quat = _libraries['./libcassiemujoco.so'].cassie_sim_set_geom_name_quat
 cassie_sim_set_geom_name_quat.restype = None
 cassie_sim_set_geom_name_quat.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, POINTER_T(ctypes.c_double)]
+
+cassie_sim_geom_pos = _libraries['./libcassiemujoco.so'].cassie_sim_geom_pos
+cassie_sim_geom_pos.restype = POINTER_T(ctypes.c_double)
+cassie_sim_geom_pos.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_geom_name_pos = _libraries['./libcassiemujoco.so'].cassie_sim_geom_name_pos
+cassie_sim_geom_name_pos.restype = POINTER_T(ctypes.c_double)
+cassie_sim_geom_name_pos.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
+
+cassie_sim_set_geom_pos = _libraries['./libcassiemujoco.so'].cassie_sim_set_geom_pos
+cassie_sim_set_geom_pos.restype = None
+cassie_sim_set_geom_pos.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double)]
+
+cassie_sim_set_geom_name_pos = _libraries['./libcassiemujoco.so'].cassie_sim_set_geom_name_pos
+cassie_sim_set_geom_name_pos.restype = None
+cassie_sim_set_geom_name_pos.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, POINTER_T(ctypes.c_double)]
+
+cassie_sim_geom_size = _libraries['./libcassiemujoco.so'].cassie_sim_geom_size
+cassie_sim_geom_size.restype = POINTER_T(ctypes.c_double)
+cassie_sim_geom_size.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_geom_name_size = _libraries['./libcassiemujoco.so'].cassie_sim_geom_name_size
+cassie_sim_geom_name_size.restype = POINTER_T(ctypes.c_double)
+cassie_sim_geom_name_size.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
+
+cassie_sim_set_geom_size = _libraries['./libcassiemujoco.so'].cassie_sim_set_geom_size
+cassie_sim_set_geom_size.restype = None
+cassie_sim_set_geom_size.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double)]
+
+cassie_sim_set_geom_name_size = _libraries['./libcassiemujoco.so'].cassie_sim_set_geom_name_size
+cassie_sim_set_geom_name_size.restype = None
+cassie_sim_set_geom_name_size.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, POINTER_T(ctypes.c_double)]
 
 cassie_sim_set_const = _libraries['./libcassiemujoco.so'].cassie_sim_set_const
 cassie_sim_set_const.restype = None
@@ -775,6 +829,7 @@ wait_for_packet.argtypes = [ctypes.c_int32, POINTER_T(None), size_t, POINTER_T(s
 send_packet = _libraries['./libcassiemujoco.so'].send_packet
 send_packet.restype = ssize_t
 send_packet.argtypes = [ctypes.c_int32, POINTER_T(None), size_t, POINTER_T(struct_sockaddr), socklen_t]
+"""
 __all__ = \
     ['cassie_pelvis_in_t', 'struct_StateOutput', 'cassie_state_t',
     'cassie_sim_check_self_collision', 'cassie_vis_free',
@@ -835,14 +890,18 @@ __all__ = \
     'cassie_sim_body_mass', 'cassie_sim_set_body_mass',
     'cassie_sim_body_ipos', 'cassie_sim_set_body_ipos',
     'cassie_sim_geom_friction', 'cassie_sim_set_geom_friction',
-    'cassie_sim_set_const', 'cassie_sim_geom_rgba', 'cassie_sim_set_geom_rgba',
-    'cassie_sim_geom_quat', 'cassie_sim_set_geom_quat', 'cassie_sim_set_geom_name_quat',
+    'cassie_sim_set_const', 
+    'cassie_sim_geom_rgba', 'cassie_sim_geom_name_rgba', 'cassie_sim_set_geom_rgba', 'cassie_sim_set_geom_name_rgba',
+    'cassie_sim_geom_quat', 'cassie_sim_geom_name_quat', 'cassie_sim_set_geom_quat', 'cassie_sim_set_geom_name_quat',
+    'cassie_sim_geom_pos', 'cassie_sim_geom_name_pos', 'cassie_sim_set_geom_pos', 'cassie_sim_set_geom_name_pos',
+    'cassie_sim_geom_size', 'cassie_sim_geom_name_size', 'cassie_sim_set_geom_size', 'cassie_sim_set_geom_name_size',
     'cassie_sim_set_geom_name_friction', 'cassie_reload_xml', 'cassie_vis_apply_force',
-    'cassie_vis_add_marker', 'cassie_vis_update_marker_pos', 'cassie_vis_update_marker_size', 'cassie_vis_update_marker_rgba',
+    'cassie_vis_add_marker', 'cassie_vis_update_marker_pos', 'cassie_vis_update_marker_size', 'cassie_vis_update_marker_rgba', 'cassie_vis_update_marker_orient',
     'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass',
     'cassie_sim_get_hfield_nrow', 'cassie_sim_get_hfield_ncol', 'cassie_sim_get_nhfielddata',
     'cassie_sim_get_hfield_size', 'cassie_sim_set_hfield_size', 'cassie_sim_hfielddata', 'cassie_sim_set_hfielddata',
     'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass', 'cassie_vis_set_cam', 'cassie_sim_nv',
     'cassie_sim_nbody', 'cassie_sim_nq', 'cassie_sim_ngeom']
+"""
 
 # 'cassie_sim_set_cassiestate'

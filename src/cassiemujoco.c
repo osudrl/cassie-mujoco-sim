@@ -263,6 +263,8 @@ struct vis_marker_info {
     double g;
     double b;
     double a;
+
+    double so3[9];
 };
 
 struct cassie_vis {
@@ -1660,8 +1662,9 @@ void cassie_vis_full_reset(cassie_vis_t *v)
 }
 
 // add markers to visualization
-void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], double rgba[4])
+void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], double rgba[4], double so3[9])
 {
+    int i;
     if (v->marker_num + 1 < MAX_VIS_MARKERS)
     {
         //struct vis_marker_info new_marker;
@@ -1676,6 +1679,10 @@ void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], doubl
         v->marker_infos[v->marker_num].g = rgba[1];
         v->marker_infos[v->marker_num].b = rgba[2];
         v->marker_infos[v->marker_num].a = rgba[3];
+        for (i = 0; i < 9; i++)
+        {
+            v->marker_infos[v->marker_num].so3[i] = so3[i];
+        }
         printf("marker with id: %d\n", v->marker_infos[v->marker_num].id);
         v->marker_num++;
     }
@@ -1735,6 +1742,22 @@ void cassie_vis_update_marker_rgba(cassie_vis_t* v, int id, double rgba[4])
         v->marker_infos[id].b = rgba[2];
         v->marker_infos[id].a = rgba[3];
         return;
+    }
+}
+
+// update existing marker orientation
+void cassie_vis_update_marker_orient(cassie_vis_t* v, int id, double so3[9])
+{
+    if (id > (int)v->marker_num)
+    {
+        printf("%lu > %d invalid marker id\n", v->marker_num, id);
+        return;
+    }
+    else
+    {
+        v->marker_infos[id].so3[0] = so3[0]; v->marker_infos[id].so3[1] = so3[1]; v->marker_infos[id].so3[2] = so3[2];
+        v->marker_infos[id].so3[3] = so3[3]; v->marker_infos[id].so3[4] = so3[4]; v->marker_infos[id].so3[5] = so3[5];
+        v->marker_infos[id].so3[6] = so3[6]; v->marker_infos[id].so3[7] = so3[7]; v->marker_infos[id].so3[8] = so3[8];
     }
 }
 
@@ -2411,9 +2434,9 @@ void v_setMarkerGeom(mjvGeom* geom, struct vis_marker_info info)
     geom->pos[0] = info.pos_x;
     geom->pos[1] = info.pos_y;
     geom->pos[2] = info.pos_z;
-    geom->mat[0] = 1; geom->mat[1] = 0; geom->mat[2] = 0;
-    geom->mat[3] = 0; geom->mat[4] = 1; geom->mat[5] = 0;
-    geom->mat[6] = 0; geom->mat[7] = 0; geom->mat[8] = 1;
+    geom->mat[0] = info.so3[0]; geom->mat[1] = info.so3[1]; geom->mat[2] = info.so3[2];
+    geom->mat[3] = info.so3[3]; geom->mat[4] = info.so3[4]; geom->mat[5] = info.so3[5];
+    geom->mat[6] = info.so3[6]; geom->mat[7] = info.so3[7]; geom->mat[8] = info.so3[8];
     geom->type = mjGEOM_SPHERE;
 }
 
