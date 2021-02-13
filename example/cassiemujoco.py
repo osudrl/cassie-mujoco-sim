@@ -498,6 +498,12 @@ class CassieVis:
             so3_array[i] = so3[i]
         cassie_vis_add_marker(self.v, pos_array, size_array, rgba_array, so3_array)
 
+    def remove_marker(self, id_val):
+        cassie_vis_remove_marker(self.v, id_val)
+
+    def clear_markers(self):
+        cassie_vis_clear_markers(self.v)
+
     def update_marker(self, id_val, pos, size, rgba, so3):
         pos_array = (ctypes.c_double * 3)()
         size_array = (ctypes.c_double * 3)()

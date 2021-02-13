@@ -1693,6 +1693,35 @@ void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], doubl
     } 
 }
 
+
+// remove markers from visualization
+void cassie_vis_remove_marker(cassie_vis_t* v, int id)
+{
+    int i,j;
+    for (i = 0; i < v->marker_num; i++)
+    {
+        if (v->marker_infos[i].id == id)
+        {
+            // found the marker to remove. slide array elements down.
+            for (j = i+1; j < v->marker_num; j++)
+            {
+                v->marker_infos[j-1] = v->marker_infos[j];
+            }
+            v->marker_num--;
+            printf("removed marker with id %d\n", id);
+            return;
+        }
+    }
+    printf("marker with id %d not found. Didn't remove anything!\n", id);
+    exit(1);
+}
+
+// remove markers from visualization
+void cassie_vis_clear_markers(cassie_vis_t* v)
+{
+    v->marker_num = 0;
+}
+
 // update existing marker position
 void cassie_vis_update_marker_pos(cassie_vis_t* v, int id, double pos[3])
 {
