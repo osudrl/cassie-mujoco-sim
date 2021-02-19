@@ -234,7 +234,7 @@ typedef struct joint_filter {
 #define NUM_JOINTS 6
 #define TORQUE_DELAY_CYCLES 6
 
-#define MAX_VIS_MARKERS 100
+#define MAX_VIS_MARKERS 500
 
 struct cassie_sim {
     mjModel *m;
