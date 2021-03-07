@@ -129,8 +129,21 @@ print(sim.nq)
 # # print(data)
 # sim.set_hfield_data(data.flatten())
 # hfield_data = sim.get_hfield_data()
+# sim = CassieSim("../model/cassie_hfield.xml")
+
+
+# print(sim.get_hfield_ncol())
+# print(sim.get_hfield_nrow())
+# print(sim.get_nhfielddata())
+# print(sim.get_hfield_size())
+# data = np.ones((10, 10))
+# # data = np.random.rand(10, 10)
+# data[:, 0] = 0
+# print(data)
+# sim.set_hfield_data(data.flatten())
+# hfield_data = sim.get_hfield_data()
 # print(hfield_data)
-vis = CassieVis(sim, "../model/cassie_mass.xml")
+vis = CassieVis(sim)
 
 
 # sim.set_hfield_size([100, 100, .15, .001])

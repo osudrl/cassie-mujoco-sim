@@ -89,11 +89,11 @@ int main(void)
             // }
             // printf("count: %i\n", count); 
             cassie_sim_step_pd(c, &y, &u);
-            count += 1;
+            // count += 1;
         }
         draw_state = cassie_vis_draw(v, c);
         
-    // }
+    }
 
     cassie_sim_free(c);
     // cassie_sim_free(c2);
