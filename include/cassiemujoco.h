@@ -34,6 +34,8 @@ typedef struct cassie_state cassie_state_t;
 extern "C" {
 #endif
 
+cassie_out_t cassie_sim_get_cassie_out(cassie_sim_t *c);
+
 // Pass a null-terminated string containing the path to the directory
 // containing cassie.xml, mjpro150/, mjkey.txt, etc. If NULL is
 // passed, the directory containing the current executable is used

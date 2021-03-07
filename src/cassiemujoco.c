@@ -899,19 +899,19 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
 
     if (reinit) {
         char error[1000] = "Could not load XML model";
-        mjModel *new_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
-        if (!new_model) {
+        initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
+        if (!initial_model) {
             fprintf(stderr, "Load model error: %s\n", error);
             return NULL;
         }
         int sens_objid[20] = {0, 1, 2, 3, 4, 9, 10, 14, 5, 6, 7, 8, 9, 20, 21, 25, 0, 0, 0, 0};
         for (int i = 0; i < 20; i++) {
-            new_model->sensor_objid[i] = sens_objid[i];
+            initial_model->sensor_objid[i] = sens_objid[i];
         }
         // Look up relevant IDs based on names
-        ID_NAME_LOOKUP(new_model, left_foot_body_id, mjOBJ_BODY, left-foot);
-        ID_NAME_LOOKUP(new_model, right_foot_body_id, mjOBJ_BODY, right-foot);
-        c->m =  mj_copyModel_fp(NULL, new_model);
+        ID_NAME_LOOKUP(initial_model, left_foot_body_id, mjOBJ_BODY, left-foot);
+        ID_NAME_LOOKUP(initial_model, right_foot_body_id, mjOBJ_BODY, right-foot);
+        c->m =  mj_copyModel_fp(NULL, initial_model);
     } else {
         // Initialize mjModel
         c->m = mj_copyModel_fp(NULL, initial_model);
@@ -955,6 +955,13 @@ void cassie_sim_copy(cassie_sim_t *dst, const cassie_sim_t *src)
     // Copy POD types
     CASSIE_COPY_POD(dst, src);
 
+    // Copy pointer types
+    mj_copyModel_fp(dst->m, src->m);
+    CASSIE_SIM_COPY_POINTER(dst, src);
+}
+
+void cassie_sim_copy_just_sim(cassie_sim_t *dst, const cassie_sim_t *src)
+{
     // Copy pointer types
     mj_copyModel_fp(dst->m, src->m);
     CASSIE_SIM_COPY_POINTER(dst, src);
@@ -1009,7 +1016,6 @@ void cassie_sim_step(cassie_sim_t *c, cassie_out_t *y, const cassie_user_in_t *u
 }
 
 
-int test = 0;
 void cassie_sim_step_pd(cassie_sim_t *c, state_out_t *y, const pd_in_t *u)
 {
     // Run PD controller system
@@ -1191,14 +1197,16 @@ void cassie_sim_set_geom_name_quat(cassie_sim_t *c, const char* name, double *qu
     mju_copy_fp(&c->m->geom_quat[4 * geom_id], quat, 4);
 }
 
-int *cassie_sim_params(cassie_sim_t *c)
+// Get import mujoco model size parameters for the inputted cassie sim stuct.
+// Takes in an int array that should be 6 long
+int *cassie_sim_params(cassie_sim_t *c, int* params) 
 {
-    int *params = malloc(sizeof(int)*4);
     params[0] = c->m->nq;
     params[1] = c->m->nv;
     params[2] = c->m->nu;
     params[3] = c->m->nsensordata;
-    return params;
+    params[4] = c->m->nbody;
+    params[5] = c->m->ngeom;
 }
 
 void *cassie_sim_mjmodel(cassie_sim_t *c)
@@ -1489,6 +1497,124 @@ void cassie_sim_set_hfielddata(cassie_sim_t *c, float* data) {
     }
 }
 
+
+void cassie_sim_copy_mjd(cassie_sim_t *dest, cassie_sim_t *src) {
+    mj_copyData_fp(dest->d, src->m, src->d);
+}
+
+void cassie_sim_copy_state_est(cassie_sim_t *dest, cassie_sim_t *src) {
+    state_output_copy(dest->estimator, src->estimator);
+    // memcpy(dest, src, sizeof(state_out_t));
+}
+
+cassie_out_t cassie_sim_get_cassie_out(cassie_sim_t *c) {
+    return c->cassie_out;
+}
+
+void cassie_sim_copy_cassie_out(cassie_sim_t *dest, cassie_out_t* y) {
+    memcpy(&(dest->cassie_out), y, sizeof(cassie_out_t));
+}
+
+void cassie_sim_run_state_est(cassie_sim_t *c, cassie_out_t* cassie_out, state_out_t *y) {
+    state_output_step(c->estimator, cassie_out, y);
+}
+
+void state_out_free(state_out_t* out) {
+    free(out);
+}
+
+state_out_t* cassie_sim_get_state_est_p(cassie_sim_t *c) {
+    return c->estimator;
+}
+
+double* cassie_sim_act_vel(cassie_sim_t *c) {
+    return c->d->actuator_velocity;
+}
+
+double* cassie_sim_sensordata(cassie_sim_t *c) {
+    return c->d->sensordata;
+}
+
+// Returns pointer to the array of joint filters (one for each 6 joints)
+joint_filter_t *cassie_sim_joint_filter(cassie_sim_t *c) {
+    return c->joint_filter;
+}
+
+// Gets joint filters for the inputted cassie_sim struct. Takes in 2 double arrays to put values in
+// (x and y), which should be 6*4 and 6*3 long respectively. 
+// (6 joints, for each joint x has 4 values y has 3)
+void cassie_sim_get_joint_filter(cassie_sim_t *c, double* x, double* y) {
+    for (int j=0; j<NUM_JOINTS; j++) {
+        for (int i=0; i<JOINT_FILTER_NB; i++) {
+            x[j*JOINT_FILTER_NB+i] = c->joint_filter[j].x[i];
+        }
+        for (int i=0; i<JOINT_FILTER_NA; i++) {
+            y[j*JOINT_FILTER_NA+i] = c->joint_filter[j].y[i];
+        }
+    }
+}
+
+// Sets joint filters for the inputted cassie_sim struct. Takes in 2 arrays of values (x and y), 
+// which should be 6*4 and 6*3 long respectively. 
+// (6 joints, for each joint x has 4 values y has 3)
+void cassie_sim_set_joint_filter(cassie_sim_t *c, double* x, double* y) {
+    // printf("in c\n");
+    for (int i=0; i<NUM_JOINTS; i++) {
+        for (int j=0; j<JOINT_FILTER_NB; j++) {
+            c->joint_filter[i].x[j] = x[i*JOINT_FILTER_NB + j];
+        }
+        for (int j=0; j<JOINT_FILTER_NA; j++) {
+            c->joint_filter[i].y[j] = y[i*JOINT_FILTER_NA + j];
+        }
+    }
+}
+
+drive_filter_t *cassie_sim_drive_filter(cassie_sim_t *c) {
+    return c->drive_filter;
+}
+
+// Gets drive filters for the inputted cassie_sim struct. Takes in a double array to put values in
+// (x), which should be 10*9 long.
+// (10 motor, for each motor have 9 values)
+void cassie_sim_get_drive_filter(cassie_sim_t *c, int* x) {
+    for (int i=0; i<NUM_DRIVES; i++) {
+        for (int j=0; j<DRIVE_FILTER_NB; j++) {
+            x[i*DRIVE_FILTER_NB + j] = c->drive_filter[i].x[j];
+        }
+    }
+}
+
+// Sets drive filters for the inputted cassie_sim struct. Takes in a double array of values (x), which should be 10*9 long.
+// (10 motor, for each motor have 9 values)
+void cassie_sim_set_drive_filter(cassie_sim_t *c, int* x) {
+    for (int i=0; i<NUM_DRIVES; i++) {
+        for (int j=0; j<DRIVE_FILTER_NB; j++) {
+            c->drive_filter[i].x[j] = x[i*DRIVE_FILTER_NB + j];
+        }
+    }
+}
+
+// Gets torque delay values for the inputted cassie_sim struct. Takes in a double array to put values in
+// (x), which should be 10*6 long.
+// (10 motor, for each motor have 6 values)
+void cassie_sim_torque_delay(cassie_sim_t *c, double* t) {
+    for (int i=0; i<NUM_DRIVES; i++) {
+        for (int j=0; j<TORQUE_DELAY_CYCLES; j++) {
+            t[i*TORQUE_DELAY_CYCLES + j] = c->torque_delay[i][j];
+        }
+    }
+}
+
+// Gets torque delay values for the inputted cassie_sim struct. Takes in a double array of values, which should be 10*6 long.
+// (10 motor, for each motor have 6 values)
+void cassie_sim_set_torque_delay(cassie_sim_t *c, double* t) {
+    for (int i=0; i<NUM_DRIVES; i++) {
+        for (int j=0; j<TORQUE_DELAY_CYCLES; j++) {
+            c->torque_delay[i][j] = t[i*TORQUE_DELAY_CYCLES + j];
+        }
+    }
+}
+
 void cassie_vis_full_reset(cassie_vis_t *v)
 {
     double qpos_init[35] = {0, 0, 1.01, 1, 0, 0, 0,
@@ -1708,8 +1834,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             v->cam.type = mjCAMERA_TRACKING;
             v->cam.trackbodyid = 1;
             v->cam.fixedcamid = -1;
-            mjv_moveCamera_fp(v->m, mjMOUSE_ZOOM, 0.0, -0.05*8, &v->scn, &v->cam);
-            mjv_moveCamera_fp(v->m, action, 0, -.15, &v->scn, &v->cam);
+            v->cam.distance = 3;
+            v->cam.azimuth = 90;
+            v->cam.elevation = -20;
         }
         // control keys
         if (mods == GLFW_MOD_CONTROL) {
@@ -1810,6 +1937,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                     -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
                     -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
                 double qvel_zero[32] = {0};
+                mj_resetData_fp(v->m, v->d);
                 mju_copy_fp(v->d->qpos, qpos_init, 35);
                 mju_copy_fp(v->d->qvel, qvel_zero, v->m->nv);
                 v->d->time = 0.0;

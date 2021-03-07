@@ -21,8 +21,9 @@ import numpy as np
 _dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize libcassiesim
-# cassie_mujoco_init(str.encode(_dir_path+"/cassie_hfield.xml"))
-cassie_mujoco_init(str.encode("../model/cassie_hfield.xml"))
+# cassie_mujoco_init(str.encode(_dir_path+"/cassie_yoke.xml"))
+cassie_mujoco_init(str.encode("../model/cassie_tray_box.xml"))
+# cassie_mujoco_init(str.encode("../model/cassiepole_x.xml"))
 
 
 # Interface classes
@@ -32,10 +33,12 @@ cassie_mujoco_init(str.encode("../model/cassie_hfield.xml"))
 class CassieSim:
     def __init__(self, modelfile, reinit=False):
         self.c = cassie_sim_init(modelfile.encode('utf-8'), reinit)
-        self.nv = 32
-        self.nbody = 26
-        self.nq = 35
-        self.ngeom = 35
+        params = (ctypes.c_int32 * 6)()
+        cassie_sim_params(self.c, params)
+        self.nv = params[1]
+        self.nbody = params[4]
+        self.nq = params[0]
+        self.ngeom = params[5]
 
     def step(self, u):
         y = cassie_out_t()
@@ -63,9 +66,17 @@ class CassieSim:
         qposp = cassie_sim_qpos(self.c)
         return qposp[:35]
 
+    def qpos_full(self):
+        qposp = cassie_sim_qpos(self.c)
+        return qposp[:self.nq]
+
     def qvel(self):
         qvelp = cassie_sim_qvel(self.c)
         return qvelp[:32]
+
+    def qvel_full(self):
+        qvelp = cassie_sim_qvel(self.c)
+        return qvelp[:self.nv]
 
     def qacc(self):
         qaccp = cassie_sim_qacc(self.c)
@@ -330,6 +341,42 @@ class CassieSim:
             size_array[i] = data[i]
         cassie_sim_set_hfield_size(self.c, size_array)
 
+    # Returns a pointer to an array of joint_filter_t objects. Can be accessed/indexed as a usual python array of
+    # joint filter objects
+    def get_joint_filter(self):
+        j_filters = cassie_sim_joint_filter(self.c)
+        return j_filters
+
+    # Set interal state of the joint filters. Takes in 2 arrays of values (x and y), which should be 6*4 and 6*3 long respectively. 
+    # (6 joints, for each joint x has 4 values y has 3)
+    def set_joint_filter(self, x, y):
+        x_arr = (ctypes.c_double * (6*4))(*x)
+        y_arr = (ctypes.c_double * (6*3))(*y)
+        cassie_sim_set_joint_filter(self.c, ctypes.cast(x_arr, ctypes.POINTER(ctypes.c_double)), ctypes.cast(y_arr, ctypes.POINTER(ctypes.c_double)))
+
+    # Returns a pointer to an array of drive_filter_t objects. Can be accessed/indexed as a usual python array of
+    # drive filter objects
+    def get_drive_filter(self):
+        d_filters = cassie_sim_drive_filter(self.c)
+        return d_filters
+
+    # Set interal state of the drive filters. Takes in an array of values (x), which should be 10*9 long.
+    # (10 motor, for each motor have 9 values)
+    def set_drive_filter(self, x):
+        x_arr = (ctypes.c_int * (10*9))(*x)
+        cassie_sim_set_drive_filter(self.c, ctypes.cast(x_arr, ctypes.POINTER(ctypes.c_int)))
+
+    # Get the current state of the torque delay array. Returns a 2d numpy array of size (10, 6), 
+    # number of motors by number of delay cycles
+    def get_torque_delay(self):
+        t_arr = (ctypes.c_double * 60)()
+        cassie_sim_torque_delay(self.c, t_arr)
+        return np.array(t_arr[:]).reshape((10, 6))
+
+    # Set the torque delay state. Takes in a 2d numpy array of size (10, 6), number of motors by number of delay cycles
+    def set_torque_delay(self, data):
+        set_t_arr = (ctypes.c_double * 60)(*data.flatten())
+        cassie_sim_set_torque_delay(self.c, ctypes.cast(set_t_arr, ctypes.POINTER(ctypes.c_double)))
 
     def __del__(self):
         cassie_sim_free(self.c)

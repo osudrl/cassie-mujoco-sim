@@ -340,6 +340,21 @@ class struct_c__SA_state_out_t(ctypes.Structure):
 class struct_c__SA_pd_in_t(ctypes.Structure):
     pass
 
+class struct_c__SA_joint_filter_t(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('x', ctypes.c_double * 4),
+    ('y', ctypes.c_double * 3),
+    ]
+joint_filter_t = struct_c__SA_joint_filter_t
+
+class struct_c__SA_drive_filter_t(ctypes.Structure):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('x', ctypes.c_double * 9),
+    ]
+drive_filter_t = struct_c__SA_drive_filter_t
+
 cassie_sim_step_pd = _libraries['./libcassiemujoco.so'].cassie_sim_step_pd
 cassie_sim_step_pd.restype = None
 cassie_sim_step_pd.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(struct_c__SA_state_out_t), POINTER_T(struct_c__SA_pd_in_t)]
@@ -544,6 +559,42 @@ cassie_sim_set_geom_name_quat.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c
 cassie_sim_set_const = _libraries['./libcassiemujoco.so'].cassie_sim_set_const
 cassie_sim_set_const.restype = None
 cassie_sim_set_const.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_params = _libraries['./libcassiemujoco.so'].cassie_sim_params
+cassie_sim_params.restype = None
+cassie_sim_params.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_int32)]
+
+cassie_sim_joint_filter = _libraries['./libcassiemujoco.so'].cassie_sim_joint_filter
+cassie_sim_joint_filter.restype = POINTER_T(joint_filter_t)
+cassie_sim_joint_filter.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_get_joint_filter = _libraries['./libcassiemujoco.so'].cassie_sim_get_joint_filter
+cassie_sim_get_joint_filter.restype = None
+cassie_sim_get_joint_filter.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double)]
+
+cassie_sim_set_joint_filter = _libraries['./libcassiemujoco.so'].cassie_sim_set_joint_filter
+cassie_sim_set_joint_filter.restype = None
+cassie_sim_set_joint_filter.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double), POINTER_T(ctypes.c_double)]
+
+cassie_sim_drive_filter = _libraries['./libcassiemujoco.so'].cassie_sim_drive_filter
+cassie_sim_drive_filter.restype = POINTER_T(drive_filter_t)
+cassie_sim_drive_filter.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_get_drive_filter = _libraries['./libcassiemujoco.so'].cassie_sim_drive_filter
+cassie_sim_get_drive_filter.restype = None
+cassie_sim_get_drive_filter.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double)]
+
+cassie_sim_set_drive_filter = _libraries['./libcassiemujoco.so'].cassie_sim_set_drive_filter2
+cassie_sim_set_drive_filter.restype = None
+cassie_sim_set_drive_filter.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double)]
+
+cassie_sim_torque_delay = _libraries['./libcassiemujoco.so'].cassie_sim_torque_delay
+cassie_sim_torque_delay.restype = None
+cassie_sim_torque_delay.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double)]
+
+cassie_sim_set_torque_delay = _libraries['./libcassiemujoco.so'].cassie_sim_set_torque_delay
+cassie_sim_set_torque_delay.restype = None
+cassie_sim_set_torque_delay.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double)]
 
 class struct_c__SA_pd_motor_in_t(ctypes.Structure):
     _pack_ = True # source:False
@@ -810,6 +861,9 @@ __all__ = \
     'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass',
     'cassie_sim_get_hfield_nrow', 'cassie_sim_get_hfield_ncol', 'cassie_sim_get_nhfielddata',
     'cassie_sim_get_hfield_size', 'cassie_sim_set_hfield_size', 'cassie_sim_hfielddata', 'cassie_sim_set_hfielddata',
-    'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass', 'cassie_vis_set_cam']
+    'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass', 'cassie_vis_set_cam', 
+    'cassie_sim_joint_filter', 'cassie_sim_drive_filter', 'cassie_sim_set_joint_filter', 'cassie_sim_set_drive_filter',
+    'cassie_sim_get_joint_filter',  'cassie_sim_get_drive_filter', 
+    'cassie_sim_torque_delay', 'cassie_sim_set_torque_delay', 'drive_filter_t', 'joint_filter_t',
+    'cassie_sim_params']
 
-# 'cassie_sim_set_cassiestate'
