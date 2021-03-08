@@ -80,6 +80,8 @@ mjvFigure figsensor;
     X(mj_step)                                  \
     X(mj_contactForce)                          \
     X(mj_name2id)                               \
+    X(mj_id2name)                               \
+    X(mj_fullM)                                 \
     X(mju_copy)                                 \
     X(mju_zero)                                 \
     X(mju_rotVecMatT)                           \
@@ -235,6 +237,8 @@ typedef struct joint_filter {
 #define NUM_JOINTS 6
 #define TORQUE_DELAY_CYCLES 6
 
+#define MAX_VIS_MARKERS 500
+
 struct cassie_sim {
     mjModel *m;
     mjData *d;
@@ -245,6 +249,25 @@ struct cassie_sim {
     drive_filter_t drive_filter[NUM_DRIVES];
     joint_filter_t joint_filter[NUM_JOINTS];
     double torque_delay[NUM_DRIVES][TORQUE_DELAY_CYCLES];
+};
+
+struct vis_marker_info {
+    int id;
+
+    double pos_x;
+    double pos_y;
+    double pos_z;
+
+    double size_x;
+    double size_y;
+    double size_z;
+
+    double r;
+    double g;
+    double b;
+    double a;
+
+    double so3[9];
 };
 
 struct cassie_vis {
@@ -277,6 +300,10 @@ struct cassie_vis {
     int perturb_body;   // Body to apply perturb force to in vis_draw
     double perturb_force[6];    // Perturb force to apply
     
+    // Markers
+    size_t marker_num;
+    struct vis_marker_info marker_infos[MAX_VIS_MARKERS];  
+
     // GLFW  handle
     GLFWwindow *window;
 
@@ -458,7 +485,7 @@ static bool load_glfw_library(const char *basedir)
     snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/" GLFWLIBNAME, basedir);
     glfw_handle = LOADLIB(buf);
     if (!glfw_handle) {
-        fprintf(stderr, "Failed to load %s\n", buf);
+        //fprintf(stderr, "Failed to load %s\n", buf);
         return false;
     }
 
@@ -728,6 +755,10 @@ static void cassie_sensor_data(cassie_sim_t *c)
                 &c->d->sensordata[26], 3);
 }
 
+void cassie_sim_read_rangefinder(cassie_sim_t *c, double ranges[6]){
+    mju_copy_fp(ranges, &c->d->sensordata[29], 6);
+}
+
 
 static void cassie_motor_data(cassie_sim_t *c, const cassie_in_t *cassie_in)
 {
@@ -809,7 +840,7 @@ bool cassie_mujoco_init(const char *file_input)
         char error[1000] = "Could not load XML model";
         initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
         if (!initial_model) {
-            fprintf(stderr, "Load model error: %s\n", error);
+            //fprintf(stderr, "Load model error: %s\n", error);
             return false;
         }
         int sens_objid[20] = {0, 1, 2, 3, 4, 9, 10, 14, 5, 6, 7, 8, 9, 20, 21, 25, 0, 0, 0, 0};
@@ -876,7 +907,7 @@ bool cassie_reload_xml(const char* modelfile) {
     char error[1000] = "Could not load XML model";
     initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
     if (!initial_model) {
-        fprintf(stderr, "Load model error: %s\n", error);
+        //fprintf(stderr, "Load model error: %s\n", error);
         return false;
     }
     int sens_objid[20] = {0, 1, 2, 3, 4, 9, 10, 14, 5, 6, 7, 8, 9, 20, 21, 25, 0, 0, 0, 0};
@@ -888,6 +919,31 @@ bool cassie_reload_xml(const char* modelfile) {
     ID_NAME_LOOKUP(initial_model, right_foot_body_id, mjOBJ_BODY, right-foot);
     return true;
 }
+
+void cassie_sim_set_const(cassie_sim_t *c)
+{
+    mj_setConst_fp(c->m, c->d);
+    double qpos_init[35] =
+        {0, 0, 1.01, 1, 0, 0, 0,
+        0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
+        -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
+        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
+    double qvel_zero[c->m->nv];
+    double qacc_zero[c->m->nv];
+    for(int i = 0; i < c->m->nv; i++) {
+      qvel_zero[i] = 0.0f;
+      qacc_zero[i] = 0.0f;
+    }
+
+    mju_copy_fp(c->d->qpos, qpos_init, 35);
+    mju_copy_fp(c->d->qvel, qvel_zero, c->m->nv);
+    mju_copy_fp(c->d->qacc, qacc_zero, c->m->nv);
+
+    c->d->time = 0.0;
+    mj_forward_fp(c->m, c->d);
+}
+
 
 cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
 {
@@ -929,6 +985,7 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
     CASSIE_SIM_ALLOC_POINTER(c);
 
     // Set initial joint configuration
+#if 1
     double qpos_init[] =
         { 0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
          -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
@@ -936,12 +993,31 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
          -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
     mju_copy_fp(&c->d->qpos[7], qpos_init, 28);
     mj_forward_fp(c->m, c->d);
+#else
+    cassie_sim_set_const(c);
+#endif
 
     // Intialize systems
     cassie_core_sim_setup(c->core);
     state_output_setup(c->estimator);
     pd_input_setup(c->pd);
     return c;
+}
+
+int cassie_sim_nv(const cassie_sim_t *c){
+  return c->m->nv;
+}
+
+int cassie_sim_nbody(const cassie_sim_t *c){
+  return c->m->nbody;
+}
+
+int cassie_sim_nq(const cassie_sim_t *c){
+  return c->m->nq;
+}
+
+int cassie_sim_ngeom(const cassie_sim_t *c){
+  return c->m->ngeom;
 }
 
 
@@ -1082,6 +1158,12 @@ double *cassie_sim_ctrl(cassie_sim_t *c)
     return c->d->ctrl;
 }
 
+double* cassie_sim_xpos(cassie_sim_t *c, const char* name)
+{
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    return &(c->d->xpos[3*body_id]);
+}
+
 double* cassie_sim_xquat(cassie_sim_t *c, const char* name)
 {
     int body_id = mj_name2id_fp(c->m, mjOBJ_BODY, name);
@@ -1149,33 +1231,22 @@ void cassie_sim_set_geom_friction(cassie_sim_t *c, double *fric)
     }
 }
 
+
 void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double *fric)
 {
     int geom_id = mj_name2id_fp(initial_model, mjOBJ_GEOM, name);
     mju_copy_fp(&c->m->geom_friction[geom_id], fric, 3);
 }
 
-void cassie_sim_set_const(cassie_sim_t *c)
-{
-    mj_setConst_fp(c->m, c->d);
-    double qpos_init[35] =
-        {0, 0, 1.01, 1, 0, 0, 0,
-        0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
-        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
-        -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
-        -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
-    double qvel_zero[32] = {0};
-
-    mju_copy_fp(c->d->qpos, qpos_init, 35);
-    mju_copy_fp(c->d->qvel, qvel_zero, c->m->nv);
-
-    c->d->time = 0.0;
-    mj_forward_fp(c->m, c->d);
-}
-
 float *cassie_sim_geom_rgba(cassie_sim_t *c)
 {
     return c->m->geom_rgba;
+}
+
+float *cassie_sim_geom_name_rgba(cassie_sim_t *c, const char* name)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    return &c->m->geom_rgba[4 * geom_id];
 }
 
 void cassie_sim_set_geom_rgba(cassie_sim_t *c, float *rgba)
@@ -1186,9 +1257,24 @@ void cassie_sim_set_geom_rgba(cassie_sim_t *c, float *rgba)
     }
 }    
 
+void cassie_sim_set_geom_name_rgba(cassie_sim_t *c, const char* name, float *rgba)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    c->m->geom_rgba[4 * geom_id + 0] = rgba[0];
+    c->m->geom_rgba[4 * geom_id + 1] = rgba[1];
+    c->m->geom_rgba[4 * geom_id + 2] = rgba[2];
+    c->m->geom_rgba[4 * geom_id + 3] = rgba[3];
+}
+
 double *cassie_sim_geom_quat(cassie_sim_t *c)
 {
     return c->m->geom_quat;
+}
+
+double *cassie_sim_geom_name_quat(cassie_sim_t *c, const char* name)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    return &c->m->geom_quat[4 * geom_id];
 }
 
 void cassie_sim_set_geom_quat(cassie_sim_t *c, double *quat)
@@ -1205,9 +1291,60 @@ void cassie_sim_set_geom_name_quat(cassie_sim_t *c, const char* name, double *qu
     mju_copy_fp(&c->m->geom_quat[4 * geom_id], quat, 4);
 }
 
+
+double *cassie_sim_geom_pos(cassie_sim_t *c)
+{
+    return c->m->geom_pos;
+}
+
+double *cassie_sim_geom_name_pos(cassie_sim_t *c, const char* name)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    return &c->m->geom_pos[3 * geom_id];
+}
+
+void cassie_sim_set_geom_pos(cassie_sim_t *c, double *pos)
+{
+    for (int i = 0; i < c->m->ngeom * 3; i++)
+    {
+        c->m->geom_pos[i] = pos[i];
+    }
+}
+
+void cassie_sim_set_geom_name_pos(cassie_sim_t *c, const char* name, double *pos)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    mju_copy_fp(&c->m->geom_pos[3 * geom_id], pos, 3);
+}
+
+double *cassie_sim_geom_size(cassie_sim_t *c)
+{
+    return c->m->geom_size;
+}
+
+double *cassie_sim_geom_name_size(cassie_sim_t *c, const char* name)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    return &c->m->geom_size[3 * geom_id];
+}
+
+void cassie_sim_set_geom_size(cassie_sim_t *c, double *size)
+{
+    for (int i = 0; i < c->m->ngeom * 3; i++)
+    {
+        c->m->geom_size[i] = size[i];
+    }
+}
+
+void cassie_sim_set_geom_name_size(cassie_sim_t *c, const char* name, double *size)
+{
+    int geom_id = mj_name2id_fp(c->m, mjOBJ_GEOM, name);
+    mju_copy_fp(&c->m->geom_size[3 * geom_id], size, 3);
+}
+
 // Get import mujoco model size parameters for the inputted cassie sim stuct.
 // Takes in an int array that should be 6 long
-int *cassie_sim_params(cassie_sim_t *c, int* params) 
+int *cassie_sim_params(cassie_sim_t *c, int* params)
 {
     params[0] = c->m->nq;
     params[1] = c->m->nv;
@@ -1221,7 +1358,6 @@ void *cassie_sim_mjmodel(cassie_sim_t *c)
 {
     return c->m;
 }
-
 
 void *cassie_sim_mjdata(cassie_sim_t *c)
 {
@@ -1505,6 +1641,11 @@ void cassie_sim_set_hfielddata(cassie_sim_t *c, float* data) {
     }
 }
 
+void cassie_vis_set_hfielddata(cassie_sim_t *v, float* data) {
+    for (int i = 0; i < v->m->nhfielddata; i++) {
+        v->m->hfield_data[i] = data[i];
+    }
+}
 
 void cassie_sim_copy_mjd(cassie_sim_t *dest, cassie_sim_t *src) {
     mj_copyData_fp(dest->d, src->m, src->d);
@@ -1625,6 +1766,14 @@ void cassie_sim_set_torque_delay(cassie_sim_t *c, double* t) {
 
 void cassie_vis_full_reset(cassie_vis_t *v)
 {
+    mjv_freeScene_fp(&v->scn);
+    mjr_freeContext_fp(&v->con);
+
+    mjr_defaultContext_fp(&v->con);
+    mjv_defaultScene_fp(&v->scn);
+    mjv_makeScene_fp(v->m, &v->scn, 1000);
+    mjr_makeContext_fp(v->m, &v->con, fontscale);
+#if 0
     double qpos_init[35] = {0, 0, 1.01, 1, 0, 0, 0,
         0.0045, 0, 0.4973, 0.9785, -0.0164, 0.01787, -0.2049,
         -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
@@ -1642,6 +1791,136 @@ void cassie_vis_full_reset(cassie_vis_t *v)
     mju_zero_fp(v->d->qfrc_applied, v->m->nv);
     mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     mju_zero_fp(v->d->qacc, v->m->nv);
+#endif
+}
+
+// add markers to visualization
+void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], double rgba[4], double so3[9])
+{
+    int i;
+    if (v->marker_num + 1 < MAX_VIS_MARKERS)
+    {
+        //struct vis_marker_info new_marker;
+        v->marker_infos[v->marker_num].id = v->marker_num;
+        v->marker_infos[v->marker_num].pos_x = pos[0];
+        v->marker_infos[v->marker_num].pos_y = pos[1];
+        v->marker_infos[v->marker_num].pos_z = pos[2];
+        v->marker_infos[v->marker_num].size_x = size[0];
+        v->marker_infos[v->marker_num].size_y = size[1];
+        v->marker_infos[v->marker_num].size_z = size[2];
+        v->marker_infos[v->marker_num].r = rgba[0];
+        v->marker_infos[v->marker_num].g = rgba[1];
+        v->marker_infos[v->marker_num].b = rgba[2];
+        v->marker_infos[v->marker_num].a = rgba[3];
+        for (i = 0; i < 9; i++)
+        {
+            v->marker_infos[v->marker_num].so3[i] = so3[i];
+        }
+        printf("marker with id: %d\n", v->marker_infos[v->marker_num].id);
+        v->marker_num++;
+    }
+    else
+    {
+        printf("max vis markers reached!");
+        exit(1);
+    } 
+}
+
+
+// remove markers from visualization
+void cassie_vis_remove_marker(cassie_vis_t* v, int id)
+{
+    int i,j;
+    for (i = 0; i < v->marker_num; i++)
+    {
+        if (v->marker_infos[i].id == id)
+        {
+            // found the marker to remove. slide array elements down.
+            for (j = i+1; j < v->marker_num; j++)
+            {
+                v->marker_infos[j-1] = v->marker_infos[j];
+            }
+            v->marker_num--;
+            printf("removed marker with id %d\n", id);
+            return;
+        }
+    }
+    printf("marker with id %d not found. Didn't remove anything!\n", id);
+    exit(1);
+}
+
+// remove markers from visualization
+void cassie_vis_clear_markers(cassie_vis_t* v)
+{
+    v->marker_num = 0;
+}
+
+// update existing marker position
+void cassie_vis_update_marker_pos(cassie_vis_t* v, int id, double pos[3])
+{
+    if (id > (int)v->marker_num)
+    {
+        printf("%lu > %d invalid marker id\n", v->marker_num, id);
+        return;
+    }
+    else
+    {
+        v->marker_infos[id].pos_x = pos[0];
+        v->marker_infos[id].pos_y = pos[1];
+        v->marker_infos[id].pos_z = pos[2];
+        return;
+    }
+}
+
+// update existing marker size
+void cassie_vis_update_marker_size(cassie_vis_t* v, int id, double size[3])
+{
+    if (id > (int)v->marker_num)
+    {
+        printf("%lu > %d invalid marker id\n", v->marker_num, id);
+        return;
+    }
+    else
+    {
+        v->marker_infos[id].size_x = size[0];
+        v->marker_infos[id].size_y = size[1];
+        v->marker_infos[id].size_z = size[2];
+        return;
+    }
+}
+
+// update existing marker color
+void cassie_vis_update_marker_rgba(cassie_vis_t* v, int id, double rgba[4])
+{
+    if (id > (int)v->marker_num)
+    {
+        printf("%lu > %d invalid marker id\n", v->marker_num, id);
+        return;
+    }
+    else
+    {
+        v->marker_infos[id].r = rgba[0];
+        v->marker_infos[id].g = rgba[1];
+        v->marker_infos[id].b = rgba[2];
+        v->marker_infos[id].a = rgba[3];
+        return;
+    }
+}
+
+// update existing marker orientation
+void cassie_vis_update_marker_orient(cassie_vis_t* v, int id, double so3[9])
+{
+    if (id > (int)v->marker_num)
+    {
+        printf("%lu > %d invalid marker id\n", v->marker_num, id);
+        return;
+    }
+    else
+    {
+        v->marker_infos[id].so3[0] = so3[0]; v->marker_infos[id].so3[1] = so3[1]; v->marker_infos[id].so3[2] = so3[2];
+        v->marker_infos[id].so3[3] = so3[3]; v->marker_infos[id].so3[4] = so3[4]; v->marker_infos[id].so3[5] = so3[5];
+        v->marker_infos[id].so3[6] = so3[6]; v->marker_infos[id].so3[7] = so3[7]; v->marker_infos[id].so3[8] = so3[8];
+    }
 }
 
 void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
@@ -1842,7 +2121,8 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
             // switch to tracking camera
             if (selmode == 3 && selbody >= 0) {
                 v->cam.type = mjCAMERA_TRACKING;
-                v->cam.trackbodyid = selbody;
+                //v->cam.trackbodyid = selbody;
+                v->cam.trackbodyid = 0;
                 v->cam.fixedcamid = -1;
             }
         } else { // set body selection
@@ -2281,6 +2561,7 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     v->lastframenum = 0;
     v->m = c->m;
     v->d = c->d;
+    v->marker_num = 0;
     v->perturb_body = 1;
     memset(v->perturb_force, 0.0, 6*sizeof(double));
 
@@ -2351,9 +2632,58 @@ void cassie_vis_free(cassie_vis_t *v)
     free(v);
 }
 
+// default marker geom
+void v_setMarkerGeom(mjvGeom* geom, struct vis_marker_info info)
+{
+    geom->dataid = -1;
+    geom->objtype = mjOBJ_UNKNOWN;
+    geom->objid = -1;
+    geom->category = mjCAT_DECOR;
+    geom->texid = -1;
+    geom->texuniform = 0;
+    geom->texrepeat[0] = 1;
+    geom->texrepeat[1] = 1;
+    geom->emission = 0;
+    geom->specular = 0.5;
+    geom->shininess = 0.5;
+    geom->reflectance = 0;
+    geom->label[0] = 0;
+    geom->size[0] = info.size_x;
+    geom->size[1] = info.size_y;
+    geom->size[2] = info.size_z;
+    geom->rgba[0] = info.r;
+    geom->rgba[1] = info.g;
+    geom->rgba[2] = info.b;
+    geom->rgba[3] = info.a;
+    geom->pos[0] = info.pos_x;
+    geom->pos[1] = info.pos_y;
+    geom->pos[2] = info.pos_z;
+    geom->mat[0] = info.so3[0]; geom->mat[1] = info.so3[1]; geom->mat[2] = info.so3[2];
+    geom->mat[3] = info.so3[3]; geom->mat[4] = info.so3[4]; geom->mat[5] = info.so3[5];
+    geom->mat[6] = info.so3[6]; geom->mat[7] = info.so3[7]; geom->mat[8] = info.so3[8];
+    geom->type = mjGEOM_SPHERE;
+}
+
+void add_vis_markers(cassie_vis_t* v)
+{
+    for (unsigned long i = 0; i < v->marker_num; i++)
+    {
+        if (v->scn.ngeom + v->marker_num < (unsigned long)v->scn.maxgeom)
+        {
+            mjvGeom* g = v->scn.geoms + v->scn.ngeom++;
+            v_setMarkerGeom(g, v->marker_infos[i]);
+        }
+        else
+        {
+            printf("vis scn.maxgeom reached: %d + %lu < %lu\n", v->scn.ngeom, v->marker_num, (unsigned long)v->scn.maxgeom);
+            exit(1);
+        }
+    }
+}
 
 bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
 {
+
     (void)c;
     if (!glfw_initialized)
         return false;
@@ -2391,7 +2721,13 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     mjrRect smallrect = viewport;
     // Render scene
     mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
+
+    // Add markers (custom geoms) at end of populated geom list
+    add_vis_markers(v);
+
+    // render
     mjr_render_fp(viewport, &v->scn, &v->con);
+
     if (v->showsensor) {
         if (!v->paused) {
             sensorupdate(v);
@@ -2432,6 +2768,7 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
                     str_paused,
                     buf, &v->con);
     }
+
     // Show updated scene
     glfwSwapBuffers_fp(v->window);
     glfwPollEvents_fp();

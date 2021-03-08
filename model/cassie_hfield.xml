@@ -66,7 +66,7 @@
     <mesh name='right-foot-crank'   scale='1 1 -1' file='foot-crank.stl'/>
     <mesh name='right-plantar-rod'  scale='1 1 -1' file='plantar-rod.stl'/>
     <mesh name='right-foot'         scale='1 1 -1' file='foot.stl'/>
-    <hfield name='hf1' nrow='10' ncol='10' size="10 10 0.15 0.0001"/>
+    <hfield name='hf1' nrow='250' ncol='250' size="50 50 0.15 0.0001"/>
   </asset>
 
   <worldbody>

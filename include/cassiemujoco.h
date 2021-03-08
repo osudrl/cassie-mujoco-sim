@@ -18,6 +18,8 @@
 #define CASSIEMUJOCO_H
 
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "cassie_out_t.h"
 #include "cassie_in_t.h"
 #include "cassie_user_in_t.h"
@@ -217,6 +219,8 @@ void cassie_sim_radio(cassie_sim_t *sim, double channels[16]);
 // out all other data used for computation (like velocities, accelerations, forces)
 void cassie_sim_full_reset(cassie_sim_t *sim);
 
+double* cassie_sim_xpos(cassie_sim_t *c, const char* name);
+
 double* cassie_sim_xquat(cassie_sim_t *c, const char* name);
 
 void cassie_sim_foot_orient(const cassie_sim_t *c, double corient[4]);
@@ -272,6 +276,21 @@ bool cassie_vis_paused(cassie_vis_t *vis);
 
 // Returns value of vis->slowmotion
 bool cassie_vis_slowmo(cassie_vis_t *vis);
+
+// add a spherical marker for visualization purposes into scene.
+void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], double rgba[4], double so3[9]);
+
+// remove a visualization marker
+void cassie_vis_remove_marker(cassie_vis_t* v, int id);
+
+// remove all visualization markers
+void cassie_vis_clear_markers(cassie_vis_t* v);
+
+// update existing marker
+void cassie_vis_update_marker_pos(cassie_vis_t* v, int id, double pos[3]);
+void cassie_vis_update_marker_size(cassie_vis_t* v, int id, double size[3]);
+void cassie_vis_update_marker_rgba(cassie_vis_t* v, int id, double rgba[4]);
+void cassie_vis_update_marker_orient(cassie_vis_t* v, int id, double so3[9]);
 
 // Apply inputted perturbation to any body in the vis's mjData
 void cassie_vis_apply_force(cassie_vis_t *vis, double xfrc[6], const char* name);
