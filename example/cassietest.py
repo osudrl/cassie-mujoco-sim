@@ -177,6 +177,7 @@ count = 0
 
 # Run until window is closed or vis is quit
 draw_state = vis.draw(sim)
+vis.start_video_recording("pyVideoTest", 1280, 720)
 feet_vel = np.zeros(12)
 rfoot_quat = np.zeros(4)
 rfoot_body_quat = np.zeros(4)
@@ -198,6 +199,7 @@ while draw_state:# and draw_state2:
         qpos = sim.qpos_full()
         qvel = sim.qvel_full()
         print("mass: ", qpos[2])
+        vis.record_frame()
         # print("pel z:", qpos[2])
         # print("left foot quat: ", sim.xquat("left-foot"))
         # qvel = sim.qvel()
@@ -223,4 +225,5 @@ while draw_state:# and draw_state2:
 
     # while time.monotonic() - t < 1/60:
     time.sleep(1/30)
+    # vis.close_video_recording()
     # t = time.monotonic()

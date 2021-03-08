@@ -581,6 +581,15 @@ class CassieVis:
     def set_cam(self, body_name, zoom, azimuth, elevation):
         cassie_vis_set_cam(self.v, body_name.encode(), zoom, azimuth, elevation)
 
+    def start_video_recording(self, fileName, video_width, video_height):
+        cassie_vis_init_recording(self.v, fileName.encode(), ctypes.c_int(video_width), ctypes.c_int(video_height))
+
+    def record_frame(self):
+        cassie_vis_record_frame(self.v)
+
+    def close_video_recording(self):
+        cassie_vis_close_recording(self.v)
+
     def __del__(self):
         cassie_vis_free(self.v)
 
