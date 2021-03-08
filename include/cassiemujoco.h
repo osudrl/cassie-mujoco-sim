@@ -280,6 +280,15 @@ void cassie_vis_apply_force(cassie_vis_t *vis, double xfrc[6], const char* name)
 // out all other data used for computation (like velocities, accelerations, forces)
 void cassie_vis_full_reset(cassie_vis_t *sim);
 
+// initialize a video renderer
+void cassie_vis_init_recording(cassie_vis_t *sim, const char* videofile, int width, int height);
+
+//Record Current frame
+void cassie_vis_record_frame(cassie_vis_t *sim);
+
+// close a video renderer
+void cassie_vis_close_recording(cassie_vis_t *sim);
+
 /*******************************************************************************
  * Cassie simulation state functions
  ******************************************************************************/

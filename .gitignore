@@ -6,3 +6,5 @@ mjpro150/
 *.dll
 .vscode
 *__pycache__*
+
+*.mp4

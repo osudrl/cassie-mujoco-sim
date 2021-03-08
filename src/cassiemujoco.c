@@ -40,7 +40,7 @@
 #include <unistd.h>
 #endif
 
-
+#define CASSIE_VIDEO_FRAMERATE "30"
 /*******************************************************************************
  * Global library state
  ******************************************************************************/
@@ -52,6 +52,7 @@ static int left_foot_body_id;
 static int right_foot_body_id;
 // Globals for visualization
 static int fontscale = mjFONTSCALE_200;
+static unsigned char *frame;
 mjvFigure figsensor;
 
 
@@ -104,7 +105,8 @@ mjvFigure figsensor;
     X(mjr_freeContext)                          \
     X(mjr_render)                               \
     X(mjr_overlay)                              \
-    X(mjr_figure)
+    X(mjr_figure)                               \
+    X(mjr_readPixels)
 
 // Loaded GLFW functions
 #define GLFW_FUNCTION_LIST                      \
@@ -133,7 +135,8 @@ mjvFigure figsensor;
     X(glfwRestoreWindow)                        \
     X(glfwMaximizeWindow)                       \
     X(glfwSetWindowShouldClose)                 \
-    X(glfwWindowShouldClose)
+    X(glfwWindowShouldClose)                    \
+    X(glfwSetWindowSize)
 
 // Dynamic object handles
 static void *mj_handle;
@@ -276,6 +279,11 @@ struct cassie_vis {
     
     // GLFW  handle
     GLFWwindow *window;
+
+    // File Recording Stuff
+    FILE *pipe_video_out;
+    int video_width;
+    int video_height;
 
     // MuJoCo stuff
 
@@ -1646,6 +1654,62 @@ void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
     }
 }
 
+void cassie_vis_init_recording(cassie_vis_t *sim, const char* videofile, int width, int height){
+    char ffmpeg_cmd[1000] = "ffmpeg -hide_banner -loglevel error -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s ";
+    char integer_string[32];
+    
+    sprintf(integer_string, "%d", width); // Convert and write widthxheight
+    strcat(ffmpeg_cmd, integer_string);
+    strcat(ffmpeg_cmd, "x");
+    sprintf(integer_string, "%d", height);
+    strcat(ffmpeg_cmd, integer_string);
+
+    strcat(ffmpeg_cmd, " -r "); //Frame Rate
+    strcat(ffmpeg_cmd, CASSIE_VIDEO_FRAMERATE); //Frame Rate
+
+    strcat(ffmpeg_cmd, " -i - -f mp4 -an -c:v libx264 -preset slow -crf 17 -vf \"vflip\" ");
+    strcat(ffmpeg_cmd, videofile);
+    if(strstr(videofile,".mp4") == NULL) // add a .mp4 if you forgot
+        strcat(ffmpeg_cmd,".mp4");
+
+    sim->video_width = width;
+    sim->video_height = height;
+    glfwSetWindowSize_fp(sim->window, width, height);
+    frame = (unsigned char*)malloc(3*width*height);
+
+    sim->pipe_video_out = popen(ffmpeg_cmd, "w"); 
+}
+
+void cassie_vis_record_frame(cassie_vis_t *sim){
+    if(!sim || !sim->window)
+        return;
+
+    mjrRect viewport = {0, 0, 0, 0};
+
+    glfwGetFramebufferSize_fp(sim->window, &viewport.width, &viewport.height);
+
+    // This checks if the window is resized and loops until it is released and corrected
+    if(viewport.width != sim->video_width || viewport.height != sim->video_height){
+        while(viewport.width != sim->video_width || viewport.height != sim->video_height){ 
+            glfwSetWindowSize_fp(sim->window, sim->video_width, sim->video_height);
+            glfwGetFramebufferSize_fp(sim->window, &viewport.width, &viewport.height);
+            usleep(10000);
+            if(!sim || !sim->window)
+                return;
+        }
+    }
+    else{ //Normal case where the right size so it can render to file
+        mjr_readPixels_fp(frame, NULL, viewport, &sim->con);
+        //Write frame to output pipe
+        fwrite(frame, 1, sim->video_width*sim->video_height*3, sim->pipe_video_out); 
+    }
+}
+
+void cassie_vis_close_recording(cassie_vis_t *sim){
+    fflush(sim->pipe_video_out);
+    pclose(sim->pipe_video_out);
+}
+
 void scroll(GLFWwindow* window, double xoffset, double yoffset)
 {
     (void)xoffset;
@@ -2267,6 +2331,10 @@ void cassie_vis_close(cassie_vis_t *v)
     // Close window
     glfwDestroyWindow_fp(v->window);
     v->window = NULL;
+
+    if( !v->pipe_video_out){
+        cassie_vis_close_recording(v);
+    }
 }
 
 
@@ -2298,6 +2366,10 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     if (glfwWindowShouldClose_fp(v->window)) {
         cassie_vis_close(v);
         return false;
+    }
+    // If we are rendering to file then force the window to be the right size
+    if( v->pipe_video_out != NULL){
+        glfwSetWindowSize_fp(v->window, v->video_width, v->video_height);
     }
     // clear old perturbations, apply new
     mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
