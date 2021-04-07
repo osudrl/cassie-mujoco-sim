@@ -2613,7 +2613,7 @@ void cassie_vis_close(cassie_vis_t *v)
     glfwDestroyWindow_fp(v->window);
     v->window = NULL;
 
-    if( !v->pipe_video_out){
+    if(v->pipe_video_out){
         cassie_vis_close_recording(v);
     }
 }
