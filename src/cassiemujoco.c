@@ -1985,8 +1985,11 @@ void cassie_vis_record_frame(cassie_vis_t *sim){
 }
 
 void cassie_vis_close_recording(cassie_vis_t *sim){
-    fflush(sim->pipe_video_out);
-    pclose(sim->pipe_video_out);
+    if (sim->pipe_video_out){
+        fflush(sim->pipe_video_out);
+        pclose(sim->pipe_video_out);
+        sim->pipe_video_out = NULL;
+    }
 }
 
 void scroll(GLFWwindow* window, double xoffset, double yoffset)
@@ -2280,10 +2283,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                     -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968,
                     -0.0045, 0, 0.4973, 0.9786, 0.00386, -0.01524, -0.2051,
                     -1.1997, 0, 1.4267, 0, -1.5244, 1.5244, -1.5968};
-                double qvel_zero[32] = {0};
                 mj_resetData_fp(v->m, v->d);
                 mju_copy_fp(v->d->qpos, qpos_init, 35);
-                mju_copy_fp(v->d->qvel, qvel_zero, v->m->nv);
                 v->d->time = 0.0;
                 mj_forward_fp(v->m, v->d);
             } break;
@@ -2612,8 +2613,7 @@ void cassie_vis_close(cassie_vis_t *v)
     // Close window
     glfwDestroyWindow_fp(v->window);
     v->window = NULL;
-
-    if( !v->pipe_video_out){
+    if( v->pipe_video_out){
         cassie_vis_close_recording(v);
     }
 }
