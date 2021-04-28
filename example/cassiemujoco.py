@@ -24,7 +24,7 @@ _dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize libcassiesim
 # cassie_mujoco_init(str.encode(_dir_path+"/cassie_yoke.xml"))
-default_model = "../model/cassie.xml"
+default_model = "../model/cassie_fixed.xml"
 cassie_mujoco_init(str.encode(default_model))
 # cassie_mujoco_init(str.encode("../model/cassiepole_x.xml"))
 
@@ -580,6 +580,15 @@ class CassieVis:
 
     def set_cam(self, body_name, zoom, azimuth, elevation):
         cassie_vis_set_cam(self.v, body_name.encode(), zoom, azimuth, elevation)
+
+    def init_recording(self, filename, width=1920, height=1080):
+        cassie_vis_init_recording(self.v, filename.encode(), ctypes.c_int(width), ctypes.c_int(height))
+
+    def record_frame(self):
+        cassie_vis_record_frame(self.v)
+
+    def close_recording(self):
+        cassie_vis_close_recording(self.v)
 
     def __del__(self):
         cassie_vis_free(self.v)
