@@ -41,9 +41,12 @@ def euler2quat(z=0, y=0, x=0):
     return result
 
 # Initialize cassie simulation
-sim = CassieSim("../model/cassie_mass.xml")
-sim.set_body_mass(10, name="load_mass")
+sim = CassieSim("../model/cassie.xml")
+# sim.set_body_mass(10, name="load_mass")
 print(sim.nq)
+# curr_qpos = sim.qpos()
+# curr_qpos[35] = 1
+# sim.set_qpos(curr_qpos)
 # sim2 = CassieSim("../model/cassie.xml")
 # print(ctypes.addressof(sim.c))
 # print(ctypes.addressof(sim2.c))
@@ -185,6 +188,7 @@ pel_vel = np.zeros(6)
 # sim.set_body_mass(5, name="right-foot")
 # vis.set_cam("cassie-pelvis", 3, 90, -20)
 # (90,0) size view
+vis.init_recording("./test_vid")
 while draw_state:# and draw_state2:
     if not vis.ispaused():
         # if 50 < count < 80:
@@ -195,9 +199,10 @@ while draw_state:# and draw_state2:
         for i in range(60):
             y = sim.step_pd(u)
         # sim.hold()
-        qpos = sim.qpos_full()
-        qvel = sim.qvel_full()
-        print("mass: ", qpos[2])
+        # qpos = np.array(sim.qpos_full())
+        # qvel = np.array(sim.qvel_full())
+        # print("mass: ", qpos[0:2] - qpos[35:37])
+        # print(qpos[35:38])
         # print("pel z:", qpos[2])
         # print("left foot quat: ", sim.xquat("left-foot"))
         # qvel = sim.qvel()
@@ -219,8 +224,11 @@ while draw_state:# and draw_state2:
         # count += 1
 
     draw_state = vis.draw(sim)
+    vis.record_frame()
     # draw_state2 = vis2.draw(sim2)
 
     # while time.monotonic() - t < 1/60:
     time.sleep(1/30)
     # t = time.monotonic()
+
+vis.close_recording()
