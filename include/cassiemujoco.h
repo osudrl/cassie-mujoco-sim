@@ -196,6 +196,10 @@ void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12]);
 // each foot (left then right) in order of 3D rotation and then 3D translation
 void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12]);
 
+void cassie_sim_cm_position(const cassie_sim_t *c, double cm_pos[3]);
+
+void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]);
+
 void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name);
 
 // Applies an external force to a specified body.

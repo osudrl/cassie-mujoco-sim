@@ -403,6 +403,14 @@ cassie_sim_foot_velocities = _libraries['./libcassiemujoco.so'].cassie_sim_foot_
 cassie_sim_foot_velocities.restype = None
 cassie_sim_foot_velocities.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 12]
 
+cassie_sim_cm_position = _libraries['./libcassiemujoco.so'].cassie_sim_cm_position
+cassie_sim_cm_position.restype = None
+cassie_sim_cm_position.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 3]
+
+cassie_sim_centroid_inertia = _libraries['./libcassiemujoco.so'].cassie_sim_centroid_inertia
+cassie_sim_centroid_inertia.restype = None
+cassie_sim_centroid_inertia.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 9]
+
 cassie_sim_foot_quat = _libraries['./libcassiemujoco.so'].cassie_sim_foot_orient
 cassie_sim_foot_quat.restype = None
 cassie_sim_foot_quat.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 4]
@@ -998,6 +1006,7 @@ __all__ = \
     'struct_c__SA_cassie_leg_in_t', 'struct_c__SA_state_joint_out_t',
     'process_packet_header', 'cassie_sim_release', 'cassie_sim_foot_forces', 
     'cassie_sim_foot_positions', 'cassie_sim_foot_velocities', 'struct_c__SA_state_foot_out_t',
+    'cassie_sim_cm_position','cassie_sim_centroid_inertia',
     'pd_input_t', 'pack_cassie_user_in_t', 'cassie_state_duplicate',
     'state_pelvis_out_t', 'struct_c__SA_state_terrain_out_t',
     'cassie_sim_free', 'cassie_sim_xpos', 'cassie_sim_xquat', 'ssize_t', 'state_output_copy',

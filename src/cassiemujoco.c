@@ -1422,6 +1422,58 @@ void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12])
 
 }
 
+void cassie_sim_cm_position(const cassie_sim_t *c, double cm_pos[3]){
+    mj_fwdPosition_fp(c->m, c->d);
+    for(int i = 0; i < 3; ++i){
+        cm_pos[i] = c->d->subtree_com[i];   // Just i because the pelvis is the first body 
+    }
+}
+
+void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]){
+    double storedQuat[4];
+    for(int i = 0; i < 4; ++i){
+        storedQuat[i] = c->d->qpos[i+3];
+        c->d->qpos[i+3] = 0;
+    }
+    c->d->qpos[4] = 1;
+
+    mj_fwdPosition_fp(c->m, c->d);
+    double fullMassMatrix[c->m->nv*c->m->nv];
+    mj_fullM_fp(c->m, fullMassMatrix, c->d->qM);
+
+    double I_p[3][3];
+    double I_c[3][3];
+    double m = fullMassMatrix[0];
+    double rcm [3];
+    cassie_sim_cm_position(c, rcm);
+    for(int i=0; i < 3; ++i){  //Offset from global loc to relative to pelvis
+        rcm[i] = rcm[i] - c->d->qpos[i];
+    }
+
+    for(int i=0; i < 3; ++i){
+        for(int j=0; j < 3; ++j){
+            I_p[i][j] = fullMassMatrix[(i+3)*c->m->nv + (j+3)];
+        }
+    }
+    
+    I_c[0][0] = I_p[0][0] - m*( pow(rcm[1],2) + pow(rcm[2],2));
+    I_c[1][1] = I_p[1][1] - m*( pow(rcm[2],2) + pow(rcm[0],2));
+    I_c[2][2] = I_p[2][2] - m*( pow(rcm[0],2) + pow(rcm[1],2));
+
+    I_c[0][1] = I_c[1][0] = I_p[1][0] - m*rcm[1]*rcm[0];
+    I_c[1][2] = I_c[2][1] = I_p[2][1] - m*rcm[2]*rcm[1];
+    I_c[2][0] = I_c[0][2] = I_p[2][0] - m*rcm[2]*rcm[0];
+
+    for(int i=0; i < 3; ++i){
+        for(int j=0; j < 3; ++j){
+            Icm[3*i + j] = I_c[i][j];
+        }
+    }
+
+    for(int i = 0; i < 4; ++i)
+        c->d->qpos[i+3] = storedQuat[i];
+}
+
 void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name)
 {
     // Calculate body CoM velocities

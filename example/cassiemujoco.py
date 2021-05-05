@@ -175,6 +175,23 @@ class CassieSim:
         for i in range(6):
             vel[i] = vel_array[i]
 
+    def center_of_mass_position(self):
+        pos_array = (ctypes.c_double * 3)()
+        cassie_sim_cm_position(self.c, pos_array)
+        pos = []
+        for i in range(3):
+            pos.append(pos_array[i])
+        return pos
+
+    def centroid_inertia(self):
+        I_array = (ctypes.c_double * 9)()
+        cassie_sim_centroid_inertia(self.c, I_array)
+        Icm = []
+        for i in range(9):
+            Icm.append(I_array[i])
+        return Icm
+
+
     def foot_quat(self, quat):
         quat_array = (ctypes.c_double * 4)()
         cassie_sim_foot_quat(self.c, quat_array)

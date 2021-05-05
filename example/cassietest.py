@@ -189,7 +189,11 @@ pel_vel = np.zeros(6)
 # sim.set_body_mass(5, name="right-foot")
 # vis.set_cam("cassie-pelvis", 3, 90, -20)
 # (90,0) size view
-vis.init_recording("./test_vid")
+# vis.start_video_recording("./test_vid", 1280, 720)
+
+y = sim.step_pd(u)
+
+
 while draw_state:# and draw_state2:
     if not vis.ispaused():
         # if 50 < count < 80:
@@ -230,7 +234,16 @@ while draw_state:# and draw_state2:
 
     # while time.monotonic() - t < 1/60:
     time.sleep(1/30)
+
+    if not vis.ispaused():
+        cm_pos = sim.center_of_mass_position()
+        cm_inerita = sim.centroid_inertia()
+
+        print("python")
+        print(cm_pos)
+        print(cm_inerita)
+
     # vis.close_video_recording()
     # t = time.monotonic()
 
-vis.close_recording()
+vis.close_video_recording()
