@@ -1504,7 +1504,7 @@ void cassie_sim_full_mass_matrix(const cassie_sim_t *c, double M[32][32]){
 }
 
 void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[16][16]){
-    const int IND[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}; //This is wrong bvut I don't have the right idxs now
+    const int IND[] = {0,1,2,3,4,5,6,7,8,12,18,19,20,21,25,31};
     mj_fwdPosition_fp(c->m, c->d);
     double fullMassMatrix[c->m->nv*c->m->nv];
     mj_fullM_fp(c->m, fullMassMatrix, c->d->qM);
