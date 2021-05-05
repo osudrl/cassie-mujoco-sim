@@ -237,11 +237,19 @@ while draw_state:# and draw_state2:
 
     if not vis.ispaused():
         cm_pos = sim.center_of_mass_position()
+        cm_vel = sim.center_of_mass_velocity()
         cm_inerita = sim.centroid_inertia()
+        ang_mom = sim.angular_momentum()
 
-        print("python")
+        print("python: cm pos")
         print(cm_pos)
+        print("python: cm vel")
+        print(cm_vel)
+        print("python: cm pos")
         print(cm_inerita)
+        print("python: angular momentum")
+        print(ang_mom)
+        print("")
 
     # vis.close_video_recording()
     # t = time.monotonic()

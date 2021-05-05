@@ -82,6 +82,7 @@ mjvFigure figsensor;
     X(mj_name2id)                               \
     X(mj_id2name)                               \
     X(mj_fullM)                                 \
+    X(mj_subtreeVel)                            \
     X(mju_copy)                                 \
     X(mju_zero)                                 \
     X(mju_rotVecMatT)                           \
@@ -1429,6 +1430,14 @@ void cassie_sim_cm_position(const cassie_sim_t *c, double cm_pos[3]){
     }
 }
 
+void cassie_sim_cm_velocity(const cassie_sim_t *c, double cm_pos[3]){
+    mj_fwdPosition_fp(c->m, c->d);
+    mj_subtreeVel_fp(c->m, c->d);
+    for(int i=0; i < 3; ++i){ 
+       cm_pos[i] = c->d->subtree_linvel[i]; // Just i because the pelvis is the first body 
+    }
+}
+
 void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]){
     double storedQuat[4];
     for(int i = 0; i < 4; ++i){
@@ -1472,6 +1481,39 @@ void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]){
 
     for(int i = 0; i < 4; ++i)
         c->d->qpos[i+3] = storedQuat[i];
+}
+
+void cassie_sim_angular_momentum(const cassie_sim_t *c, double Lcm[3]){
+    mj_fwdPosition_fp(c->m, c->d);
+    mj_subtreeVel_fp(c->m, c->d);
+    for(int i=0; i < 3; ++i){ 
+       Lcm[i] = c->d->subtree_angmom[i]; // Just i because the pelvis is the first body 
+    }
+}
+
+void cassie_sim_full_mass_matrix(const cassie_sim_t *c, double M[32][32]){
+    mj_fwdPosition_fp(c->m, c->d);
+    double fullMassMatrix[c->m->nv*c->m->nv];
+    mj_fullM_fp(c->m, fullMassMatrix, c->d->qM);
+
+    for(int i=0; i < 32; ++i){
+        for(int j=0; j < 32; ++j){
+            M[i][j] = fullMassMatrix[i*c->m->nv + j];
+        }
+    }
+}
+
+void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[16][16]){
+    const int IND[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}; //This is wrong bvut I don't have the right idxs now
+    mj_fwdPosition_fp(c->m, c->d);
+    double fullMassMatrix[c->m->nv*c->m->nv];
+    mj_fullM_fp(c->m, fullMassMatrix, c->d->qM);
+
+    for(int i=0; i < 16; ++i){
+        for(int j=0; j < 16; ++j){
+            M[i][j] = fullMassMatrix[IND[i]*c->m->nv + IND[j]];
+        }
+    }
 }
 
 void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name)

@@ -183,6 +183,14 @@ class CassieSim:
             pos.append(pos_array[i])
         return pos
 
+    def center_of_mass_velocity(self):
+        vel_array = (ctypes.c_double * 3)()
+        cassie_sim_cm_velocity(self.c, vel_array)
+        vel = []
+        for i in range(3):
+            vel.append(vel_array[i])
+        return vel
+
     def centroid_inertia(self):
         I_array = (ctypes.c_double * 9)()
         cassie_sim_centroid_inertia(self.c, I_array)
@@ -191,6 +199,32 @@ class CassieSim:
             Icm.append(I_array[i])
         return Icm
 
+    def angular_momentum(self):
+        L_array = (ctypes.c_double * 3)()
+        cassie_sim_angular_momentum(self.c, L_array)
+        L_return = []
+        for i in range(3):
+            L_return.append(L_array[i])
+        return L_return
+
+    def full_mass_matrix(self):
+        M_array = ((ctypes.c_double * 32) * 32)
+        cassie_sim_full_mass_matrix(self.c, M_array)
+        M_return = np.zeros((32,32))
+        for i in range(32):
+            for j in range(32):
+                M_return[i,j] = M_array[i][j]
+        return M_return
+
+    def minimal_mass_matrix(self):
+        M_array = ((ctypes.c_double * 16) * 16)
+        cassie_sim_minimal_mass_matrix(self.c, M_array)
+        M_return = np.zeros((16,16))
+        for i in range(16):
+            for j in range(16):
+                M_return[i,j] = M_array[i][j]
+        return M_return
+        
 
     def foot_quat(self, quat):
         quat_array = (ctypes.c_double * 4)()

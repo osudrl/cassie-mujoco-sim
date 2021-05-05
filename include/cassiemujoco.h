@@ -198,7 +198,15 @@ void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12]);
 
 void cassie_sim_cm_position(const cassie_sim_t *c, double cm_pos[3]);
 
+void cassie_sim_cm_velocity(const cassie_sim_t *c, double cm_pos[3]);
+
 void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]);
+
+void cassie_sim_angular_momentum(const cassie_sim_t *c, double Lcm[3]);
+
+void cassie_sim_full_mass_matrix(const cassie_sim_t *c, double M[32][32]);
+
+void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[16][16]);
 
 void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name);
 
