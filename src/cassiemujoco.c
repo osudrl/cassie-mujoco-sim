@@ -1440,6 +1440,7 @@ void cassie_sim_cm_velocity(const cassie_sim_t *c, double cm_pos[3]){
 
 void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]){
     double storedQuat[4];
+    // Store the original quaternion and set the quaternion to [1,0,0,0] 
     for(int i = 0; i < 4; ++i){
         storedQuat[i] = c->d->qpos[i+3];
         c->d->qpos[i+3] = 0;
@@ -1452,19 +1453,20 @@ void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]){
 
     double I_p[3][3];
     double I_c[3][3];
-    double m = fullMassMatrix[0];
+    double m = fullMassMatrix[0]; // Get the mass of the robot by looking at M[0][0]
     double rcm [3];
     cassie_sim_cm_position(c, rcm);
     for(int i=0; i < 3; ++i){  //Offset from global loc to relative to pelvis
         rcm[i] = rcm[i] - c->d->qpos[i];
     }
 
-    for(int i=0; i < 3; ++i){
+    for(int i=0; i < 3; ++i){ // Copy idx 3,4,5 block from full mass matrix
         for(int j=0; j < 3; ++j){
             I_p[i][j] = fullMassMatrix[(i+3)*c->m->nv + (j+3)];
         }
     }
     
+    // Apply 3D Parallel Axis law
     I_c[0][0] = I_p[0][0] - m*( pow(rcm[1],2) + pow(rcm[2],2));
     I_c[1][1] = I_p[1][1] - m*( pow(rcm[2],2) + pow(rcm[0],2));
     I_c[2][2] = I_p[2][2] - m*( pow(rcm[0],2) + pow(rcm[1],2));
@@ -1480,7 +1482,7 @@ void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]){
     }
 
     for(int i = 0; i < 4; ++i)
-        c->d->qpos[i+3] = storedQuat[i];
+        c->d->qpos[i+3] = storedQuat[i];  //Restore the original quaternion
 }
 
 void cassie_sim_angular_momentum(const cassie_sim_t *c, double Lcm[3]){
@@ -1491,27 +1493,27 @@ void cassie_sim_angular_momentum(const cassie_sim_t *c, double Lcm[3]){
     }
 }
 
-void cassie_sim_full_mass_matrix(const cassie_sim_t *c, double M[32][32]){
+void cassie_sim_full_mass_matrix(const cassie_sim_t *c, double M[1024]){
     mj_fwdPosition_fp(c->m, c->d);
     double fullMassMatrix[c->m->nv*c->m->nv];
     mj_fullM_fp(c->m, fullMassMatrix, c->d->qM);
 
     for(int i=0; i < 32; ++i){
         for(int j=0; j < 32; ++j){
-            M[i][j] = fullMassMatrix[i*c->m->nv + j];
+            M[i*32+j] = fullMassMatrix[i*c->m->nv + j]; // Use nv here in case there are more joints after the 32 normal cassie joints
         }
     }
 }
 
-void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[16][16]){
-    const int IND[] = {0,1,2,3,4,5,6,7,8,12,18,19,20,21,25,31};
+void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[256]){
+    const int IND[] = {0,1,2,3,4,5,6,7,8,12,18,19,20,21,25,31}; //This is floating base, then the 10 motors in the normal order
     mj_fwdPosition_fp(c->m, c->d);
     double fullMassMatrix[c->m->nv*c->m->nv];
     mj_fullM_fp(c->m, fullMassMatrix, c->d->qM);
 
     for(int i=0; i < 16; ++i){
         for(int j=0; j < 16; ++j){
-            M[i][j] = fullMassMatrix[IND[i]*c->m->nv + IND[j]];
+            M[i*16+j] = fullMassMatrix[IND[i]*c->m->nv + IND[j]];
         }
     }
 }

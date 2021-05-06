@@ -421,11 +421,11 @@ cassie_sim_angular_momentum.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_d
 
 cassie_sim_full_mass_matrix = _libraries['./libcassiemujoco.so'].cassie_sim_full_mass_matrix
 cassie_sim_full_mass_matrix.restype = None
-cassie_sim_full_mass_matrix.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double)]
+cassie_sim_full_mass_matrix.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * (32*32)]
 
 cassie_sim_minimal_mass_matrix = _libraries['./libcassiemujoco.so'].cassie_sim_minimal_mass_matrix
 cassie_sim_minimal_mass_matrix.restype = None
-cassie_sim_minimal_mass_matrix.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double)]
+cassie_sim_minimal_mass_matrix.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * (16*16)]
 
 cassie_sim_foot_quat = _libraries['./libcassiemujoco.so'].cassie_sim_foot_orient
 cassie_sim_foot_quat.restype = None
@@ -1024,6 +1024,7 @@ __all__ = \
     'cassie_sim_foot_positions', 'cassie_sim_foot_velocities', 'struct_c__SA_state_foot_out_t',
     'cassie_sim_cm_position','cassie_sim_centroid_inertia',
     'cassie_sim_cm_velocity','cassie_sim_angular_momentum',
+    'cassie_sim_full_mass_matrix','cassie_sim_minimal_mass_matrix',
     'pd_input_t', 'pack_cassie_user_in_t', 'cassie_state_duplicate',
     'state_pelvis_out_t', 'struct_c__SA_state_terrain_out_t',
     'cassie_sim_free', 'cassie_sim_xpos', 'cassie_sim_xquat', 'ssize_t', 'state_output_copy',

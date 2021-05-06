@@ -175,6 +175,7 @@ class CassieSim:
         for i in range(6):
             vel[i] = vel_array[i]
 
+    # Returns the center of mass position vector in world frame
     def center_of_mass_position(self):
         pos_array = (ctypes.c_double * 3)()
         cassie_sim_cm_position(self.c, pos_array)
@@ -183,6 +184,7 @@ class CassieSim:
             pos.append(pos_array[i])
         return pos
 
+    # Returns the center of mass velocity vector in world frame
     def center_of_mass_velocity(self):
         vel_array = (ctypes.c_double * 3)()
         cassie_sim_cm_velocity(self.c, vel_array)
@@ -191,6 +193,8 @@ class CassieSim:
             vel.append(vel_array[i])
         return vel
 
+    # Returns 3x3 rotational intertia matrix of the robot around its center
+    # of mass in the pelvis frame. [kg*m^2]
     def centroid_inertia(self):
         I_array = (ctypes.c_double * 9)()
         cassie_sim_centroid_inertia(self.c, I_array)
@@ -199,6 +203,7 @@ class CassieSim:
             Icm.append(I_array[i])
         return Icm
 
+    # Return the angular momentum of the robot in the world frame.
     def angular_momentum(self):
         L_array = (ctypes.c_double * 3)()
         cassie_sim_angular_momentum(self.c, L_array)
@@ -207,22 +212,25 @@ class CassieSim:
             L_return.append(L_array[i])
         return L_return
 
+    # Return the full 32x32 mass matrix of Cassie.
     def full_mass_matrix(self):
-        M_array = ((ctypes.c_double * 32) * 32)
+        M_array = (ctypes.c_double * (32 * 32))()
         cassie_sim_full_mass_matrix(self.c, M_array)
         M_return = np.zeros((32,32))
         for i in range(32):
             for j in range(32):
-                M_return[i,j] = M_array[i][j]
+                M_return[i,j] = M_array[i*32+j]
         return M_return
 
+    # Return the minimal actuated mass matrix of Cassie. Contains 6 for floating 
+    # base, 5 for left leg motors, 5 for right leg motors.
     def minimal_mass_matrix(self):
-        M_array = ((ctypes.c_double * 16) * 16)
+        M_array = (ctypes.c_double * (16 * 16))()
         cassie_sim_minimal_mass_matrix(self.c, M_array)
         M_return = np.zeros((16,16))
         for i in range(16):
             for j in range(16):
-                M_return[i,j] = M_array[i][j]
+                M_return[i,j] = M_array[i*16+j]
         return M_return
         
 

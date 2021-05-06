@@ -240,6 +240,8 @@ while draw_state:# and draw_state2:
         cm_vel = sim.center_of_mass_velocity()
         cm_inerita = sim.centroid_inertia()
         ang_mom = sim.angular_momentum()
+        M_full = sim.full_mass_matrix()
+        M_minimal = sim.minimal_mass_matrix()
 
         print("python: cm pos")
         print(cm_pos)
@@ -249,6 +251,10 @@ while draw_state:# and draw_state2:
         print(cm_inerita)
         print("python: angular momentum")
         print(ang_mom)
+        print("python: MFull")
+        print(M_full)
+        print("python: M_minimal")
+        print(M_minimal)
         print("")
 
     # vis.close_video_recording()

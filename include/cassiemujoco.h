@@ -196,17 +196,27 @@ void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12]);
 // each foot (left then right) in order of 3D rotation and then 3D translation
 void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12]);
 
+// Returns the CoM position of the entire robot in the world frame
+// (technically the subtree center of mass from the pelvis). [m]
 void cassie_sim_cm_position(const cassie_sim_t *c, double cm_pos[3]);
 
+// Returns the CoM velocity of the entire robot in the world frame
+// (technically the subtree center of mass from the pelvis). [m/s]
 void cassie_sim_cm_velocity(const cassie_sim_t *c, double cm_pos[3]);
 
+// Returns 3x3 rotational intertia matrix of the robot around its center
+// of mass in the pelvis frame. [kg*m^2]
 void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]);
 
+// Return the angular momentum of the robot in the world frame. 
 void cassie_sim_angular_momentum(const cassie_sim_t *c, double Lcm[3]);
 
-void cassie_sim_full_mass_matrix(const cassie_sim_t *c, double M[32][32]);
+// Return the full 32x32 mass matrix of Cassie.
+void cassie_sim_full_mass_matrix(const cassie_sim_t *c, double M[1024]);
 
-void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[16][16]);
+// Return the minimal actuated mass matrix of Cassie. Contains 6 for floating 
+// base, 5 for left leg motors, 5 for right leg motors.
+void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[256]);
 
 void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name);
 
