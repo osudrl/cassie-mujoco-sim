@@ -266,7 +266,7 @@ class CassieSim:
 
         G = np.linalg.lstsq(J_c_div[:, dep_idx], -J_c_div[:, ind_idx])
 
-        print(G[0].shape)
+        # print(G[0].shape)
         P = np.block([[np.eye(16)], [G[0]]])
         M_minimal = P.T  @ M_div @ P
 
@@ -277,10 +277,10 @@ class CassieSim:
         M_print = M_div[:, ind_idx]
         M_print = M_print[ind_idx, :]
 
-        print("M")
-        print(M_print)
-        print("M_minimal")
-        print(M_minimal)
+        # print("M")
+        # print(M_print)
+        # print("M_minimal")
+        # print(M_minimal)
 
 
         return M_minimal

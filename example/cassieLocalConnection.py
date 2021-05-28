@@ -21,10 +21,14 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from collections import namedtuple
+import json
 
 MOTOR_POS_IDX = [7,8,9,14,20,21,22,23,28,34]
 MOTOR_VEL_IDX = [7,8,9,14,20,21,22,23,28,34]
 PASSIVE_VEL_IDX = [9,10,11,14,22,23,24,27]
+
+DynamicInfo = namedtuple("DynamicInfo", "qpos motorPos M_min I_centroid cm_pos")
 
 
 def euler2quat(z=0, y=0, x=0):
@@ -49,10 +53,16 @@ def euler2quat(z=0, y=0, x=0):
 
 def forwardUpdateClosedLoop(sim, vis, motorPos):
     u = pd_in_t()
-    sim.full_reset()
+    # sim.full_reset()
     qpos = sim.qpos()
     qvel = sim.qvel()
-    qpos[2] = 2
+    qpos[0] = 0
+    qpos[1] = 0
+    qpos[2] = 0
+    qpos[3] = 1
+    qpos[4] = 0
+    qpos[5] = 0
+    qpos[6] = 0
 
     for i in range(5):
         qpos[MOTOR_POS_IDX[i]] = motorPos[i]
@@ -62,24 +72,15 @@ def forwardUpdateClosedLoop(sim, vis, motorPos):
     sim.set_qvel(np.zeros((len(qvel), 1)))
     sim.hold()
     nStep = 0
-    while nStep < 200:
+    err_c = 10
+    while nStep < 500 and np.linalg.norm(err_c) > 1e-5:
         J_c = sim.constraint_jacobian()
         err_c = sim.constraint_error()
         J_passive_c = np.zeros(J_c.shape)
         J_passive_c[:, PASSIVE_VEL_IDX] = J_c[:, PASSIVE_VEL_IDX]
-        # print('\nJ_passive_c')
-        # print(J_passive_c.shape)
-        # print(J_passive_c)
-        # print('\nJ_c Full')
-        # print(J_c.shape)
-        # print(J_c)
-        # print('\nerr_c')
-        # print(err_c.shape)
-        # print(err_c)
+
         q_vel = np.linalg.lstsq(J_passive_c, -200*err_c, rcond=None)
-        # print('\nq_vel')
-        # print(q_vel[0].shape)
-        # print(q_vel[0])
+
         sim.set_qvel(q_vel[0])
         sim.integrate_pos()
 
@@ -87,9 +88,33 @@ def forwardUpdateClosedLoop(sim, vis, motorPos):
         draw_state = vis.draw(sim)
 
     qpos_final = sim.qpos()
-    for i in range(10):
-        print("idx " + str(i) + "   des: " + str(motorPos[i]) + "  Final: " + str(qpos_final[MOTOR_POS_IDX[i]]))
+    print("Finished in " + str(nStep) + " steps with error norm of " + str(np.linalg.norm(err_c)))
     return qpos_final
+
+
+def getAllDynamicInfo(sim, vis, motor_pos):
+    qpos_result = forwardUpdateClosedLoop(sim, vis, motor_pos)
+    sim.set_qpos(qpos_result)
+    M_minimal = sim.minimal_mass_matrix()
+    centroid_interia = sim.centroid_inertia()
+    centerofMass_pos = sim.center_of_mass_position()
+
+    dynInf = {}
+    dynInf['qpos']=qpos_result, 
+    dynInf['motorPos']=motor_pos, 
+    dynInf['M_min']= M_minimal.tolist()
+    dynInf['I_centroid']=centroid_interia
+    dynInf['cm_pos']=centerofMass_pos
+
+    return dynInf
+
+def writeDynInfoJSON(dynInfo_list):
+    # print(json.dumps({'q_pos':dynInfo_list[0].qpos, 'motorPos':dynInfo_list[0].motorPos,
+    #                   'M_minimal':dynInfo_list[0].M_min, 'I_centroid':dynInfo_list[0].I_centroid,
+    #                   'cm_pos':dynInfo_list[0].cm_pos}))
+    with open('cassieInertia.txt', 'w') as outfile:
+        json.dump(dynInfo_list, outfile)
+
 
 # Initialize cassie simulation
 sim = CassieSim("../model/cassie_no_grav.xml")
@@ -112,7 +137,7 @@ motor_pos = []
 for i in range(10):
     motor_pos.append(qpos[MOTOR_POS_IDX[i]])
 
-N_grid = 30
+N_grid = 5
 # hip_list = np.radians(np.linspace(-50, 80, num=N_grid))
 # knee_list = np.radians(np.linspace(-156, -42, num=N_grid))
 
@@ -122,38 +147,28 @@ knee_list = np.radians(np.linspace(-100, -60, num=N_grid))
 
 error = np.zeros((N_grid,N_grid))
 
+dynInfo_list = []
 for left_hip_idx in range(N_grid):
     for left_knee_idx in  range(N_grid):
 
         left_hip_pitch_angle = hip_list[left_hip_idx]
         left_knee_angle = knee_list[left_knee_idx]
-        # sim.full_reset()
-        # qpos = sim.qpos()
-        # qpos[MOTOR_POS_IDX[2]] = left_hip_pitch_angle
-        # qpos[MOTOR_POS_IDX[3]] = left_knee_angle
-        # qpos[MOTOR_POS_IDX[7]] = left_hip_pitch_angle
-        # qpos[MOTOR_POS_IDX[8]] = left_knee_angle
-        # sim.set_qpos(qpos)
-        # draw_state = vis.draw(sim)
-        # time.sleep(1/30)
+
         motor_pos[2] = left_hip_pitch_angle
         motor_pos[3] = left_knee_angle
         motor_pos[7] = left_hip_pitch_angle
         motor_pos[8] = left_knee_angle
         
-        qpos_result = forwardUpdateClosedLoop(sim, vis, motor_pos)
-        error[left_hip_idx, left_knee_idx] =   np.sqrt((left_hip_pitch_angle - qpos_result[MOTOR_POS_IDX[2]])**2 + (left_hip_pitch_angle - qpos_result[MOTOR_POS_IDX[2]])**2)
+        dynInfo = getAllDynamicInfo(sim, vis, motor_pos)
+        dynInfo_list.append(dynInfo)
 
+writeDynInfoJSON(dynInfo_list)
 
 # Plot the surface.
 
-fig, axs = plt.subplots(nrows=1, ncols=1)
-temp_imshow = axs.imshow(error, extent = (hip_list[0], hip_list[-1], knee_list[0], knee_list[-1]))
-
-fig.colorbar(temp_imshow, ax=axs)
-
-plt.show()
-
-print(error)
+# fig, axs = plt.subplots(nrows=1, ncols=1)
+# temp_imshow = axs.imshow(error, extent = (hip_list[0], hip_list[-1], knee_list[0], knee_list[-1]))
+# fig.colorbar(temp_imshow, ax=axs)
+# plt.show()
 
 
