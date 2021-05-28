@@ -24,6 +24,8 @@ from matplotlib import cm
 
 MOTOR_POS_IDX = [7,8,9,14,20,21,22,23,28,34]
 MOTOR_VEL_IDX = [7,8,9,14,20,21,22,23,28,34]
+PASSIVE_VEL_IDX = [9,10,11,14,22,23,24,27]
+
 
 def euler2quat(z=0, y=0, x=0):
 
@@ -49,40 +51,40 @@ def forwardUpdateClosedLoop(sim, vis, motorPos):
     u = pd_in_t()
     sim.full_reset()
     qpos = sim.qpos()
+    qvel = sim.qvel()
     qpos[2] = 2
 
     for i in range(5):
-        u.leftLeg.motorPd.pGain[i] = 100.0
-        u.leftLeg.motorPd.dGain[i] = 10.0
-        u.rightLeg.motorPd.pGain[i] = 100.0
-        u.rightLeg.motorPd.dGain[i] = 10.0
-
-        u.leftLeg.motorPd.pTarget[i] = motorPos[i]
-        u.rightLeg.motorPd.pTarget[i] = motorPos[i+5]
         qpos[MOTOR_POS_IDX[i]] = motorPos[i]
-        qpos[MOTOR_POS_IDX[i+5]] = motorPos[i+5]
-        
+        qpos[MOTOR_POS_IDX[i+5]] = motorPos[i+5]     
     
     sim.set_qpos(qpos)
+    sim.set_qvel(np.zeros((len(qvel), 1)))
     sim.hold()
     nStep = 0
-    while nStep < 120:
-        # if not vis.ispaused():
-        qvel = sim.qvel()
-        qvel[3] = 0
-        qvel[4] = 0
-        qvel[5] = 0
-        sim.set_qvel(qvel)
-        nStep = nStep + 1
-        # if 50 < count < 80:
-        #     vis.apply_force([0, 0, 500, 0, 0, 0], "cassie-pelvis")
-        #     print("applying force", count)
-        # else:
-        #     vis.apply_force([0, 0, 0, 0, 0, 0], "cassie-pelvis")
-        for i in range(60):
-            y = sim.step_pd(u)
-            
-        # draw_state = vis.draw(sim)
+    while nStep < 200:
+        J_c = sim.constraint_jacobian()
+        err_c = sim.constraint_error()
+        J_passive_c = np.zeros(J_c.shape)
+        J_passive_c[:, PASSIVE_VEL_IDX] = J_c[:, PASSIVE_VEL_IDX]
+        # print('\nJ_passive_c')
+        # print(J_passive_c.shape)
+        # print(J_passive_c)
+        # print('\nJ_c Full')
+        # print(J_c.shape)
+        # print(J_c)
+        # print('\nerr_c')
+        # print(err_c.shape)
+        # print(err_c)
+        q_vel = np.linalg.lstsq(J_passive_c, -200*err_c, rcond=None)
+        # print('\nq_vel')
+        # print(q_vel[0].shape)
+        # print(q_vel[0])
+        sim.set_qvel(q_vel[0])
+        sim.integrate_pos()
+
+        nStep = nStep + 1  
+        draw_state = vis.draw(sim)
 
     qpos_final = sim.qpos()
     for i in range(10):
@@ -111,8 +113,12 @@ for i in range(10):
     motor_pos.append(qpos[MOTOR_POS_IDX[i]])
 
 N_grid = 30
-hip_list = np.radians(np.linspace(-50, 80, num=N_grid))
-knee_list = np.radians(np.linspace(-156, -42, num=N_grid))
+# hip_list = np.radians(np.linspace(-50, 80, num=N_grid))
+# knee_list = np.radians(np.linspace(-156, -42, num=N_grid))
+
+
+hip_list = np.radians(np.linspace(-20, 60, num=N_grid))
+knee_list = np.radians(np.linspace(-100, -60, num=N_grid))
 
 error = np.zeros((N_grid,N_grid))
 

@@ -69,6 +69,11 @@ class CassieSim:
         cassie_sim_step_pd(self.c, y, u)
         return y
 
+    def integrate_pos(self):
+        y = state_out_t()
+        cassie_integrate_pos(self.c, y)
+        return y
+
     def get_state(self):
         s = CassieState()
         cassie_get_state(self.c, s.s)
@@ -222,16 +227,63 @@ class CassieSim:
                 M_return[i,j] = M_array[i*32+j]
         return M_return
 
+    def constraint_jacobian(self):
+        J_array = (ctypes.c_double * (6 * 32))()
+        err_array = (ctypes.c_double * (6))()
+        cassie_sim_loop_constraint_info(self.c, J_array, err_array)
+        J_return = np.zeros((6,32))
+        for i in range(6):
+            for j in range(32):
+                J_return[i,j] = J_array[i*32+j]
+        return J_return
+
+    def constraint_error(self):
+        J_array = (ctypes.c_double * (6 * 32))()
+        err_array = (ctypes.c_double * (6))()
+        cassie_sim_loop_constraint_info(self.c, J_array, err_array)
+        err_return = np.zeros((6,1))
+        for i in range(6):
+                err_return[i] = err_array[i]
+        return err_return
+
     # Return the minimal actuated mass matrix of Cassie. Contains 6 for floating 
     # base, 5 for left leg motors, 5 for right leg motors.
     def minimal_mass_matrix(self):
-        M_array = (ctypes.c_double * (16 * 16))()
-        cassie_sim_minimal_mass_matrix(self.c, M_array)
-        M_return = np.zeros((16,16))
-        for i in range(16):
-            for j in range(16):
-                M_return[i,j] = M_array[i*16+j]
-        return M_return
+        ind_full_idx = [0,1,2,3,4,5,6,7,8,12,18,19,20,21,25,31]
+        dep_full_idx = [9,10,11,14,22,23,24,27]
+        ind_idx = np.arange(0, 16)
+        dep_idx = np.arange(16, 24)
+        spring_idx = [13, 15, 26, 28]
+
+        J_c = self.constraint_jacobian()
+        J_c[:, 0:6] = 0  # Zero out floating base coordinates
+        J_c_div = J_c[:, ind_full_idx + dep_full_idx]
+        J_c_div[J_c_div < 1e-5] = 0 # Zero out very small terms for numerical stabilityL 
+        
+        M = self.full_mass_matrix()
+        M_div_temp = M[:, ind_full_idx + dep_full_idx]
+        M_div = M_div_temp[ind_full_idx + dep_full_idx, :]
+
+        G = np.linalg.lstsq(J_c_div[:, dep_idx], -J_c_div[:, ind_idx])
+
+        print(G[0].shape)
+        P = np.block([[np.eye(16)], [G[0]]])
+        M_minimal = P.T  @ M_div @ P
+
+        #J_c_dep = J_c[:, (13,24)]
+        # This gets hard 
+        # import sys
+        # np.set_printoptions(threshold=sys.maxsize)
+        M_print = M_div[:, ind_idx]
+        M_print = M_print[ind_idx, :]
+
+        print("M")
+        print(M_print)
+        print("M_minimal")
+        print(M_minimal)
+
+
+        return M_minimal
         
 
     def foot_quat(self, quat):

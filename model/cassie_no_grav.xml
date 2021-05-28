@@ -241,10 +241,10 @@
   </worldbody>
 
   <equality>
-    <connect body1='left-plantar-rod'  body2='left-foot'        anchor='0.35012 0 0'/>
-    <connect body1='left-achilles-rod' body2='left-heel-spring' anchor='0.5012 0 0'/>
-    <connect body1='right-plantar-rod'  body2='right-foot'        anchor='0.35012 0 0'/>
-    <connect body1='right-achilles-rod' body2='right-heel-spring' anchor='0.5012 0 0'/>
+    <connect name = 'left-plantar-rod-eq' body1='left-plantar-rod'  body2='left-foot'        anchor='0.35012 0 0'/>
+    <connect name = 'left-achilles-rod-eq' body1='left-achilles-rod' body2='left-heel-spring' anchor='0.5012 0 0'/>
+    <connect name = 'right-plantar-rod-eq' body1='right-plantar-rod'  body2='right-foot'        anchor='0.35012 0 0'/>
+    <connect name = 'right-achilles-rod-eq' body1='right-achilles-rod' body2='right-heel-spring' anchor='0.5012 0 0'/>
   </equality>
 
   <actuator>

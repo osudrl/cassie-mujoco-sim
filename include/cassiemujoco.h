@@ -91,6 +91,10 @@ void cassie_sim_step(cassie_sim_t *sim, cassie_out_t *y, const cassie_user_in_t 
 // called on a given Cassie simulator instance.
 void cassie_sim_step_pd(cassie_sim_t *sim, state_out_t *y, const pd_in_t *u);
 
+// Forward Integrate the position coordinate based on what is in qvel. 
+// This takes 1/2000 sec steps. Adjust the "step size" by scaling velocity
+void cassie_integrate_pos(cassie_sim_t *c, state_out_t *y);
+
 // Returns a read-write pointer to the simulator time.
 double *cassie_sim_time(cassie_sim_t *sim);
 
@@ -217,6 +221,9 @@ void cassie_sim_full_mass_matrix(const cassie_sim_t *c, double M[1024]);
 // Return the minimal actuated mass matrix of Cassie. Contains 6 for floating 
 // base, 5 for left leg motors, 5 for right leg motors.
 void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[256]);
+
+// Return the conrod closed loop constraint jacobian and constraint violation (error) vectors
+void cassie_sim_loop_constraint_info(const cassie_sim_t *c, double J_cl[192], double err_cl[6]);
 
 void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name);
 

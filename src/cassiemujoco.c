@@ -78,6 +78,7 @@ mjvFigure figsensor;
     X(mj_step1)                                 \
     X(mj_step2)                                 \
     X(mj_step)                                  \
+    X(mj_integratePos)                          \
     X(mj_contactForce)                          \
     X(mj_name2id)                               \
     X(mj_id2name)                               \
@@ -1113,6 +1114,13 @@ void cassie_sim_step_pd(cassie_sim_t *c, state_out_t *y, const pd_in_t *u)
     state_output_step(c->estimator, &cassie_out, y);
 }
 
+void cassie_integrate_pos(cassie_sim_t *c, state_out_t *y)
+{
+    mj_integratePos_fp(c->m, c->d->qpos, c->d->qvel, c->m->opt.timestep);
+    // Run state estimator system because why not
+    cassie_out_t cassie_out;
+    state_output_step(c->estimator, &cassie_out, y);
+}
 
 double *cassie_sim_time(cassie_sim_t *c)
 {
@@ -1420,7 +1428,6 @@ void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12])
         cvel[i]     = c->d->cvel[6 * left_foot_body_id + i];
         cvel[6 + i] = c->d->cvel[6 * right_foot_body_id + i];
     }
-
 }
 
 void cassie_sim_cm_position(const cassie_sim_t *c, double cm_pos[3]){
@@ -1430,11 +1437,11 @@ void cassie_sim_cm_position(const cassie_sim_t *c, double cm_pos[3]){
     }
 }
 
-void cassie_sim_cm_velocity(const cassie_sim_t *c, double cm_pos[3]){
+void cassie_sim_cm_velocity(const cassie_sim_t *c, double cm_vel[3]){
     mj_fwdPosition_fp(c->m, c->d);
     mj_subtreeVel_fp(c->m, c->d);
     for(int i=0; i < 3; ++i){ 
-       cm_pos[i] = c->d->subtree_linvel[i]; // Just i because the pelvis is the first body 
+       cm_vel[i] = c->d->subtree_linvel[i]; // Just i because the pelvis is the first body 
     }
 }
 
@@ -1517,6 +1524,31 @@ void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[256]){
         }
     }
 }
+
+void cassie_sim_loop_constraint_info(const cassie_sim_t *c, double J_cl[192], double err_cl[6]){ //32*6 a
+    mj_fwdPosition_fp(c->m, c->d);
+
+    int idx_J = 0;
+
+    for(int i = 0; i < c->d->nefc; ++i){
+        // mj_id2name_fp(c->m, 15, c->d->efc_id[i])
+
+        // printf("Row: %i    Type: %i   efc_id: %d    efc_name:%s\n", i, c->d->efc_type[i], c->d->efc_id[i], mj_id2name_fp(c->m, 16, c->d->efc_id[i]));
+        // std::cout << d->efc_type[i] << std::endl;
+        if(c->d->efc_type[i] == 0 && (          // 0 is mjCNSTR_EQUALITY, I don't want to import mujoco constants
+            strcmp(mj_id2name_fp(c->m, 16, c->d->efc_id[i]), "left-achilles-rod-eq") == 0 || 
+            strcmp(mj_id2name_fp(c->m, 16, c->d->efc_id[i]), "right-achilles-rod-eq") == 0)){
+
+            // std::cout << J_eq.rows() << " " << J_eq.cols() << std::endl; //12x32 non contact
+            for(int j = 0; j < 32; ++j){
+                J_cl[idx_J*32 + j] = c->d->efc_J[i*c->m->nv + j];
+            }
+            err_cl[idx_J] = c->d->efc_pos[i];
+            idx_J++;
+        }
+    }
+}
+
 
 void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name)
 {

@@ -193,6 +193,9 @@ pel_vel = np.zeros(6)
 
 y = sim.step_pd(u)
 
+M = sim.minimal_mass_matrix()
+
+
 
 while draw_state:# and draw_state2:
     if not vis.ispaused():
