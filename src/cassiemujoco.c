@@ -60,7 +60,7 @@ mjvFigure figsensor;
 float znear;
 float zfar;
 float extent1;
-mjrRect viewport={0,0,320,240};
+mjrRect viewport_depth={0,0,320,240};
 
 
 /*******************************************************************************
@@ -2705,8 +2705,8 @@ cassie_vis_t *cassie_vis_init2(cassie_sim_t* c, const char* modelfile) {
     // viewport =  mjr_maxViewport_fp(&v->con);
     // viewport = {0, 0, 320, 240};
     
-    int W = viewport.width;
-    int H = viewport.height;
+    int W = viewport_depth.width;
+    int H = viewport_depth.height;
     printf(" W : %d\n",W);
     printf(" H : %d\n",H);
     depth_raw = (float*)malloc(sizeof(float)*W*H);
@@ -2902,8 +2902,8 @@ bool cassie_vis_draw2(cassie_vis_t *v, cassie_sim_t *c)
 {
     mj_forward_fp(v->m, v->d);
     mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
-    mjr_render_fp(viewport, &v->scn, &v->con);
-    mjr_readPixels_fp(NULL, depth_raw, viewport, &v->con);
+    mjr_render_fp(viewport_depth, &v->scn, &v->con);
+    mjr_readPixels_fp(NULL, depth_raw, viewport_depth, &v->con);
     return true;
 }
 
