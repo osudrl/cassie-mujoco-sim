@@ -36,6 +36,7 @@ typedef struct cassie_state cassie_state_t;
 extern "C" {
 #endif
 
+// output depth array pointer
 float* get_depth();
 
 cassie_out_t cassie_sim_get_cassie_out(cassie_sim_t *c);
@@ -49,6 +50,19 @@ bool cassie_mujoco_init(const char *modelfile);
 // Unloads the MuJoCo library and Cassie model. After calling this
 // function, cassie_mujoco_init can be called again.
 void cassie_cleanup(void);
+
+// Pass a null-terminated string containing the path to the directory
+// containing cassie.xml, mjpro150/, mjkey.txt, etc. If NULL is
+// passed, the directory containing the current executable is used
+// instead. Returns true if loading was successful, false otherwise.
+// relies on osmesa instead of glew
+bool cassie_mujoco_init2(const char *modelfile);
+
+// Unloads the MuJoCo library and Cassie model. After calling this
+// function, cassie_mujoco_init can be called again.
+// relies on osmesa
+void cassie_cleanup2(void);
+
 
 
 /*******************************************************************************
@@ -67,6 +81,15 @@ bool cassie_reload_xml(const char *modelfile);
 // is true, then a new mjModel is made using the inputted "modelfile" arg. Note that
 // in this case the global "initial_model" that is used by default is not changed.
 cassie_sim_t *cassie_sim_init(const char *modelfile, bool reinit);
+
+// Creates an instance of the Cassie simulator. If called before
+// cassie_mujoco_init, cassie_mujoco_init is called with the parameter
+// NULL. The "reinit" arg allows for the created cassie sim object to use a 
+// different mjModel than the global one loaded by cassie_mujoco_init. If reinit
+// is true, then a new mjModel is made using the inputted "modelfile" arg. Note that
+// in this case the global "initial_model" that is used by default is not changed.
+// relies on OSMesa
+cassie_sim_t *cassie_sim_init2(const char *modelfile, bool reinit);
 
 // Creates an instance of the Cassie simulator with the same state as
 // an existing instance.

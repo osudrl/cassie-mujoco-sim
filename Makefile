@@ -14,8 +14,8 @@ LIBOUT := cassiemujoco.dll
 else
 CC     := gcc
 CFLAGS += -fPIC
-LIBS   := -lm -ldl -Wl,--whole-archive -lagilitycassie -Wl,--no-whole-archive
-LIBOUT := libcassiemujoco.so
+LIBS   := -lm -ldl -Wl,--whole-archive -lagilitycassie -Wl,--no-whole-archive -lOSMesa -lglewosmesa
+LIBOUT := libcassiemujocoosmesa.so
 endif
 
 # Default build target
@@ -28,8 +28,8 @@ clean:
 	rm -rf test/
 
 $(LIBOUT): src/*.c
-	echo src/*.c $(INC) $(CFLAGS) -o $(LIBOUT) $(LDFLAGS) $(LIBS)
-	$(CC) src/*.c $(INC) $(CFLAGS) -o $(LIBOUT) $(LDFLAGS) $(LIBS)
+	echo src/cassiemujocoosmesa.c $(INC) $(CFLAGS) -o $(LIBOUT) $(LDFLAGS) $(LIBS)
+	$(CC) src/cassiemujocoosmesa.c $(INC) $(CFLAGS) -o $(LIBOUT) $(LDFLAGS) $(LIBS)
 
 build: $(LIBOUT)
 	mkdir -p build
