@@ -840,7 +840,7 @@ bool cassie_mujoco_init(const char *file_input)
         char error[1000] = "Could not load XML model";
         initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
         if (!initial_model) {
-            //fprintf(stderr, "Load model error: %s\n", error);
+            fprintf(stderr, "Load model error: %s\n", error);
             return false;
         }
         int sens_objid[20] = {0, 1, 2, 3, 4, 9, 10, 14, 5, 6, 7, 8, 9, 20, 21, 25, 0, 0, 0, 0};
@@ -963,6 +963,7 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
 
     if (reinit) {
         char error[1000] = "Could not load XML model";
+        mj_deleteModel_fp(initial_model);
         initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
         if (!initial_model) {
             fprintf(stderr, "Load model error: %s\n", error);
