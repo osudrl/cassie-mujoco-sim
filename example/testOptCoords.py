@@ -25,6 +25,7 @@ from collections import namedtuple
 import json
 from cassieXboxController import cassieXboxController
 from optimalCoords.optimal_cassie import load_data, interpolate_so3
+from scipy.spatial.transform import Rotation as R
 
 MOTOR_POS_IDX = [7,8,9,14,20,21,22,23,28,34]
 MOTOR_VEL_IDX = [7,8,9,14,20,21,22,23,28,34]
@@ -60,7 +61,7 @@ def forwardUpdateClosedLoop(sim, vis, motorPos):
     qvel = sim.qvel()
     qpos[0] = 0
     qpos[1] = 0
-    qpos[2] = 0
+    qpos[2] = 1.5
     qpos[3] = 1
     qpos[4] = 0
     qpos[5] = 0
@@ -87,7 +88,7 @@ def forwardUpdateClosedLoop(sim, vis, motorPos):
         sim.integrate_pos()
 
         nStep = nStep + 1  
-        draw_state = vis.draw(sim)
+        # draw_state = vis.draw(sim)
 
     qpos_final = sim.qpos()
     # print("Finished in " + str(nStep) + " steps with error norm of " + str(np.linalg.norm(err_c)))
@@ -162,7 +163,10 @@ motor_pos = []
 for i in range(10):
     motor_pos.append(qpos[MOTOR_POS_IDX[i]])
 
-while True:
+
+vis.start_video_recording("pyVideoTest", 1280, 720)
+i = 0
+while controller.button_state['M'] == 0:
 
     motor_pos = update_motor_pos(controller, motor_pos)
     alpha[0] = motor_pos[0]
@@ -171,18 +175,28 @@ while True:
     alpha[3] = motor_pos[5]
     alpha[4] = motor_pos[7]
     alpha[5] = motor_pos[8]
-    interp = interpolate_so3(trans_dict, alpha)
-    # body_orientation_offset = euler2quat(z=interp['z'], y=interp['y'], x=interp['x'])
-    print("Angles: x " + str(interp['x']) + " y  " + str(interp['y']) + " z " + str(interp['z']))
-    body_orientation_offset = euler2quat(z=-interp['z']*np.pi/180, y=-interp['y']*np.pi/180, x=-interp['x']*np.pi/180)
+
     qpos_result = forwardUpdateClosedLoop(sim, vis, motor_pos)
+
+    interp = interpolate_so3(trans_dict, alpha)
+    r = R.from_matrix(interp['rot_mat'])
+    body_orientation_offset = r.as_quat()  
     qpos_result[3] = body_orientation_offset[0]
     qpos_result[4] = body_orientation_offset[1]
     qpos_result[5] = body_orientation_offset[2]
     qpos_result[6] = body_orientation_offset[3]
+
     sim.set_qpos(qpos_result)
     draw_state = vis.draw(sim)
-    time.sleep(1.0/240)
+
+    i = i+1
+    if i%5 == 0:
+        vis.record_frame()
+    time.sleep(1.0/(60*5))
+
+
+vis.close_video_recording()
+    
 
 
 # hip_list = np.radians(np.linspace(-20, 60, num=N_grid))
