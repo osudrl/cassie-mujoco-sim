@@ -284,12 +284,12 @@
     <gyro          name='pelvis-angular-velocity'    site='imu' noise='5e-4' cutoff='34.9'/>
     <accelerometer name='pelvis-linear-acceleration' site='imu' noise='1e-2' cutoff='157'/>
     <magnetometer  name='pelvis-magnetometer'        site='imu'/>
-    <rangefinder   name='range1'                     site='range1' noise='1e-2' cutoff='1'/>
+    <!-- <rangefinder   name='range1'                     site='range1' noise='1e-2' cutoff='1'/>
     <rangefinder   name='range2'                     site='range2' noise='1e-2' cutoff='1'/>
     <rangefinder   name='range3'                     site='range3' noise='1e-2' cutoff='1'/>
     <rangefinder   name='range4'                     site='range4' noise='1e-2' cutoff='1'/>
     <rangefinder   name='range5'                     site='range5' noise='1e-2' cutoff='1'/>
-    <rangefinder   name='range6'                     site='range6' noise='1e-2' cutoff='1'/>
+    <rangefinder   name='range6'                     site='range6' noise='1e-2' cutoff='1'/> -->
   </sensor>
 
 </mujoco>
