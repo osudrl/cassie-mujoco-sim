@@ -58,7 +58,7 @@ def forwardUpdateClosedLoop(sim, vis, motorPos):
     qvel = sim.qvel()
     qpos[0] = 0
     qpos[1] = 0
-    qpos[2] = 0
+    qpos[2] = 0.5
     qpos[3] = 1
     qpos[4] = 0
     qpos[5] = 0
@@ -85,7 +85,7 @@ def forwardUpdateClosedLoop(sim, vis, motorPos):
         sim.integrate_pos()
 
         nStep = nStep + 1  
-        draw_state = vis.draw(sim)
+        # draw_state = vis.draw(sim)
 
     qpos_final = sim.qpos()
     print("Finished in " + str(nStep) + " steps with error norm of " + str(np.linalg.norm(err_c)))
@@ -133,36 +133,66 @@ draw_state = vis.draw(sim)
 
 sim.full_reset()
 qpos = sim.qpos()
-motor_pos = []
+motor_pos_nominal = []
 for i in range(10):
-    motor_pos.append(qpos[MOTOR_POS_IDX[i]])
-
-N_grid = 5
-# hip_list = np.radians(np.linspace(-50, 80, num=N_grid))
-# knee_list = np.radians(np.linspace(-156, -42, num=N_grid))
+    motor_pos_nominal.append(qpos[MOTOR_POS_IDX[i]])
 
 
-hip_list = np.radians(np.linspace(-20, 60, num=N_grid))
-knee_list = np.radians(np.linspace(-100, -60, num=N_grid))
 
-error = np.zeros((N_grid,N_grid))
+N_grid_hip_roll = 3
+N_grid_knee = 3
+N_grid_hip = 3
+hip_list = np.linspace(-0.27, 1.25, num=N_grid_hip)
+knee_list = np.linspace(-1.90, -0.9, num=N_grid_knee)
+hip_roll_left_list = np.linspace(-0.18, 0.30, num=N_grid_hip_roll)
+hip_roll_right_list = np.linspace(-0.30, 0.18, num=N_grid_hip_roll)
+
+
+# for idx in range(N_grid):
+#     motor_pos[0] = hip_roll[idx]
+#     motor_pos[5] = hip_roll[idx]
+#     sim.full_reset()
+
+#     dynInfo = getAllDynamicInfo(sim, vis, motor_pos)
+#     print('Hip Motor: ', hip_roll[idx])
+#     input('')
+
+
+header_info = {}
+header_info['grid_dimensions'] = [N_grid_hip_roll, N_grid_hip, N_grid_knee,N_grid_hip_roll, N_grid_hip, N_grid_knee]
+header_info['right_hip_roll_vals'] = hip_roll_right_list.tolist()
+header_info['right_hip_pitch_vals'] = hip_list.tolist()
+header_info['right_knee_vals'] = knee_list.tolist()
+header_info['left_hip_roll_vals'] = hip_roll_left_list.tolist()
+header_info['left_hip_pitch_vals'] = hip_list.tolist()
+header_info['left_knee_vals'] = knee_list.tolist()
+
+
+# writeDynInfoJSON(header_info)
 
 dynInfo_list = []
-for left_hip_idx in range(N_grid):
-    for left_knee_idx in  range(N_grid):
+for right_hip_roll_idx in range(N_grid_hip_roll):
+    for right_hip__pitch_idx in range(N_grid_hip):
+        for right_knee_idx in range(N_grid_knee):
+            for left_hip_roll_idx in range(N_grid_hip_roll):
+                for left_hip__pitch_idx in range(N_grid_hip):
+                    for left_knee_idx in range(N_grid_knee):
+                        
+                        motor_pos = motor_pos_nominal
+                        motor_pos[0] = hip_roll_left_list[left_hip_roll_idx]
+                        motor_pos[2] = hip_list[left_hip__pitch_idx]
+                        motor_pos[3] = knee_list[left_knee_idx]
+                        motor_pos[5] = hip_roll_right_list[right_hip_roll_idx]
+                        motor_pos[7] = hip_list[right_hip__pitch_idx]
+                        motor_pos[8] = knee_list[right_knee_idx]
 
-        left_hip_pitch_angle = hip_list[left_hip_idx]
-        left_knee_angle = knee_list[left_knee_idx]
+                        sim.full_reset()
+                        idx_key = [right_hip_roll_idx, right_hip__pitch_idx, right_knee_idx, left_hip_roll_idx, left_hip__pitch_idx, left_knee_idx]
+                        dynInfo = getAllDynamicInfo(sim, vis, motor_pos)
+                        dynInfo['grid_indices'] = idx_key
+                        dynInfo_list.append(dynInfo)
 
-        motor_pos[2] = left_hip_pitch_angle
-        motor_pos[3] = left_knee_angle
-        motor_pos[7] = left_hip_pitch_angle
-        motor_pos[8] = left_knee_angle
-        
-        dynInfo = getAllDynamicInfo(sim, vis, motor_pos)
-        dynInfo_list.append(dynInfo)
-
-writeDynInfoJSON(dynInfo_list)
+writeDynInfoJSON((header_info, dynInfo_list))
 
 # Plot the surface.
 
