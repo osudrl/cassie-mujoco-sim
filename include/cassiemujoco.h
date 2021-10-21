@@ -272,6 +272,8 @@ bool cassie_vis_draw(cassie_vis_t *vis, cassie_sim_t *sim);
 
 bool cassie_vis_draw2(cassie_vis_t *vis, cassie_sim_t *sim);
 
+void cassie_vis_window_resize(cassie_vis_t *vis, int width, int height);
+
 // Returns true if the visualizer has been closed but not freed.
 bool cassie_vis_valid(cassie_vis_t *vis);
 

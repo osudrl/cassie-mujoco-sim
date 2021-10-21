@@ -139,7 +139,7 @@ mjvFigure figsensor;
     X(glfwSetWindowShouldClose)                 \
     X(glfwWindowShouldClose)                    \
     X(glfwSetWindowSize)                        \
-    X(glClear)
+    X(glClear)                                  \
 
 // Dynamic object handles
 static void *mj_handle;
@@ -2652,7 +2652,7 @@ void cassie_vis_free(cassie_vis_t *v)
         cassie_vis_close(v);
 
     // Free cassie_vis_t
-    mjr_freeContext(&v->con);
+    mjr_freeContext_fp(&v->con);
     free(v);
 }
 
@@ -2879,6 +2879,10 @@ bool cassie_vis_paused(cassie_vis_t *v)
 bool cassie_vis_slowmo(cassie_vis_t *v)
 {
     return v->slowmotion;
+}
+
+void cassie_vis_window_resize(cassie_vis_t *v, int width, int height) {
+    glfwSetWindowSize_fp(v->window, width, height);
 }
 
 cassie_state_t *cassie_state_alloc()
