@@ -171,6 +171,8 @@ double *cassie_sim_qvel(cassie_sim_t *sim);
 
 double *cassie_sim_qacc(cassie_sim_t *c);
 
+double *cassie_sim_ctrl(cassie_sim_t *sim);
+
 // Returns the mjModel* used by the simulator
 void *cassie_sim_mjmodel(cassie_sim_t *sim);
 
@@ -267,6 +269,8 @@ void cassie_vis_free(cassie_vis_t *vis);
 
 // Visualizes the state of the given Cassie simulator.
 bool cassie_vis_draw(cassie_vis_t *vis, cassie_sim_t *sim);
+
+bool cassie_vis_draw2(cassie_vis_t *vis, cassie_sim_t *sim);
 
 // Returns true if the visualizer has been closed but not freed.
 bool cassie_vis_valid(cassie_vis_t *vis);

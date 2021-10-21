@@ -2,10 +2,10 @@
 PLATFORM := LINUX
 
 # Compilation settings
-INC     := -Iinclude -I../include
-CFLAGS  := -std=gnu11 -Wall -Wextra -O3 -march=sandybridge -flto
+INC     := -Iinclude -I../include -I$(HOME)/.mujoco/mujoco200_linux/include
+CFLAGS  := -std=gnu11 -Wall -Wextra -O3 -march=sandybridge -flto -g
 LDFLAGS := -L. -L..
-LIBS    := -lcassiemujoco
+LIBS    := -lcassiemujoco #-L/home/robot/.mujoco/mujoco200_linux/bin
 
 # Platform-specific settings
 ifeq ($(PLATFORM), WIN)
@@ -21,10 +21,11 @@ TESTOUT := cassietest
 SIMOUT  := cassiesim
 CTRLOUT := cassiectrl
 VIDOUT := cassievideo
+DOUBLEVISOUT := test_doublevis
 endif
 
 # Default target
-all: $(TESTOUT) $(SIMOUT) $(CTRLOUT) $(VIDOUT)
+all: $(TESTOUT) $(SIMOUT) $(CTRLOUT) $(VIDOUT) vel_check $(DOUBLEVISOUT)
 
 # Normal targets
 clean:
@@ -32,6 +33,8 @@ clean:
 	rm -f $(SIMOUT)
 	rm -f $(CTRLOUT)
 	rm -f $(VIDOUT)
+	rm -f $(DOUBLEVISOUT)
+	rm -f vel_check
 
 $(TESTOUT): cassietest.c
 	$(CC) cassietest.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $(TESTOUT)
@@ -44,6 +47,14 @@ $(CTRLOUT): cassiectrl.c
 
 $(VIDOUT): cassievideo.c 
 	$(CC) cassievideo.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $(VIDOUT)
+	
+$(DOUBLEVISOUT): test_doublevis.c 
+	$(CC) test_doublevis.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $(DOUBLEVISOUT)
+
+vel_check: vel_check.c 
+	$(CC) vel_check.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o vel_check
+
+
 
 # Virtual targets
 .PHONY: all clean

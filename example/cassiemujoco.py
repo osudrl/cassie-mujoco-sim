@@ -50,6 +50,8 @@ class CassieSim:
             x_res, y_res = self.get_hfield_nrow(), self.get_hfield_ncol()
             self.hfields = generate_perlin(x_res, y_res)
 
+        params_array = (ctypes.c_int32 * 6)()
+        cassie_sim_params(self.c, params_array)
         self.nv = cassie_sim_nv(self.c)
         self.nbody = cassie_sim_nbody(self.c)
         self.nq = cassie_sim_nq(self.c)

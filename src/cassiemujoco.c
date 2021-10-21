@@ -138,7 +138,8 @@ mjvFigure figsensor;
     X(glfwMaximizeWindow)                       \
     X(glfwSetWindowShouldClose)                 \
     X(glfwWindowShouldClose)                    \
-    X(glfwSetWindowSize)
+    X(glfwSetWindowSize)                        \
+    X(glClear)
 
 // Dynamic object handles
 static void *mj_handle;
@@ -832,13 +833,15 @@ bool cassie_mujoco_init(const char *file_input)
         const char* key_buf = getenv("MUJOCO_KEY_PATH");
         mj_activate_fp(key_buf);
         // Load the model;
-        const char* modelfile;
-        if ((modelfile = getenv("CASSIE_MODEL_PATH")) == NULL) {
+        // const char* modelfile = getenv("CASSIE_MODEL_PATH");
+        // if ((modelfile = getenv("CASSIE_MODEL_PATH")) == NULL) {
+        // if (modelfile == NULL) {
             //printf("env variable doesn't exist\n");
-            modelfile = file_input;
-        }
+            // modelfile = file_input;
+        // }
         char error[1000] = "Could not load XML model";
-        initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
+        initial_model = mj_loadXML_fp(file_input, 0, error, 1000);
+        // initial_model = mj_loadXML(file_input, 0, error, 1000); 
         if (!initial_model) {
             fprintf(stderr, "Load model error: %s\n", error);
             return false;
@@ -865,19 +868,32 @@ bool cassie_mujoco_init(const char *file_input)
 }
 
 
+void delete_init_model() {
+    printf("deleting initial model\n");
+    mj_deleteModel_fp(initial_model);
+    // free(initial_model);
+    printf("deleted model\n");
+    mj_deactivate_fp();
+    printf("deactivated mujoco\n");
+}
+
 void cassie_cleanup()
 {
     if (mj_handle) {
         if (mujoco_initialized) {
-            if (initial_model) {
+            if (initial_model != NULL) {
+                printf("deleting initial model\n");
                 mj_deleteModel_fp(initial_model);
+                printf("deleted model\n");
                 initial_model = NULL;
             }
             mj_deactivate_fp();
+            printf("deactivated mujoco\n");
             mujoco_initialized = false;
         }
 
         UNLOADLIB(mj_handle);
+        printf("unloaded lib\n");
         mj_handle = NULL;
     }
 
@@ -1345,7 +1361,7 @@ void cassie_sim_set_geom_name_size(cassie_sim_t *c, const char* name, double *si
 
 // Get import mujoco model size parameters for the inputted cassie sim stuct.
 // Takes in an int array that should be 6 long
-int *cassie_sim_params(cassie_sim_t *c, int* params)
+void *cassie_sim_params(cassie_sim_t *c, int* params)
 {
     params[0] = c->m->nq;
     params[1] = c->m->nv;
@@ -2152,6 +2168,9 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
     if (act == GLFW_PRESS) {
         v->lastbutton = button;
         v->lastclicktm = time(0);
+    } else {
+        // If mouse not pressed, not applying perturb so zero it out.
+        mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     }
     
 }
@@ -2565,6 +2584,7 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     v->d = c->d;
     v->marker_num = 0;
     v->perturb_body = 1;
+    v->pipe_video_out = NULL;
     memset(v->perturb_force, 0.0, 6*sizeof(double));
 
     // Create window
@@ -2608,8 +2628,10 @@ void cassie_vis_close(cassie_vis_t *v)
         return;
 
     // Free mujoco objects
+    // Cannot free context here in case there are multiple windows open
+    // Context is freed in vis_free
     mjv_freeScene_fp(&v->scn);
-    mjr_freeContext_fp(&v->con);
+    // mjr_freeContext_fp(&v->con);
 
     // Close window
     glfwDestroyWindow_fp(v->window);
@@ -2630,6 +2652,7 @@ void cassie_vis_free(cassie_vis_t *v)
         cassie_vis_close(v);
 
     // Free cassie_vis_t
+    mjr_freeContext(&v->con);
     free(v);
 }
 
@@ -2690,8 +2713,9 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
         return false;
 
     // Return early if window is closed
-    if (!v || !v->window)
+    if (!v || !v->window) {
         return false;
+    }
 
     // Check if window should be closed
     if (glfwWindowShouldClose_fp(v->window)) {
@@ -2703,7 +2727,7 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
         glfwSetWindowSize_fp(v->window, v->video_width, v->video_height);
     }
     // clear old perturbations, apply new
-    mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
+    // mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     if (v->pert.select > 0) {
        mjv_applyPerturbPose_fp(v->m, v->d, &v->pert, 0); // move mocap bodies only
        mjv_applyPerturbForce_fp(v->m, v->d, &v->pert);
@@ -2780,6 +2804,61 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     // for (int i = 0; i < 12; i++) {
     //     printf("%f, ", cfrc[i]);
     // }
+    return true;//glfwWindowShouldClose_fp(v->window);
+}
+
+bool cassie_vis_draw2(cassie_vis_t *v, cassie_sim_t *c)
+{
+
+    (void)c;
+    if (!glfw_initialized)
+        return false;
+
+    // Return early if window is closed
+    if (!v || !v->window)
+        return false;
+
+    // Check if window should be closed
+    if (glfwWindowShouldClose_fp(v->window)) {
+        cassie_vis_close(v);
+        return false;
+    }
+  
+    /*
+    // clear old perturbations, apply new
+    mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
+    if (v->pert.select > 0) {
+       mjv_applyPerturbPose_fp(v->m, v->d, &v->pert, 0); // move mocap bodies only
+       mjv_applyPerturbForce_fp(v->m, v->d, &v->pert);
+    }
+    // Add applied forces to qfrc array
+    for (int i = 0; i < 6; i++) {
+        v->d->xfrc_applied[6*v->perturb_body + i] += v->perturb_force[i];
+    }
+    mj_forward_fp(v->m, v->d);
+    // Reset xfrc applied to zero
+    memset(v->perturb_force, 0, 6*sizeof(double));
+    */
+
+    // Set up for rendering
+    glfwMakeContextCurrent_fp(v->window);
+    mjrRect viewport = {0, 0, 0, 0};
+    glfwGetFramebufferSize_fp(v->window, &viewport.width, &viewport.height);
+    mjrRect smallrect = viewport;
+    // Render scene
+    mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
+
+    // Add markers (custom geoms) at end of populated geom list
+    // add_vis_markers(v);
+
+    // render
+    mjr_render_fp(viewport, &v->scn, &v->con);
+
+    // Show updated scene
+    // glClear(GL_COLOR_BUFFER_BIT);
+    glfwSwapBuffers_fp(v->window);
+    glfwPollEvents_fp();
+
     return true;
 }
 
