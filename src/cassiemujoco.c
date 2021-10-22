@@ -324,6 +324,11 @@ struct cassie_vis {
     mjvFigure figGRF;
     mjModel* m;
     mjData* d;
+    float *depth_raw;
+    float znear;
+    float zfar;
+    float extent1;
+    int depth_size;
 };
 
 struct cassie_state {
@@ -2190,6 +2195,19 @@ void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, dou
     
 }
 
+void cassie_vis_attach_cam(cassie_vis_t* v, const char* cam_name){
+    int cam_id = mj_name2id_fp(initial_model, mjOBJ_CAMERA, cam_name);
+    v->cam.type = mjCAMERA_FIXED;
+    v->cam.fixedcamid = cam_id;
+    v->cam.lookat[0] = initial_model->stat.center[0];
+    v->cam.lookat[1] = initial_model->stat.center[1];
+    v->cam.lookat[2] = initial_model->stat.center[2];
+    v->cam.distance = initial_model->stat.extent;
+    v->zfar = initial_model->vis.map.zfar;
+    v->znear = initial_model->vis.map.znear;
+    v->extent1 = initial_model->stat.extent;
+}
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     (void)scancode;
     cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);
@@ -2618,9 +2636,45 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     glfwSetScrollCallback_fp(v->window, scroll);
     glfwSetKeyCallback_fp(v->window, key_callback);
 
+    v->depth_raw = NULL; //set to null here if not use depth at all
+
     return v;
 }
 
+void cassie_vis_init_depth(cassie_vis_t *v, int width, int height)
+{
+    v->depth_raw = (float*)calloc(width*height,sizeof(float));
+    v->depth_size = width * height;
+}
+
+float* cassie_vis_draw_depth(cassie_vis_t *v, cassie_sim_t *c, int width, int height)
+{
+    if (v->depth_raw == NULL){
+        printf("raw is null");
+        return NULL;
+    }
+
+    if (v->depth_size != height*width){
+        printf("wrong size %i\n", height*width);
+        printf("init depth size %i\n%i\n%i\n", v->depth_size, height, width);
+        return NULL;
+    }
+
+    mjrRect viewport={0,0,width,height};
+    glfwMakeContextCurrent_fp(v->window);
+    //mjr_makeContext_fp(c->m, &v->con, 200);
+    // mjr_setBuffer_fp(mjFB_OFFSCREEN, &v->con);
+    mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
+    mjr_render_fp(viewport, &v->scn, &v->con);
+    mjr_readPixels_fp(NULL, v->depth_raw, viewport, &v->con);
+    //mjr_freeContext_fp(&v->con);
+    return v->depth_raw;
+}
+
+int cassie_vis_get_depth_size(cassie_vis_t *v)
+{
+    return v->depth_size;
+}
 
 void cassie_vis_close(cassie_vis_t *v)
 {
@@ -2806,62 +2860,6 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     // }
     return true;//glfwWindowShouldClose_fp(v->window);
 }
-
-bool cassie_vis_draw2(cassie_vis_t *v, cassie_sim_t *c)
-{
-
-    (void)c;
-    if (!glfw_initialized)
-        return false;
-
-    // Return early if window is closed
-    if (!v || !v->window)
-        return false;
-
-    // Check if window should be closed
-    if (glfwWindowShouldClose_fp(v->window)) {
-        cassie_vis_close(v);
-        return false;
-    }
-  
-    /*
-    // clear old perturbations, apply new
-    mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
-    if (v->pert.select > 0) {
-       mjv_applyPerturbPose_fp(v->m, v->d, &v->pert, 0); // move mocap bodies only
-       mjv_applyPerturbForce_fp(v->m, v->d, &v->pert);
-    }
-    // Add applied forces to qfrc array
-    for (int i = 0; i < 6; i++) {
-        v->d->xfrc_applied[6*v->perturb_body + i] += v->perturb_force[i];
-    }
-    mj_forward_fp(v->m, v->d);
-    // Reset xfrc applied to zero
-    memset(v->perturb_force, 0, 6*sizeof(double));
-    */
-
-    // Set up for rendering
-    glfwMakeContextCurrent_fp(v->window);
-    mjrRect viewport = {0, 0, 0, 0};
-    glfwGetFramebufferSize_fp(v->window, &viewport.width, &viewport.height);
-    mjrRect smallrect = viewport;
-    // Render scene
-    mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
-
-    // Add markers (custom geoms) at end of populated geom list
-    // add_vis_markers(v);
-
-    // render
-    mjr_render_fp(viewport, &v->scn, &v->con);
-
-    // Show updated scene
-    // glClear(GL_COLOR_BUFFER_BIT);
-    glfwSwapBuffers_fp(v->window);
-    glfwPollEvents_fp();
-
-    return true;
-}
-
 
 bool cassie_vis_valid(cassie_vis_t *v)
 {

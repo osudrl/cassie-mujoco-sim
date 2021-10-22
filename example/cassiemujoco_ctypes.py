@@ -495,6 +495,26 @@ cassie_vis_set_cam = _libraries['./libcassiemujoco.so'].cassie_vis_set_cam
 cassie_vis_set_cam.restype = None
 cassie_vis_set_cam.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_char_p, ctypes.c_double, ctypes.c_double, ctypes.c_double]
 
+cassie_vis_window_resize = _libraries['./libcassiemujoco.so'].cassie_vis_window_resize
+cassie_vis_window_resize.restype = None
+cassie_vis_window_resize.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int32, ctypes.c_int32]
+
+cassie_vis_attach_cam = _libraries['./libcassiemujoco.so'].cassie_vis_attach_cam
+cassie_vis_attach_cam.restype = None
+cassie_vis_attach_cam.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_char_p]
+
+cassie_vis_draw_depth = _libraries['./libcassiemujoco.so'].cassie_vis_draw_depth
+cassie_vis_draw_depth.restype = POINTER_T(ctypes.c_float)
+cassie_vis_draw_depth.argtypes = [POINTER_T(struct_cassie_vis), POINTER_T(struct_cassie_sim), ctypes.c_int32, ctypes.c_int32]
+
+cassie_vis_get_depth_size = _libraries['./libcassiemujoco.so'].cassie_vis_get_depth_size
+cassie_vis_get_depth_size.restype = ctypes.c_int32
+cassie_vis_get_depth_size.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int32, ctypes.c_int32]
+
+cassie_vis_init_depth = _libraries['./libcassiemujoco.so'].cassie_vis_init_depth
+cassie_vis_init_depth.restype = None
+cassie_vis_init_depth.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int, ctypes.c_int]
+
 cassie_vis_valid = _libraries['./libcassiemujoco.so'].cassie_vis_valid
 cassie_vis_valid.restype = ctypes.c_bool
 cassie_vis_valid.argtypes = [POINTER_T(struct_cassie_vis)]
@@ -1028,6 +1048,7 @@ __all__ = \
     'cassie_sim_get_joint_filter',  'cassie_sim_get_drive_filter', 
     'cassie_sim_torque_delay', 'cassie_sim_set_torque_delay', 'drive_filter_t', 'joint_filter_t',
     'cassie_sim_params', 'cassie_sim_nv', 'cassie_sim_nbody', 'cassie_sim_nq', 'cassie_sim_ngeom',
-    'cassie_vis_record_frame', 'cassie_vis_init_recording', 'cassie_vis_close_recording']
+    'cassie_vis_record_frame', 'cassie_vis_init_recording', 'cassie_vis_close_recording', 'cassie_vis_window_resize', 'cassie_vis_attach_cam',
+    'cassie_vis_draw_depth', 'cassie_vis_get_depth_size', 'cassie_vis_init_depth', 'cassie_vis_attach_cam']
 
 

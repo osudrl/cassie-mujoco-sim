@@ -583,6 +583,23 @@ class CassieVis:
     def set_cam(self, body_name, zoom, azimuth, elevation):
         cassie_vis_set_cam(self.v, body_name.encode(), zoom, azimuth, elevation)
 
+    def window_resize(self, width=1200, height=900):
+        cassie_vis_window_resize(self.v, ctypes.c_int(width), ctypes.c_int(height))
+
+    def attach_cam(self, cam_name='egocentric'):
+        cassie_vis_attach_cam(self.v, cam_name.encode())
+
+    def init_depth(self, width, height):
+        cassie_vis_init_depth(self.v, ctypes.c_int(width), ctypes.c_int(height))
+
+    def get_depth_size(self):
+        size = cassie_vis_get_depth_size(self.v)
+        return size
+
+    def draw_depth(self, c, width=30, height=30):
+        depth = cassie_vis_draw_depth(self.v, c.c, ctypes.c_int(width), ctypes.c_int(height))
+        return depth[:width*height]
+
     def init_recording(self, filename, width=1920, height=1080):
         cassie_vis_init_recording(self.v, filename.encode(), ctypes.c_int(width), ctypes.c_int(height))
 
