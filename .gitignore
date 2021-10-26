@@ -8,3 +8,8 @@ mjpro150/
 *__pycache__*
 
 *.mp4
+./example/cassiesim
+./example/cassiectrl
+./example/cassievideo
+./example/test_doublevis
+./example/cassietest
