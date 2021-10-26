@@ -140,6 +140,7 @@ mjvFigure figsensor;
     X(glfwWindowShouldClose)                    \
     X(glfwSetWindowSize)                        \
     X(glClear)                                  \
+    X(glfwWindowHint)
 
 // Dynamic object handles
 static void *mj_handle;
@@ -2561,7 +2562,7 @@ void grfshow(cassie_vis_t* v, mjrRect rect) {
     mjr_figure_fp(viewport, &v->figGRF, &v->con);
 }
 
-cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
+cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile, bool offscreen) {
     // Make sure MuJoCo is initialized and the model is loaded
     if (!mujoco_initialized) {
         printf("vis mujoco not init\n");
@@ -2606,6 +2607,10 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile) {
     memset(v->perturb_force, 0.0, 6*sizeof(double));
 
     // Create window
+    if(offscreen)
+    {
+        glfwWindowHint_fp(GLFW_VISIBLE, GLFW_FALSE);
+    }
     v->window = glfwCreateWindow_fp(1200, 900, "Cassie", NULL, NULL);
     glfwMakeContextCurrent_fp(v->window);
     glfwSwapInterval_fp(0);
