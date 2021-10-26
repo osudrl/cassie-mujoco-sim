@@ -76,6 +76,9 @@ void cassie_sim_copy(cassie_sim_t *dst, const cassie_sim_t *src);
 // Destroys an instance of the Cassie simulator.
 void cassie_sim_free(cassie_sim_t *sim);
 
+// Deletes the saved initial model
+void delete_init_model();
+
 // Simulates one step of the Cassie simulator at the lowest level of
 // input and output. Only one cassie_sim_step_* function should be
 // called on a given Cassie simulator instance.
@@ -313,6 +316,12 @@ void cassie_vis_record_frame(cassie_vis_t *sim);
 
 // close a video renderer
 void cassie_vis_close_recording(cassie_vis_t *sim);
+
+// Depth Functions
+void cassie_vis_init_depth(cassie_vis_t *v, int width, int height);
+
+float* cassie_vis_draw_depth(cassie_vis_t *v, cassie_sim_t *c, int width, int height);
+
 
 /*******************************************************************************
  * Cassie simulation state functions

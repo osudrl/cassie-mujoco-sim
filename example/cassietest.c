@@ -22,48 +22,22 @@
 
 int main(void)
 {
-    const char modelfile[] = "../model/cassie_mass.xml";
+    const char modelfile[] = "../model/cassie.xml";
     cassie_sim_t *c = cassie_sim_init(modelfile, false);
     // cassie_sim_t *c2 = cassie_sim_init(modelfile, false);
 
     // printf("%p\n", cassie_sim_joint_filter(c));
     // printf("%p\n", cassie_sim_joint_filter(c2));
     cassie_vis_t *v = cassie_vis_init(c, modelfile);
+    // cassie_vis_init_depth(v, 300, 300);
+    // cassie_vis_full_reset(v);
+    cassie_vis_t *v2 = cassie_vis_init(c, modelfile);
+    cassie_vis_window_resize(v2, 300, 300);
+    cassie_vis_init_depth(v2, 300, 300);
 
     state_out_t y;
     // state_out_t y2;
     pd_in_t u = {0};
-    // for (int i = 0; i < 5; i++) {
-    //     cassie_sim_step_pd(c, &y, &u);
-    // }
-    // cassie_out_t test_out;
-    // test_out = cassie_sim_get_cassie_out(c);
-    // printf("test: %f\n", test_out.leftLeg.hipRollDrive.position);
-    // test_out.leftLeg.hipRollDrive.position = 1.0;
-    // test_out = cassie_sim_get_cassie_out(c);
-    // printf("test after: %f\n", test_out.leftLeg.hipRollDrive.position);
-    // cassie_sim_copy(c2,  c);
-    // cassie_sim_step_pd(c, &y, &u);
-    // cassie_sim_step_pd(c2, &y2, &u);
-    // double p_diff = 0;
-    // for (int i = 0; i < 3; i++) {
-    //     p_diff += abs(y.pelvis.position[i] - y2.pelvis.position[i]);
-    // }
-    
-    // state_out_t* est1 = calloc(1, sizeof(state_out_t));
-    // est1 = state_output_alloc();
-    // state_output_setup(est1);
-    // state_out_t* est_p = cassie_sim_get_state_est_p(c);
-    // printf("%p\n", cassie_sim_gset_state_est_p(c));
-    // printf("%f\n", est_p->pelvis.position[0]);
-    // state_out_t est1;
-    // printf("alloc\n");
-    // cassie_sim_get_state_est(c, &est1);
-    // // printf("%d", est1);
-    // printf("after get\n");
-    // cassie_sim_copy_state_est(c2, &est1);
-    // printf("after copy\n");
-    // printf("pel pos diff: %f\n", p_diff);
 
 
     // pd_in_t u2;
@@ -79,8 +53,14 @@ int main(void)
     //     // printf("%g\n", (float)rand()/(float)RAND_MAX);
     //     hfield_data[i] = (float)rand()/(float)RAND_MAX;
     // }
-    
+
+    for (int i = 0; i < 300; i++) {
+        cassie_sim_step_pd(c, &y, &u);
+    }
+    // 
     bool draw_state = cassie_vis_draw(v, c);
+    // cassie_vis_window_resize(v, 300, 300);
+    // bool draw_state2 = cassie_vis_draw(v2, c);
     while (draw_state) {
         if (!cassie_vis_paused(v)) {   
             // if (count > 500) {
@@ -92,18 +72,18 @@ int main(void)
             // count += 1;
         }
         draw_state = cassie_vis_draw(v, c);
+        cassie_vis_draw_depth(v2, c, 300, 300);
+        // draw_state2 = cassie_vis_draw(v2, c);
         
     }
 
     cassie_sim_free(c);
+    
     // cassie_sim_free(c2);
     printf("done free\n");
-    // cassie_vis_free(v);
-    // do {
-    //     if (!cassie_vis_paused(v)) {    
-    //         cassie_sim_step_pd(c, &y, &u);
-    //     }
-    // } while (cassie_vis_draw(v, c));
+    cassie_vis_free(v);
+    cassie_vis_free(v2);
+    cassie_cleanup();
 
     return 0;
 }

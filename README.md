@@ -69,6 +69,9 @@ The F1 key will display a help screen that lists the most useful of the followin
 * Slowmotion functionality? (requires changes to `cassiemujoco.py` and using GLFW in python when executing policies)
 * Add full mujoco 2.00 ui functionality?
 
+## Notes:
+* Note that there is some small unavoidable memory leak when calling `cassie_mujoco_init`. I am not sure what causes this, it seems to come from the `mj_loadXML` when it makes the underlying C model (when mujoco internally calls `mjCModel`). This is for sure a problem that we cause as normal MuJoCo does not have any memory leaks, perhaps with the weird passing around of strings and structs that we do in our wrapper messes things up. I do not know how to fix it (though perhaps with MuJoCo becoming open source, looking at the source code once it becomes available might help). Regardless, this is mostly a non-issue as the size of the leak is small (2560 bytes) and it is a one time leak, as `cassie_mujoco_init` will only ever be called once unless you are manually activating and then deactivating MuJoCo multiple times for some reason.
+
 ## Citation
 To cite this software package use the following format:\
 Agility Robotics. cassie-mujoco-sim. (2018) [Online]. Available: https://github.com/osudrl/cassie-mujoco-sim

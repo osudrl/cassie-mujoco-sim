@@ -52,7 +52,6 @@ static int left_foot_body_id;
 static int right_foot_body_id;
 // Globals for visualization
 static int fontscale = mjFONTSCALE_200;
-static unsigned char *frame;
 mjvFigure figsensor;
 
 
@@ -313,6 +312,7 @@ struct cassie_vis {
     FILE *pipe_video_out;
     int video_width;
     int video_height;
+    unsigned char *frame;
 
     // MuJoCo stuff
 
@@ -329,7 +329,8 @@ struct cassie_vis {
     float znear;
     float zfar;
     float extent1;
-    int depth_size;
+    int depth_width;
+    int depth_height
 };
 
 struct cassie_state {
@@ -888,30 +889,33 @@ void cassie_cleanup()
     if (mj_handle) {
         if (mujoco_initialized) {
             if (initial_model != NULL) {
-                printf("deleting initial model\n");
                 mj_deleteModel_fp(initial_model);
-                printf("deleted model\n");
                 initial_model = NULL;
             }
             mj_deactivate_fp();
-            printf("deactivated mujoco\n");
             mujoco_initialized = false;
         }
 
         UNLOADLIB(mj_handle);
-        printf("unloaded lib\n");
         mj_handle = NULL;
     }
 
+    /* 
+    NOTE: For some reason glfwTerminate causes a seg fault, and trying to unload the library without calling 
+    glfwTerminate will causes a memory leak.
     if (glfw_handle) {
         if (glfw_initialized) {
-            glfwTerminate_fp();
+            printf("glfw init true\n");
+            /glfwTerminate_fp();
+            printf("glfwterm\n");
             glfw_initialized = false;
         }
 
         UNLOADLIB(glfw_handle);
         glfw_handle = NULL;
+        printf("unload glfw lib and set handle to null\n");
     }
+    */
 
     if (glew_handle) {
         UNLOADLIB(glew_handle);
@@ -1977,7 +1981,7 @@ void cassie_vis_init_recording(cassie_vis_t *sim, const char* videofile, int wid
     sim->video_width = width;
     sim->video_height = height;
     glfwSetWindowSize_fp(sim->window, width, height);
-    frame = (unsigned char*)malloc(3*width*height);
+    sim->frame = (unsigned char*)malloc(3*width*height);
 
     sim->pipe_video_out = popen(ffmpeg_cmd, "w"); 
 }
@@ -2001,9 +2005,9 @@ void cassie_vis_record_frame(cassie_vis_t *sim){
         }
     }
     else{ //Normal case where the right size so it can render to file
-        mjr_readPixels_fp(frame, NULL, viewport, &sim->con);
+        mjr_readPixels_fp(sim->frame, NULL, viewport, &sim->con);
         //Write frame to output pipe
-        fwrite(frame, 1, sim->video_width*sim->video_height*3, sim->pipe_video_out); 
+        fwrite(sim->frame, 1, sim->video_width*sim->video_height*3, sim->pipe_video_out); 
     }
 }
 
@@ -2012,6 +2016,7 @@ void cassie_vis_close_recording(cassie_vis_t *sim){
         fflush(sim->pipe_video_out);
         pclose(sim->pipe_video_out);
         sim->pipe_video_out = NULL;
+        free(sim->frame);
     }
 }
 
@@ -2649,36 +2654,36 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile, bool offsc
 void cassie_vis_init_depth(cassie_vis_t *v, int width, int height)
 {
     v->depth_raw = (float*)calloc(width*height,sizeof(float));
-    v->depth_size = width * height;
+    v->depth_width = width;
+    v->depth_height = height;
 }
 
 float* cassie_vis_draw_depth(cassie_vis_t *v, cassie_sim_t *c, int width, int height)
 {
     if (v->depth_raw == NULL){
-        printf("raw is null");
+        printf("ERROR: raw is null");
         return NULL;
     }
-
-    if (v->depth_size != height*width){
-        printf("wrong size %i\n", height*width);
-        printf("init depth size %i\n%i\n%i\n", v->depth_size, height, width);
+    if (v->depth_width != width){
+        printf("ERROR: wrong width, should be %i, got %i\n", v->depth_width, width);
+        return NULL;
+    }
+    if (v->depth_height != height){
+        printf("ERROR: wrong height, should be %i, got %i\n", v->depth_height, height);
         return NULL;
     }
 
     mjrRect viewport={0,0,width,height};
     glfwMakeContextCurrent_fp(v->window);
-    //mjr_makeContext_fp(c->m, &v->con, 200);
-    // mjr_setBuffer_fp(mjFB_OFFSCREEN, &v->con);
     mjv_updateScene_fp(c->m, c->d, &v->opt, &v->pert, &v->cam, mjCAT_ALL, &v->scn);
     mjr_render_fp(viewport, &v->scn, &v->con);
     mjr_readPixels_fp(NULL, v->depth_raw, viewport, &v->con);
-    //mjr_freeContext_fp(&v->con);
     return v->depth_raw;
 }
 
 int cassie_vis_get_depth_size(cassie_vis_t *v)
 {
-    return v->depth_size;
+    return v->depth_width * v->depth_height;
 }
 
 void cassie_vis_close(cassie_vis_t *v)
@@ -2709,6 +2714,10 @@ void cassie_vis_free(cassie_vis_t *v)
     // Close the window, if it hasn't been closed already
     if (v->window)
         cassie_vis_close(v);
+
+    if (v->depth_raw) {
+        free(v->depth_raw);
+    }
 
     // Free cassie_vis_t
     mjr_freeContext_fp(&v->con);
