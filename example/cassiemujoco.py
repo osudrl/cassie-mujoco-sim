@@ -450,8 +450,7 @@ class CassieSim:
         cassie_sim_set_hfielddata(self.c, ctypes.cast(data_arr, ctypes.POINTER(ctypes.c_float)))
 
         if vis is not None:
-            cassie_vis_set_hfielddata(vis.v, ctypes.cast(data_arr, ctypes.POINTER(ctypes.c_float)))
-
+            cassie_vis_remakeSceneCon(vis)
     
     def get_hfield_data(self):
         nhfielddata = self.get_nhfielddata()

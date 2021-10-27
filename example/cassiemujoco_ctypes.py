@@ -559,6 +559,10 @@ cassie_vis_full_reset = _libraries['./libcassiemujoco.so'].cassie_vis_full_reset
 cassie_vis_full_reset.restype = None
 cassie_vis_full_reset.argtypes = [POINTER_T(struct_cassie_vis)]
 
+cassie_vis_remakeSceneCon = _libraries['./libcassiemujoco.so'].cassie_vis_remakeSceneCon
+cassie_vis_remakeSceneCon.restype = None
+cassie_vis_remakeSceneCon.argtypes = [POINTER_T(struct_cassie_vis)]
+
 cassie_vis_init_recording = _libraries['./libcassiemujoco.so'].cassie_vis_init_recording
 cassie_vis_init_recording.restype = None
 cassie_vis_init_recording.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_char_p, ctypes.c_int32, ctypes.c_int32]
@@ -1049,6 +1053,6 @@ __all__ = \
     'cassie_sim_torque_delay', 'cassie_sim_set_torque_delay', 'drive_filter_t', 'joint_filter_t',
     'cassie_sim_params', 'cassie_sim_nv', 'cassie_sim_nbody', 'cassie_sim_nq', 'cassie_sim_ngeom',
     'cassie_vis_record_frame', 'cassie_vis_init_recording', 'cassie_vis_close_recording', 'cassie_vis_window_resize', 'cassie_vis_attach_cam',
-    'cassie_vis_draw_depth', 'cassie_vis_get_depth_size', 'cassie_vis_init_depth', 'cassie_vis_attach_cam']
+    'cassie_vis_draw_depth', 'cassie_vis_get_depth_size', 'cassie_vis_init_depth', 'cassie_vis_attach_cam', 'cassie_vis_remakeSceneCon']
 
 

@@ -29,10 +29,14 @@ cassie_vis is being perturbed. Not sure how to fix this. Even if we make mjvPert
 mjvPerturb is changed in the GLFW callbacks, so then would have to have access to the cassie_sim object in the callbacks. So 
 would have the have the cassie_vis object have the pointer to the whole cassie_sim object instead of mjData and mjModel. Seems 
 bulky though. Can't make mjvPerturb a global var either, since it would break having two separate cassie_vis with their own
-cassie_sim each. 
-
-For some reason can't free the scene of one window without breaking rendering of the other window??? If 
+cassie_sim each. Regardless, simulation is unaffected, the difference is purely visual.
 */
+
+static long get_microseconds(void) {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return now.tv_sec * 1000000 + now.tv_nsec / 1000;
+}
 
 int main(void)
 {
@@ -44,42 +48,37 @@ int main(void)
     state_out_t y;
     pd_in_t u = {0};
     
-    
     bool draw_state = cassie_vis_draw(v, c);
     bool draw_state2 = cassie_vis_draw(v2, c);
+    long start_t = get_microseconds();
+    long sleep_time = 0;
     while (draw_state || draw_state2) {
-        if (!cassie_vis_paused(v)){// & !cassie_vis_paused(v2)) {
-            cassie_sim_step_pd(c, &y, &u);
+        start_t = get_microseconds();
+        if (!cassie_vis_paused(v) & !cassie_vis_paused(v2)) {
+            // Base 40 fps
+            for (int i = 0; i < 50; i++) {
+                cassie_sim_step_pd(c, &y, &u);
+            }
         }
+        // Only draw if the window is open
         if (draw_state) {
-            // printf("draw 1\n");
             draw_state = cassie_vis_draw(v, c);
         }
         if (draw_state2) {
-            // printf("draw 2\n");
             draw_state2 = cassie_vis_draw(v2, c);
         }
-        // printf("1: %i, 2: %i\n", draw_state, draw_state2);
+        sleep_time = 25000 - (get_microseconds() - start_t);
+        if (sleep_time < 0){
+            sleep_time = 0;
+        }
+        usleep(sleep_time);
     }
-    // if (draw_state) {
-    //     cassie_vis_close(v);
-    // }
-    // if (draw_state2) {
-    //     cassie_vis_close(v2);
-    // }
 
+    // Should free vis before freeing sim. 
     cassie_vis_free(v);
     cassie_vis_free(v2);
     cassie_sim_free(c);
-    // delete_init_model();
-    // cassie_sim_free(c2);
-    printf("done free\n");
-    // cassie_vis_free(v);
-    // do {
-    //     if (!cassie_vis_paused(v)) {    
-    //         cassie_sim_step_pd(c, &y, &u);
-    //     }
-    // } while (cassie_vis_draw(v, c));
+    cassie_cleanup();
 
     return 0;
 }

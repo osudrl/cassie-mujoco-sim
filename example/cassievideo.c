@@ -20,37 +20,45 @@
 #include <stdlib.h>
 #include <time.h>
 
+static long get_microseconds(void) {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return now.tv_sec * 1000000 + now.tv_nsec / 1000;
+}
 
 int main(void)
 {
-    const char modelfile[] = "../model/cassie_hfield.xml";
+    const char modelfile[] = "../model/cassie.xml";
     cassie_sim_t *c = cassie_sim_init(modelfile, false);
     cassie_vis_t *v = cassie_vis_init(c, modelfile);
 
     state_out_t y;
     pd_in_t u = {0};
-    
-    int count = 0;
-    
+        
     bool draw_state = cassie_vis_draw(v, c);
     cassie_vis_init_recording(v, "testFile", 1920, 1080);
-    
+    long start_t = get_microseconds();
+    long sleep_time = 0;
     while (draw_state) {
-
-        if (!cassie_vis_paused(v)) {   
-            cassie_sim_step_pd(c, &y, &u);
-            count += 1;
+        start_t = get_microseconds();
+        if (!cassie_vis_paused(v)) {
+            for (int i = 0; i < 50; i++) {
+                cassie_sim_step_pd(c, &y, &u);
+            }
         }
-
-        if(count%67 == 0){
-            draw_state = cassie_vis_draw(v, c);
-            cassie_vis_record_frame(v);
+        draw_state = cassie_vis_draw(v, c);
+        cassie_vis_record_frame(v);
+        sleep_time = 25000 - (get_microseconds() - start_t);
+        if (sleep_time < 0){
+            sleep_time = 0;
         }
-        
+        usleep(sleep_time);
     }
+
     cassie_vis_close_recording(v);
-    cassie_sim_free(c);
     cassie_vis_free(v);
+    cassie_sim_free(c);
+    cassie_cleanup();
 
     return 0;
 }
