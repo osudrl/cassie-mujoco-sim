@@ -3,7 +3,7 @@ PLATFORM := LINUX
 
 # Compilation settings
 INC     := -Iinclude -I../include -I$(HOME)/.mujoco/mujoco200_linux/include
-CFLAGS  := -std=gnu11 -Wall -Wextra -O3 -march=sandybridge -flto -g
+CFLAGS  := -std=gnu11 -Wall -Wextra -O3 -march=sandybridge -flto -ggdb3
 LDFLAGS := -L. -L..
 LIBS    := -lcassiemujoco #-L/home/robot/.mujoco/mujoco200_linux/bin
 
@@ -22,10 +22,11 @@ SIMOUT  := cassiesim
 CTRLOUT := cassiectrl
 VIDOUT := cassievideo
 DOUBLEVISOUT := test_doublevis
+HFIELDOUT := test_hfield
 endif
 
 # Default target
-all: $(TESTOUT) $(SIMOUT) $(CTRLOUT) $(VIDOUT) vel_check $(DOUBLEVISOUT)
+all: $(TESTOUT) $(SIMOUT) $(CTRLOUT) $(VIDOUT) vel_check $(DOUBLEVISOUT) $(HFIELDOUT)
 
 # Normal targets
 clean:
@@ -34,6 +35,7 @@ clean:
 	rm -f $(CTRLOUT)
 	rm -f $(VIDOUT)
 	rm -f $(DOUBLEVISOUT)
+	rm -f $(HFIELDOUT)
 	rm -f vel_check
 
 $(TESTOUT): cassietest.c
@@ -50,6 +52,9 @@ $(VIDOUT): cassievideo.c
 	
 $(DOUBLEVISOUT): test_doublevis.c 
 	$(CC) test_doublevis.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $(DOUBLEVISOUT)
+
+$(HFIELDOUT): test_hfield.c 
+	$(CC) test_hfield.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $(HFIELDOUT)
 
 vel_check: vel_check.c 
 	$(CC) vel_check.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o vel_check

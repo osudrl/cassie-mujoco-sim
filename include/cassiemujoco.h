@@ -308,6 +308,15 @@ void cassie_vis_apply_force(cassie_vis_t *vis, double xfrc[6], const char* name)
 // out all other data used for computation (like velocities, accelerations, forces)
 void cassie_vis_full_reset(cassie_vis_t *sim);
 
+// Remake the visualized mjvScene and mjrContext. Used to update cassie_vis_t 
+// after some change has been made to the underlying model. 
+void cassie_vis_remakeSceneCon(cassie_vis_t *v);
+
+// Set height field data for vis model
+void cassie_vis_set_hfielddata(cassie_vis_t *v, float* data);
+
+float* cassie_vis_hfielddata(cassie_vis_t *c);
+
 // initialize a video renderer
 void cassie_vis_init_recording(cassie_vis_t *sim, const char* videofile, int width, int height);
 

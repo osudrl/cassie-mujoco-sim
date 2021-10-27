@@ -66,7 +66,11 @@
     <mesh name='right-foot-crank'   scale='1 1 -1' file='foot-crank.stl'/>
     <mesh name='right-plantar-rod'  scale='1 1 -1' file='plantar-rod.stl'/>
     <mesh name='right-foot'         scale='1 1 -1' file='foot.stl'/>
-    <hfield name='hf1' nrow='250' ncol='250' size="50 50 0.15 0.0001"/>
+    <hfield name='hf1' nrow='250' ncol='250' size="25 25 .1 .1"/>
+    <!--
+    Example of how to use png file for hfield instead of setting at runtime. For some reason, need to use full path for file
+    <hfield file="/home/robot/OSU_DRL/cassie-mujoco-sim/model/terrains/noise.png" name='hf1' size="25 25 .1 .1"/> 
+    -->
   </asset>
 
   <worldbody>

@@ -1640,7 +1640,7 @@ int cassie_sim_get_hfield_nrow(cassie_sim_t *c) {
 }
 
 int cassie_sim_get_hfield_ncol(cassie_sim_t *c) {
-    return c->m->hfield_nrow[0];
+    return c->m->hfield_ncol[0];
 }
 
 int cassie_sim_get_nhfielddata(cassie_sim_t *c) {
@@ -1664,12 +1664,6 @@ float* cassie_sim_hfielddata(cassie_sim_t *c) {
 void cassie_sim_set_hfielddata(cassie_sim_t *c, float* data) {
     for (int i = 0; i < c->m->nhfielddata; i++) {
         c->m->hfield_data[i] = data[i];
-    }
-}
-
-void cassie_vis_set_hfielddata(cassie_sim_t *v, float* data) {
-    for (int i = 0; i < v->m->nhfielddata; i++) {
-        v->m->hfield_data[i] = data[i];
     }
 }
 
@@ -1818,6 +1812,11 @@ void cassie_vis_full_reset(cassie_vis_t *v)
     mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     mju_zero_fp(v->d->qacc, v->m->nv);
 #endif
+}
+
+void cassie_vis_remakeSceneCon(cassie_vis_t *v) {
+    mjv_makeScene_fp(v->m, &v->scn, 1000);
+    mjr_makeContext_fp(v->m, &v->con, fontscale);
 }
 
 // add markers to visualization
