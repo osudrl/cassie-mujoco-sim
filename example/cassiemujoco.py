@@ -510,8 +510,8 @@ class CassieSim:
         cassie_sim_free(self.c)
 
 class CassieVis:
-    def __init__(self, c):
-        self.v = cassie_vis_init(c.c, c.modelfile.encode('utf-8'))
+    def __init__(self, c, offscreen=False):
+        self.v = cassie_vis_init(c.c, c.modelfile.encode('utf-8'), ctypes.c_bool(offscreen))
 
     def draw(self, c):
         state = cassie_vis_draw(self.v, c.c)

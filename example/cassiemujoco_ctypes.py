@@ -477,7 +477,7 @@ cassie_vis_set_hfielddata.argtypes = [POINTER_T(struct_cassie_vis), POINTER_T(ct
 
 cassie_vis_init = _libraries['./libcassiemujoco.so'].cassie_vis_init
 cassie_vis_init.restype = POINTER_T(struct_cassie_vis)
-cassie_vis_init.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
+cassie_vis_init.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p,ctypes.c_bool]
 
 cassie_vis_close = _libraries['./libcassiemujoco.so'].cassie_vis_close
 cassie_vis_close.restype = None

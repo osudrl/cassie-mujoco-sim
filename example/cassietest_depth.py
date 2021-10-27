@@ -44,7 +44,7 @@ def euler2quat(z=0, y=0, x=0):
 # Initialize cassie simulation
 sim = CassieSim("../model/cassie_depth.xml")
 vis = CassieVis(sim)
-visd = CassieVis(sim)
+visd = CassieVis(sim, offscreen=True)
 width = 300
 height = 300
 visd.window_resize(width, height)
@@ -109,9 +109,10 @@ while draw_state:# and draw_state2:
     visd.draw(sim)
     depth_ptr = visd.draw_depth(sim, width=width, height=height)
     depth = np.ctypeslib.as_array(depth_ptr, shape=(width*height,)).reshape((1,1,width,height))
-    plt.imshow(np.flip(depth[0,0,:,:],0), cmap='hot', interpolation='nearest')
+    # print(min(depth), max(depth))
+    # plt.imshow(np.flip(depth[0,0,:,:],0), cmap='hot', interpolation='nearest')
     # plt.show()
-    plt.savefig('./figs/img_{}.png'.format(count))
+    # plt.savefig('./figs/img_{}.png'.format(count))
     count += 1
 
     while time.monotonic() - t < 60*0.0005:

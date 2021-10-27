@@ -260,7 +260,7 @@ void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, dou
 // Creates an instance of the Cassie simulation visualizer. If called
 // before cassie_mujoco_init, cassie_mujoco_init is called with the
 // parameter NULL.
-cassie_vis_t *cassie_vis_init(cassie_sim_t *sim, const char* modelfile);
+cassie_vis_t *cassie_vis_init(cassie_sim_t *sim, const char* modelfile, bool offscreen);
 
 // Closes the visualization window without freeing the instance. After
 // calling this, cassie_vis_draw can still be called, but the
