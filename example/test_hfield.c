@@ -45,7 +45,8 @@ int main(void)
         hfield_data[i] = (float)rand()/(float)(RAND_MAX);
     }
 
-    // Set middle where Cassie is initialized to be flat
+    // Set middle where Cassie is initialized to be flat. Indexing starts at negative x negative y
+    // (back right corner of the hfield in relation to where Cassie faces foward.)
     int nrow = cassie_sim_get_hfield_nrow(c);
     int ncol = cassie_sim_get_hfield_ncol(c);
     int zero_rad = 5;   // "Radius" around the center to make flat
