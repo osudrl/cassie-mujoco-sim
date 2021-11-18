@@ -772,6 +772,10 @@ cassie_sim_nq = _libraries['./libcassiemujoco.so'].cassie_sim_nq
 cassie_sim_nq.restype = ctypes.c_int32
 cassie_sim_nq.argtypes = [POINTER_T(struct_cassie_sim)]
 
+cassie_sim_get_jacobian = _libraries['./libcassiemujoco.so'].cassie_sim_get_jacobian
+cassie_sim_get_jacobian.restype = None
+cassie_sim_get_jacobian.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double), ctypes.c_char_p]
+
 class struct_c__SA_pd_motor_in_t(ctypes.Structure):
     _pack_ = True # source:False
     _fields_ = [
@@ -1049,6 +1053,7 @@ __all__ = \
     'cassie_sim_torque_delay', 'cassie_sim_set_torque_delay', 'drive_filter_t', 'joint_filter_t',
     'cassie_sim_params', 'cassie_sim_nv', 'cassie_sim_nbody', 'cassie_sim_nq', 'cassie_sim_ngeom',
     'cassie_vis_record_frame', 'cassie_vis_init_recording', 'cassie_vis_close_recording', 'cassie_vis_window_resize', 'cassie_vis_attach_cam',
-    'cassie_vis_draw_depth', 'cassie_vis_get_depth_size', 'cassie_vis_init_depth', 'cassie_vis_attach_cam', 'cassie_vis_remakeSceneCon']
+    'cassie_vis_draw_depth', 'cassie_vis_get_depth_size', 'cassie_vis_init_depth', 'cassie_vis_attach_cam', 'cassie_vis_remakeSceneCon',
+    'cassie_sim_get_jacobian']
 
 
