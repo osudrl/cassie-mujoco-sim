@@ -28,10 +28,10 @@ int main(void)
 
     // printf("%p\n", cassie_sim_joint_filter(c));
     // printf("%p\n", cassie_sim_joint_filter(c2));
-    cassie_vis_t *v = cassie_vis_init(c, modelfile);
+    cassie_vis_t *v = cassie_vis_init(c, modelfile, false);
     // cassie_vis_init_depth(v, 300, 300);
     // cassie_vis_full_reset(v);
-    cassie_vis_t *v2 = cassie_vis_init(c, modelfile);
+    cassie_vis_t *v2 = cassie_vis_init(c, modelfile, false);
     cassie_vis_window_resize(v2, 300, 300);
     cassie_vis_init_depth(v2, 300, 300);
 

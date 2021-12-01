@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
     cassie_sim_t *sim = cassie_sim_init(modelfile, false);
     cassie_vis_t *vis;
     if (visualize)
-        vis = cassie_vis_init(sim, modelfile);
+        vis = cassie_vis_init(sim, modelfile, false);
     if (hold)
         cassie_sim_hold(sim);
 
