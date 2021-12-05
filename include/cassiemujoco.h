@@ -35,7 +35,7 @@ extern "C" {
 #endif
 
 // Pass a null-terminated string containing the path to the directory
-// containing cassie.xml, mjpro150/, mjkey.txt, etc. If NULL is
+// containing cassie.xml, mujoco210/, mjkey.txt, etc. If NULL is
 // passed, the directory containing the current executable is used
 // instead. Returns true if loading was successful, false otherwise.
 bool cassie_mujoco_init(const char *basedir);
