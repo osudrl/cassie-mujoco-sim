@@ -2,7 +2,7 @@
 PLATFORM := LINUX
 
 # Compilation settings
-INC     := -Iinclude -Imjpro150/include
+INC     := -Iinclude -Imujoco210/include
 CFLAGS  := -std=gnu11 -Wall -Wextra -O3 -march=sandybridge -flto
 LDFLAGS := -shared -Lsrc
 
@@ -37,7 +37,7 @@ build: $(LIBOUT)
 	cp -r model/* build/
 
 ctypes: build
-	clang2py include/*.h --clang-args="-I/usr/include/clang/6.0/include -Iinclude" -l ./$(LIBOUT) -o build/cassiemujoco_ctypes.py
+	clang2py include/*.h --clang-args="-I/usr/include/clang/10/include -Iinclude" -l ./$(LIBOUT) -o build/cassiemujoco_ctypes.py
 	sed -i '/import ctypes/aimport os\n_dir_path = os.path.dirname(os.path.realpath(__file__))' build/cassiemujoco_ctypes.py
 	sed -i "s/CDLL('.\/$(LIBOUT)')/CDLL(_dir_path + '\/$(LIBOUT)')/g" build/cassiemujoco_ctypes.py
 
@@ -45,8 +45,7 @@ test: checkdirs build
 	mkdir -p test
 	cp -r build/* test/
 	cp example/* test/
-	cp -r mjpro150 test/
-	cp mjkey.txt test/
+	cp -r mujoco210 test/
 	make -C test PLATFORM="$(PLATFORM)"
 
 # Virtual targets

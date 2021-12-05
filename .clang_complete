@@ -1,5 +1,5 @@
 -Iinclude
--Imjpro150/include
+-Imujoco210/include
 -std=gnu11
 -Wall
 -Wextra

@@ -112,7 +112,7 @@ GLFW_FUNCTION_LIST
 #define LOADLIB(path) LoadLibrary(path)
 #define UNLOADLIB(handle) FreeLibrary(handle)
 #define LOADFUN(handle, sym) sym ## _fp = (void*) GetProcAddress(handle, #sym)
-#define MJLIBNAME "mujoco150.dll"
+#define MJLIBNAME "mujoco210.dll"
 #define GLFWLIBNAME "glfw3.dll"
 
 #else
@@ -120,8 +120,8 @@ GLFW_FUNCTION_LIST
 #define LOADLIB(path) dlopen(path, RTLD_LAZY | RTLD_GLOBAL)
 #define UNLOADLIB(handle) dlclose(handle)
 #define LOADFUN(handle, sym) sym ## _fp = dlsym(handle, #sym)
-#define MJLIBNAME "libmujoco150.so"
-#define MJLIBNAMENOGL "libmujoco150nogl.so"
+#define MJLIBNAME "libmujoco210.so"
+#define MJLIBNAMENOGL "libmujoco210nogl.so"
 #define GLFWLIBNAME "libglfw.so.3"
 
 #endif
@@ -268,14 +268,14 @@ static bool load_glfw_library(const char *basedir)
 #ifndef _WIN32
     // Open dependencies
     gl_handle = LOADLIB("libGL.so.1");
-    snprintf(buf, sizeof buf, "%.4096s/mjpro150/bin/libglew.so", basedir);
+    snprintf(buf, sizeof buf, "%.4096s/mujoco210/bin/libglew.so", basedir);
     glew_handle = LOADLIB(buf);
     if (!gl_handle || !glew_handle)
         return false;
 #endif
 
     // Open library
-    snprintf(buf, sizeof buf, "%.4096s/mjpro150/bin/" GLFWLIBNAME, basedir);
+    snprintf(buf, sizeof buf, "%.4096s/mujoco210/bin/" GLFWLIBNAME, basedir);
     glfw_handle = LOADLIB(buf);
     if (!glfw_handle) {
         fprintf(stderr, "Failed to load %s\n", buf);
@@ -300,10 +300,10 @@ static bool load_mujoco_library(const char *basedir)
     bool __attribute__((unused)) gl = load_glfw_library(basedir);
 
     // Choose library version
-    snprintf(buf, sizeof buf, "%.4096s/mjpro150/bin/" MJLIBNAME, basedir);
+    snprintf(buf, sizeof buf, "%.4096s/mujoco210/bin/" MJLIBNAME, basedir);
 #ifndef _WIN32
     if (!gl)
-        snprintf(buf, sizeof buf, "%.4096s/mjpro150/bin/" MJLIBNAMENOGL, basedir);
+        snprintf(buf, sizeof buf, "%.4096s/mujoco210/bin/" MJLIBNAMENOGL, basedir);
 #endif
 
     // Open library
@@ -615,8 +615,10 @@ bool cassie_mujoco_init(const char *basedir)
             return false;
 
         // Activate MuJoCo
+		/*
         snprintf(buf, sizeof buf, "%.4096s/mjkey.txt", basedir);
         mj_activate_fp(buf);
+		*/
 
         // Load the model
         snprintf(buf, sizeof buf, "%.4096s/cassie.xml", basedir);
@@ -974,7 +976,7 @@ cassie_vis_t *cassie_vis_init()
         return NULL;
 
     // Allocate visualization structure
-    cassie_vis_t *v = malloc(sizeof (cassie_vis_t));
+    cassie_vis_t *v = calloc(1, sizeof (cassie_vis_t));
 
     // Create window
     v->window = glfwCreateWindow_fp(1200, 900, "Cassie", NULL, NULL);
@@ -986,7 +988,7 @@ cassie_vis_t *cassie_vis_init()
     v->cam.fixedcamid = 0;
     mjv_defaultOption_fp(&v->opt);
     mjr_defaultContext_fp(&v->con);
-    mjv_makeScene_fp(&v->scn, 1000);
+    mjv_makeScene_fp(initial_model, &v->scn, 1000);
     mjr_makeContext_fp(initial_model, &v->con, mjFONTSCALE_100);
 
     // Set callback for user-initiated window close events
