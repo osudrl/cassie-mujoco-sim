@@ -8,12 +8,13 @@ mjpro150/
 *__pycache__*
 
 *.mp4
-*/example/cassiesim
-*/example/cassiectrl
-*/example/cassievideo
-*/example/test_doublevis
-*/example/cassietest
-*/example/test_doublevis
-*/example/test_hfield
-*/example/test_terrain
-*/example/vel_check
+*MUJOCO_LOG.TXT
+example/cassiesim
+example/cassiectrl
+example/cassievideo
+example/test_doublevis
+example/cassietest
+example/test_doublevis
+example/test_hfield
+example/test_terrain
+example/vel_check
