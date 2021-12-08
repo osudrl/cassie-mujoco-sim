@@ -23,11 +23,8 @@ import numpy as np
 _dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize libcassiesim
-# cassie_mujoco_init(str.encode(_dir_path+"/cassie_yoke.xml"))
 default_model = "../model/cassie.xml"
 cassie_mujoco_init(str.encode(default_model))
-# cassie_mujoco_init(str.encode("../model/cassiepole_x.xml"))
-
 
 # Interface classes
 # Note: Making the optional argument be a global var be default is perhaps not the safest thing to do
@@ -146,6 +143,14 @@ class CassieSim:
         for i in range(6):
             ret[i] = percept[i]
         return ret
+
+    def get_jacobian(self, name):
+        jacp = np.zeros(3*self.nv)
+        jacp_array = (ctypes.c_double * (3*self.nv))()
+        cassie_sim_get_jacobian(self.c, jacp_array, name.encode())
+        for i in range(3*self.nv):
+            jacp[i] = jacp_array[i]
+        return jacp
 
     def get_foot_forces(self):
         force = np.zeros(12)
