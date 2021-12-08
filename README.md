@@ -2,36 +2,32 @@
 
 A simulation library for Agility Robotics' Cassie robot using MuJoCo.
 
-Developed and tested on Ubuntu 16.04. Also compiles for Windows using mingw-w64.
+Developed and tested on Ubuntu 18.04. Also compiles for Windows using mingw-w64.
 
 To build the shared library:
 1.  Install libglfw3-dev
 2.  Clone this repository
-3.  Download mjpro200_linux.zip from roboti.us
-4.  Put mjpro200_linux in a `.mujoco` directory in your home directory
+3.  Download mjpro210 from roboti.us [here](https://mujoco.org/download)
+4.  Put mjpro210 in a `.mujoco` directory in your home directory
 5.  `make`
 
 To cross-compile for Windows, use `make PLATFORM=WIN`. (NOT TESTED)
 
-A directory named release will be created containing the files needed to use the library with a C interface. A Python interface can be generated with `make ctypes`, which requires ctypeslib2 to be installed.
+A directory named release will be created containing the files needed to use the library with a C interface. A Python interface can be generated with `make ctypes`, which requires ctypeslib2 to be installed. Note that this is not needed as the ctypes Python wrapper is already provided in this repo.
 
-A license file for MuJoCo (mjkey.txt) is required to run the simulation. The library also includes functions that can be used for communicating with Cassie over UDP, and MuJoCo is not required if only these functions are called.
+This library also includes functions that can be used for communicating with Cassie over UDP, and MuJoCo is not required if only these functions are called.
 
 To build and run the examples:
-1.  Place mjkey.txt in the `.mujoco`directory
-2.  Set the `MUJOCO_KEY_PATH` environment variable to be `~/.mujoco/mjkey.txt`
-4.  `make test`
-5.  Run the examples in the test directory
+1.  `make test`
+2.  Run the examples in the test directory
 
 The examples include cassiesim, which simulates a physical Cassie robot controlled over UDP, and cassiectrl, a null controller operating over UDP. The file cassietest.c is a minimal example of running the simulation, and cassietest.py demonstrates controlling the simulated robot in Python.
 
 Documentation for the simulation functions is included in include/cassiemujoco.h. The file header/udp.h declares convenience functions for creating a UDP socket and obtaining the most recent packet. The remaining header files include functions for packing and unpacking structures used to communicate with Cassie into UDP packets and for simulating Cassie's internal safety mechanisms and state estimation processes.
 
 ## Changes:
-* Updated libraries to use mujoco 2.00
-* MuJoCo activation key is now loaded by the `MUJOCO_KEY_PATH` environment variable. Add `export MUJOCO_KEY_PATH = <path to mjkey.txt>` to your `.bashrc`.
-* To make things cleaner when loading MuJoCo and GLFW libraries, we assume the `mujoco200_linux` folder is `~/.mujoco` folder. This allows there to be only one copy of mujoco on your machine, rather than having to copy the mujoco folder to every place where `libcassiemujoco.so` is. 
-* If building fails because it can't find `mujoco.h`, specify the full path in the Makefile when including mujoco200_linux/include, rather than using `~`.
+* Updated libraries to use mujoco 2.10, MuJoCo activation key is no longer required
+* To make things cleaner when loading MuJoCo and GLFW libraries, we assume the `mujoco210` folder is in the `~/.mujoco` folder. This allows there to be only one copy of mujoco on your machine, rather than having to copy the mujoco folder to every place where `libcassiemujoco.so` is. 
 
 ## New Visualization Features
 The F1 key will display a help screen that lists the most useful of the following functions.
@@ -68,7 +64,7 @@ The F1 key will display a help screen that lists the most useful of the followin
 * Add full mujoco 2.00 ui functionality?
 
 ## Notes:
-* Note that there is some small unavoidable memory leak when calling `cassie_mujoco_init`. I am not sure what causes this, it seems to come from the `mj_loadXML` when it makes the underlying C model (when mujoco internally calls `mjCModel`). This is for sure a problem that we cause as normal MuJoCo does not have any memory leaks, perhaps with the weird passing around of strings and structs that we do in our wrapper messes things up. I do not know how to fix it (though perhaps with MuJoCo becoming open source, looking at the source code once it becomes available might help). Regardless, this is mostly a non-issue as the size of the leak is small (2560 bytes) and it is a one time leak, as `cassie_mujoco_init` will only ever be called once unless you are manually activating and then deactivating MuJoCo multiple times for some reason.
+* Note that there is some small unavoidable memory leak when calling `cassie_mujoco_init`. I am not sure what causes this, it seems to come from the `mj_loadXML` when it makes the underlying C model (when mujoco internally calls `mjCModel`). This is for sure a problem that we cause as normal MuJoCo does not have any memory leaks, perhaps with the weird passing around of strings and structs that we do in our wrapper messes things up. I do not know how to fix it (though perhaps with MuJoCo becoming open source, looking at the source code once it becomes available might help). Regardless, this is mostly a non-issue as the size of the leak is small (2560 bytes) and it is a one time leak, as `cassie_mujoco_init` will only ever be called once unless you are manually initializing and then cleaning up MuJoCo multiple times for some reason.
 
 ## Citation
 To cite this software package use the following format:\

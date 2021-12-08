@@ -61,8 +61,6 @@ mjvFigure figsensor;
 
 // Loaded MuJoCo functions
 #define MUJOCO_FUNCTION_LIST                    \
-    X(mj_activate)                              \
-    X(mj_deactivate)                            \
     X(mj_loadXML)                               \
     X(mj_copyModel)                             \
     X(mj_deleteModel)                           \
@@ -874,7 +872,6 @@ void cassie_cleanup()
                 mj_deleteModel_fp(initial_model);
                 initial_model = NULL;
             }
-            mj_deactivate_fp();
             mujoco_initialized = false;
         }
 
