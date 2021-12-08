@@ -24,7 +24,7 @@ _dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Initialize libcassiesim
 # cassie_mujoco_init(str.encode(_dir_path+"/cassie_yoke.xml"))
-default_model = "../model/cassie_fixed.xml"
+default_model = "../model/cassie.xml"
 cassie_mujoco_init(str.encode(default_model))
 # cassie_mujoco_init(str.encode("../model/cassiepole_x.xml"))
 
@@ -60,6 +60,7 @@ class CassieSim:
     def randomize_terrain(self):
         hfield = self.hfields[np.random.randint(len(self.hfields))]
         self.set_hfield_data(hfield.flatten())
+        return hfield
 
     def step(self, u):
         y = cassie_out_t()
@@ -446,8 +447,8 @@ class CassieSim:
         if len(data) != nhfielddata:
             print("SIZE MISMATCH SET_HFIELD_DATA")
             exit(1)
-        data_arr = (ctypes.c_float * nhfielddata)(*data)
-        cassie_sim_set_hfielddata(self.c, ctypes.cast(data_arr, ctypes.POINTER(ctypes.c_float)))
+        data_arr = (ctypes.c_double * nhfielddata)(*data)
+        cassie_sim_set_hfielddata(self.c, ctypes.cast(data_arr, ctypes.POINTER(ctypes.c_double)))
 
         if vis is not None:
             cassie_vis_remakeSceneCon(vis)
