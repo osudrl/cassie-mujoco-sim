@@ -452,8 +452,8 @@ class CassieSim:
         if len(data) != nhfielddata:
             print("SIZE MISMATCH SET_HFIELD_DATA")
             exit(1)
-        data_arr = (ctypes.c_double * nhfielddata)(*data)
-        cassie_sim_set_hfielddata(self.c, ctypes.cast(data_arr, ctypes.POINTER(ctypes.c_double)))
+        data_arr = (ctypes.c_float * nhfielddata)(*data)
+        cassie_sim_set_hfielddata(self.c, ctypes.cast(data_arr, ctypes.POINTER(ctypes.c_float)))
 
         if vis is not None:
             cassie_vis_remakeSceneCon(vis)

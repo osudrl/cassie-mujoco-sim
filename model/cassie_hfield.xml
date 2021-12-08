@@ -1,7 +1,7 @@
 <!-- Cassie simulation model developed by the Dynamic Robotics Laboratory -->
 <mujoco model='cassie'>
   <compiler inertiafromgeom='auto' angle='degree' eulerseq='zyx' meshdir='cassie-stl-meshes'/>
-  <size nuser_actuator='1' nuser_sensor='1' nuser_geom='1'/>
+  <size nuser_actuator='1' nuser_sensor='1' nuser_geom='1' nconmax="300"/>
   <option timestep='0.0005' iterations='50' solver='PGS' gravity='0 0 -9.81'/>
   <!-- Timestep is set to 0.0005 because our controller runs at 2 kHz -->
   <!-- Larger values still have stable dynamics -->
@@ -66,7 +66,7 @@
     <mesh name='right-foot-crank'   scale='1 1 -1' file='foot-crank.stl'/>
     <mesh name='right-plantar-rod'  scale='1 1 -1' file='plantar-rod.stl'/>
     <mesh name='right-foot'         scale='1 1 -1' file='foot.stl'/>
-    <hfield name='hf1' nrow='250' ncol='250' size="25 25 .1 .1"/>
+    <hfield name='hf1' nrow='200' ncol='200' size="5 5 .2 .1"/>
     <!--
     Example of how to use png file for hfield instead of setting at runtime. For some reason, need to use full path for file
     <hfield file="/home/robot/OSU_DRL/cassie-mujoco-sim/model/terrains/noise.png" name='hf1' size="25 25 .1 .1"/> 
@@ -74,19 +74,23 @@
   </asset>
 
   <worldbody>
-    <!-- <geom name='floor'   pos='9 0 -0.01'     size='20 10 0.125' type='plane' material='plane' condim='3' conaffinity='15'/> -->
-    <geom name='hfield1' pos='0.0 0 0.0' hfield='hf1'     type='hfield'                 condim='3' conaffinity='15'/>
+    <body name='floor' pos='0 0 0'>
+        <geom name='hfield1' pos='0.0 0 -0.1' hfield='hf1'     type='hfield'                 condim='3' conaffinity='15'/>
+    </body>
 
     <light mode='trackcom' pos='0 0 5' dir='0 0 -1'/>
     <light directional='true' pos='0 0 3' dir='0 0 -1' diffuse='0.2 0.2 0.2' specular='0 0 0'/>
 
     <body name='cassie-pelvis' pos='0 0 1.01' childclass='cassie'>
       <camera name='track' pos='0 -3 1' zaxis='0 -1 0.5' mode='track'/>
+      <camera name="egocentric" pos=".2 0 0.2" xyaxes="0 -1 0 .7 0 0.7" fovy="65.5"/>
+      <camera name="gopro" pos="3 0 0.5" xyaxes="0 1 0 0 0 1" fovy="65.5"/>
       <!--camera name='track' pos='-3 0 0' xyaxes='0 -1 0 0 0 1' mode='track'/-->
       <inertial pos='0.05066 0.000346 0.02841' mass='10.33' fullinertia='0.085821 0.049222 0.08626 1.276e-05 -0.00016022 -0.000414'/>
       <joint type='slide' axis='1 0 0' limited='false'/>
       <joint type='slide' axis='0 1 0' limited='false'/>
       <joint type='slide' axis='0 0 1' limited='false' ref='1.01'/>
+      <!-- <joint type='slide' axis='0 0 1' limited='true' range='1 1.01' ref='1.01'/> -->
       <joint type='ball' limited='false'/>
       <geom type='mesh' mesh='cassie-pelvis'/>
       <geom type='sphere' size='0.15' pos='0.02 0 0.02' class='collision'/>

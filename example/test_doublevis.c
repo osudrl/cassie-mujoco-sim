@@ -42,8 +42,8 @@ int main(void)
 {
     const char modelfile[] = "../model/cassie.xml";
     cassie_sim_t *c = cassie_sim_init(modelfile, false);
-    cassie_vis_t *v = cassie_vis_init(c, modelfile);
-    cassie_vis_t *v2 = cassie_vis_init(c, modelfile);
+    cassie_vis_t *v = cassie_vis_init(c, modelfile, false);
+    cassie_vis_t *v2 = cassie_vis_init(c, modelfile, false);
 
     state_out_t y;
     pd_in_t u = {0};

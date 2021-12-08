@@ -23,10 +23,11 @@ CTRLOUT := cassiectrl
 VIDOUT := cassievideo
 DOUBLEVISOUT := test_doublevis
 HFIELDOUT := test_hfield
+TERRAINOUT := test_terrain
 endif
 
 # Default target
-all: $(TESTOUT) $(SIMOUT) $(CTRLOUT) $(VIDOUT) vel_check $(DOUBLEVISOUT) $(HFIELDOUT)
+all: $(TESTOUT) $(SIMOUT) $(CTRLOUT) $(VIDOUT) vel_check $(DOUBLEVISOUT) $(HFIELDOUT) $(TERRAINOUT)
 
 # Normal targets
 clean:
@@ -55,6 +56,9 @@ $(DOUBLEVISOUT): test_doublevis.c
 
 $(HFIELDOUT): test_hfield.c 
 	$(CC) test_hfield.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $(HFIELDOUT)
+
+$(TERRAINOUT): test_terrain.c 
+	$(CC) test_terrain.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $(TERRAINOUT)
 
 vel_check: vel_check.c 
 	$(CC) vel_check.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o vel_check

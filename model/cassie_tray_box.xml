@@ -228,10 +228,10 @@
       <!-- <geom type='box' size='0.1 0.1 0.1' mass='3' class='obstacle'/> -->
     <!-- </body> -->
     <body name='cup_box' pos='0.0 0 1.25'> 
-        <geom type='box' size='0.05 0.05 0.05' mass="5" class='obstacle'/>
+        <geom type='box' size='0.05 0.05 0.05' mass="5" class='obstacle' friction='1.0 0.005 0.0001'/>
          <joint type='free' limited='false'/>
-        <!-- <joint type='slide' axis='1 0 0' limited='false'/>
-        <joint type='slide' axis='0 1 0' limited='false'/>
+        <!-- <joint type='slide' axis='1 0 0' limited='true' range='-0.14 0.14'/>
+        <joint type='slide' axis='0 1 0' limited='true' range='-0.14 0.14'/>
         <joint type='slide' axis='0 0 1' ref='1.25' limited='false'/> -->
     </body>
 

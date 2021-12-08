@@ -1416,12 +1416,8 @@ void cassie_sim_foot_positions(const cassie_sim_t *c, double cpos[6])
 {
     // Zero the output foot positions 
     mju_zero_fp(cpos, 6);
-
-    for (int i = 0; i < 3; ++i) {
-        // Get foot xyz (global coords)
-        cpos[i]     = c->d->xpos[3 * left_foot_body_id + i];
-        cpos[3 + i] = c->d->xpos[3 * right_foot_body_id + i];
-    }
+    mju_copy_fp(cpos, &c->d->xpos[3 * left_foot_body_id], 3);
+    mju_copy_fp(&cpos[3], &c->d->xpos[3 * right_foot_body_id], 3);
 
     // cassie mechanical model offset
     // double offset_footJoint2midFoot = sqrt(pow((0.052821 + 0.069746)/2, 2) + pow((0.092622 + 0.010224)/2, 2));
@@ -1643,7 +1639,7 @@ float* cassie_sim_hfielddata(cassie_sim_t *c) {
     return c->m->hfield_data;
 }
 
-void cassie_sim_set_hfielddata(cassie_sim_t *c, double* data) {
+void cassie_sim_set_hfielddata(cassie_sim_t *c, float* data) {
     for (int i = 0; i < c->m->nhfielddata; i++) {
         c->m->hfield_data[i] = data[i];
     }
@@ -1909,11 +1905,8 @@ void cassie_vis_update_marker_orient(cassie_vis_t* v, int id, double so3[9])
 void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
 {
     int body_id = mj_name2id_fp(v->m, mjOBJ_BODY, name);
-    // mju_copy_fp(&v->d->xfrc_applied[6 * body_id], xfrc, 6);
     v->perturb_body = body_id;
-    for (int i = 0; i < 6; i++) {
-        v->perturb_force[i] = xfrc[i];
-    }
+    mju_copy_fp(v->perturb_force, xfrc, 6);
 }
 
 void cassie_vis_init_recording(cassie_vis_t *sim, const char* videofile, int width, int height){
@@ -2811,12 +2804,6 @@ bool cassie_vis_draw(cassie_vis_t *v, cassie_sim_t *c)
     glfwSwapBuffers_fp(v->window);
     glfwPollEvents_fp();
 
-    //double cfrc[12];
-    // cassie_sim_foot_forces(c, cfrc);
-    // printf("foot forces:\n");
-    // for (int i = 0; i < 12; i++) {
-    //     printf("%f, ", cfrc[i]);
-    // }
     return true;//glfwWindowShouldClose_fp(v->window);
 }
 
