@@ -164,7 +164,7 @@ GLFW_FUNCTION_LIST
 #define LOADLIB(path) LoadLibrary(path)
 #define UNLOADLIB(handle) FreeLibrary(handle)
 #define LOADFUN(handle, sym) sym ## _fp = (void*) GetProcAddress(handle, #sym)
-#define MJLIBNAME "mujoco150.dll"
+#define MJLIBNAME "mujoco210.dll"
 #define GLFWLIBNAME "glfw3.dll"
 
 #else
@@ -172,8 +172,8 @@ GLFW_FUNCTION_LIST
 #define LOADLIB(path) dlopen(path, RTLD_LAZY | RTLD_GLOBAL)
 #define UNLOADLIB(handle) dlclose(handle)
 #define LOADFUN(handle, sym) sym ## _fp = dlsym(handle, #sym)
-#define MJLIBNAME "libmujoco200.so"
-#define MJLIBNAMENOGL "libmujoco200nogl.so"
+#define MJLIBNAME "libmujoco210.so"
+#define MJLIBNAMENOGL "libmujoco210nogl.so"
 #define GLFWLIBNAME "libglfw.so.3"
 
 #endif
@@ -481,7 +481,7 @@ static bool load_glfw_library(const char *basedir)
 #ifndef _WIN32
     // Open dependencies
     gl_handle = LOADLIB("libGL.so.1");
-    snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/libglew.so", basedir);
+    snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco210/bin/libglew.so", basedir);
     glew_handle = LOADLIB(buf);
     if (!gl_handle || !glew_handle) {
         printf("gl_handle or glew_handle not loaded\n");
@@ -490,7 +490,7 @@ static bool load_glfw_library(const char *basedir)
 #endif
 
     // Open library
-    snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/" GLFWLIBNAME, basedir);
+    snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco210/bin/" GLFWLIBNAME, basedir);
     glfw_handle = LOADLIB(buf);
     if (!glfw_handle) {
         //fprintf(stderr, "Failed to load %s\n", buf);
@@ -521,12 +521,10 @@ static bool load_mujoco_library()
     //struct passwd *pw = getpwuid(getuid());
     
     // Choose library version
-    snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/" MJLIBNAME, homedir);
-    // snprintf(buf, sizeof buf, "%.4096s/mujoco200_linux/bin/" MJLIBNAME, "~/.mujoco");
+    snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco210/bin/" MJLIBNAME, homedir);
 #ifndef _WIN32
     if (!gl) {
-        snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/" MJLIBNAMENOGL, homedir);
-        // snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco200_linux/bin/" MJLIBNAMENOGL, "~");
+        snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco210/bin/" MJLIBNAMENOGL, homedir);
     }
 #endif
 
@@ -836,9 +834,6 @@ bool cassie_mujoco_init(const char *file_input)
         if (!load_mujoco_library()) {
             return false;
         }
-        // Activate MuJoCo
-        const char* key_buf = getenv("MUJOCO_KEY_PATH");
-        mj_activate_fp(key_buf);
         // Load the model;
         char error[1000] = "Could not load XML model";
         initial_model = mj_loadXML_fp(file_input, 0, error, 1000); 

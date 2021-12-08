@@ -2,10 +2,10 @@
 PLATFORM := LINUX
 
 # Compilation settings
-INC     := -Iinclude -I../include -I$(HOME)/.mujoco/mujoco200_linux/include
+INC     := -Iinclude -I../include -I$(HOME)/.mujoco/mujoco210/include
 CFLAGS  := -std=gnu11 -Wall -Wextra -O3 -march=sandybridge -flto -ggdb3
 LDFLAGS := -L. -L..
-LIBS    := -lcassiemujoco #-L/home/robot/.mujoco/mujoco200_linux/bin
+LIBS    := -lcassiemujoco
 
 # Platform-specific settings
 ifeq ($(PLATFORM), WIN)
