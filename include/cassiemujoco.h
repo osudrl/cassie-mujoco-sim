@@ -172,8 +172,11 @@ double *cassie_sim_qpos(cassie_sim_t *sim);
 // [31] Right foot            (Motor [9], Joint [5])
 double *cassie_sim_qvel(cassie_sim_t *sim);
 
+// Returns a read-write pointer to the simulator joint velocities.
+// Order of the values are the same as qvel
 double *cassie_sim_qacc(cassie_sim_t *c);
 
+// Returns a read-write pointer to the simulator actuated motors.
 double *cassie_sim_ctrl(cassie_sim_t *sim);
 
 // Returns the mjModel* used by the simulator
@@ -201,6 +204,8 @@ void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12]);
 // each foot (left then right) in order of 3D rotation and then 3D translation
 void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12]);
 
+// Returns CoM velocities of the inputted body specified by the input string. 
+// Returns 6 long array, with 6 values for each foot (left then right) in order of 3D rotation and then 3D translation
 void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name);
 
 // Applies an external force to a specified body.
@@ -234,7 +239,15 @@ void cassie_sim_set_geom_name_quat(cassie_sim_t *c, const char* name, double *qu
 
 void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double *fric);
 
+void cassie_sim_set_geom_name_pos(cassie_sim_t *c, const char* name, double *pos);
+
+double *cassie_sim_geom_name_pos(cassie_sim_t *c, const char* name);
+
 void cassie_sim_set_body_name_mass(cassie_sim_t *c, const char* name, double mass);
+
+void cassie_sim_set_body_name_pos(cassie_sim_t *c, const char* name, double *data);
+
+double* cassie_sim_get_body_name_pos(cassie_sim_t *c, const char* name);
 
 int cassie_sim_get_hfield_nrow(cassie_sim_t *c);
 
@@ -248,10 +261,7 @@ void cassie_sim_set_hfield_size(cassie_sim_t *c, double* size);
 
 float* cassie_sim_hfielddata(cassie_sim_t *c);
 
-void cassie_sim_set_hfielddata(cassie_sim_t *c, float* data);
-
-void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, double azi, double elev);
-
+void cassie_sim_set_hfielddata(cassie_sim_t *c, double* data);
 
 /*******************************************************************************
  * Cassie visualizer functions
@@ -273,8 +283,7 @@ void cassie_vis_free(cassie_vis_t *vis);
 // Visualizes the state of the given Cassie simulator.
 bool cassie_vis_draw(cassie_vis_t *vis, cassie_sim_t *sim);
 
-bool cassie_vis_draw2(cassie_vis_t *vis, cassie_sim_t *sim);
-
+// Resize the visualization window
 void cassie_vis_window_resize(cassie_vis_t *vis, int width, int height);
 
 // Returns true if the visualizer has been closed but not freed.
@@ -316,6 +325,11 @@ void cassie_vis_remakeSceneCon(cassie_vis_t *v);
 void cassie_vis_set_hfielddata(cassie_vis_t *v, float* data);
 
 float* cassie_vis_hfielddata(cassie_vis_t *c);
+
+// Set the visualization camera to track the inputted body (specified by a string matching the name of a body defined
+// in the XML model file). Also takes in as input a zoom level as well as a azimuth and elevation value controlling 
+// the angle of the camera.
+void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, double azi, double elev);
 
 // initialize a video renderer
 void cassie_vis_init_recording(cassie_vis_t *sim, const char* videofile, int width, int height);

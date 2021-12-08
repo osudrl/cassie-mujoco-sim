@@ -20,7 +20,6 @@ A license file for MuJoCo (mjkey.txt) is required to run the simulation. The lib
 To build and run the examples:
 1.  Place mjkey.txt in the `.mujoco`directory
 2.  Set the `MUJOCO_KEY_PATH` environment variable to be `~/.mujoco/mjkey.txt`
-3.  (Optional) Set the `CASSIE_MODEL_PATH` environment variable to be `<where you cloned this repository>/model/cassie.xml`
 4.  `make test`
 5.  Run the examples in the test directory
 
@@ -32,7 +31,6 @@ Documentation for the simulation functions is included in include/cassiemujoco.h
 * Updated libraries to use mujoco 2.00
 * MuJoCo activation key is now loaded by the `MUJOCO_KEY_PATH` environment variable. Add `export MUJOCO_KEY_PATH = <path to mjkey.txt>` to your `.bashrc`.
 * To make things cleaner when loading MuJoCo and GLFW libraries, we assume the `mujoco200_linux` folder is `~/.mujoco` folder. This allows there to be only one copy of mujoco on your machine, rather than having to copy the mujoco folder to every place where `libcassiemujoco.so` is. 
-* There are now two options for specifying a Cassie model file. The library will check if there is a `CASSIE_MODEL_PATH` environment variable defined. If such a variable is defined, it loads the model on that path. Otherwise, it will load the modelfile that is inputted into `cassie_sim_init`/`cassie_vis_init` (which is then passed along to `cassie_mujoco_init`). If you are using a environment variable then you can just pass `NULL` or an empty string to these methods. Using an environment variable is makes the usage invariant to the directory a program is run from, but requires changing and sourcing your `.bashrc` everytime you want to change modelfile. Note that a model file path (or `NULL` input) is also required when making a python `CassieSim` or `CassieVis` object, though you can make the argument have a default value so you don't have to input a model everytime.
 * If building fails because it can't find `mujoco.h`, specify the full path in the Makefile when including mujoco200_linux/include, rather than using `~`.
 
 ## New Visualization Features
