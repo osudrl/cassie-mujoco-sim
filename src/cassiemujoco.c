@@ -75,6 +75,7 @@ mjvFigure figsensor;
     X(mj_step1)                                 \
     X(mj_step2)                                 \
     X(mj_step)                                  \
+    X(mj_integratePos)                          \
     X(mj_contactForce)                          \
     X(mj_name2id)                               \
     X(mj_id2name)                               \
@@ -82,6 +83,7 @@ mjvFigure figsensor;
     X(mj_jacBody)                               \
     X(mj_kinematics)                            \
     X(mj_comPos)                                \
+    X(mj_subtreeVel)                            \
     X(mju_copy)                                 \
     X(mju_zero)                                 \
     X(mju_rotVecMatT)                           \
@@ -1109,6 +1111,14 @@ void cassie_sim_step_pd(cassie_sim_t *c, state_out_t *y, const pd_in_t *u)
     state_output_step(c->estimator, &cassie_out, y);
 }
 
+void cassie_integrate_pos(cassie_sim_t *c, state_out_t *y)
+{
+    mj_integratePos_fp(c->m, c->d->qpos, c->d->qvel, c->m->opt.timestep);
+    // Run state estimator system because why not
+    cassie_out_t cassie_out;
+    state_output_step(c->estimator, &cassie_out, y);
+}
+
 double *cassie_sim_time(cassie_sim_t *c)
 {
     return &c->d->time;
@@ -1427,6 +1437,126 @@ void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12])
     mju_copy_fp(cvel, &c->d->cvel[6 * left_foot_body_id], 6);
     mju_copy_fp(&cvel[6], &c->d->cvel[6 * right_foot_body_id], 6);
 }
+
+void cassie_sim_cm_position(const cassie_sim_t *c, double cm_pos[3]){
+    mj_fwdPosition_fp(c->m, c->d);
+    for(int i = 0; i < 3; ++i){
+        cm_pos[i] = c->d->subtree_com[i];   // Just i because the pelvis is the first body 
+    }
+}
+
+void cassie_sim_cm_velocity(const cassie_sim_t *c, double cm_vel[3]){
+    mj_fwdPosition_fp(c->m, c->d);
+    mj_subtreeVel_fp(c->m, c->d);
+    for(int i=0; i < 3; ++i){ 
+       cm_vel[i] = c->d->subtree_linvel[i]; // Just i because the pelvis is the first body 
+    }
+}
+
+void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]){
+    double storedQuat[4];
+    // Store the original quaternion and set the quaternion to [1,0,0,0] 
+    for(int i = 0; i < 4; ++i){
+        storedQuat[i] = c->d->qpos[i+3];
+        c->d->qpos[i+3] = 0;
+    }
+    c->d->qpos[4] = 1;
+
+    mj_fwdPosition_fp(c->m, c->d);
+    double fullMassMatrix[c->m->nv*c->m->nv];
+    mj_fullM_fp(c->m, fullMassMatrix, c->d->qM);
+
+    double I_p[3][3];
+    double I_c[3][3];
+    double m = fullMassMatrix[0]; // Get the mass of the robot by looking at M[0][0]
+    double rcm [3];
+    cassie_sim_cm_position(c, rcm);
+    for(int i=0; i < 3; ++i){  //Offset from global loc to relative to pelvis
+        rcm[i] = rcm[i] - c->d->qpos[i];
+    }
+
+    for(int i=0; i < 3; ++i){ // Copy idx 3,4,5 block from full mass matrix
+        for(int j=0; j < 3; ++j){
+            I_p[i][j] = fullMassMatrix[(i+3)*c->m->nv + (j+3)];
+        }
+    }
+    
+    // Apply 3D Parallel Axis law
+    I_c[0][0] = I_p[0][0] - m*( pow(rcm[1],2) + pow(rcm[2],2));
+    I_c[1][1] = I_p[1][1] - m*( pow(rcm[2],2) + pow(rcm[0],2));
+    I_c[2][2] = I_p[2][2] - m*( pow(rcm[0],2) + pow(rcm[1],2));
+
+    I_c[0][1] = I_c[1][0] = I_p[1][0] - m*rcm[1]*rcm[0];
+    I_c[1][2] = I_c[2][1] = I_p[2][1] - m*rcm[2]*rcm[1];
+    I_c[2][0] = I_c[0][2] = I_p[2][0] - m*rcm[2]*rcm[0];
+
+    for(int i=0; i < 3; ++i){
+        for(int j=0; j < 3; ++j){
+            Icm[3*i + j] = I_c[i][j];
+        }
+    }
+
+    for(int i = 0; i < 4; ++i)
+        c->d->qpos[i+3] = storedQuat[i];  //Restore the original quaternion
+}
+
+void cassie_sim_angular_momentum(const cassie_sim_t *c, double Lcm[3]){
+    mj_fwdPosition_fp(c->m, c->d);
+    mj_subtreeVel_fp(c->m, c->d);
+    for(int i=0; i < 3; ++i){ 
+       Lcm[i] = c->d->subtree_angmom[i]; // Just i because the pelvis is the first body 
+    }
+}
+
+void cassie_sim_full_mass_matrix(const cassie_sim_t *c, double M[1024]){
+    mj_fwdPosition_fp(c->m, c->d);
+    double fullMassMatrix[c->m->nv*c->m->nv];
+    mj_fullM_fp(c->m, fullMassMatrix, c->d->qM);
+
+    for(int i=0; i < 32; ++i){
+        for(int j=0; j < 32; ++j){
+            M[i*32+j] = fullMassMatrix[i*c->m->nv + j]; // Use nv here in case there are more joints after the 32 normal cassie joints
+        }
+    }
+}
+
+void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[256]){
+    const int IND[] = {0,1,2,3,4,5,6,7,8,12,18,19,20,21,25,31}; //This is floating base, then the 10 motors in the normal order
+    mj_fwdPosition_fp(c->m, c->d);
+    double fullMassMatrix[c->m->nv*c->m->nv];
+    mj_fullM_fp(c->m, fullMassMatrix, c->d->qM);
+
+    for(int i=0; i < 16; ++i){
+        for(int j=0; j < 16; ++j){
+            M[i*16+j] = fullMassMatrix[IND[i]*c->m->nv + IND[j]];
+        }
+    }
+}
+
+void cassie_sim_loop_constraint_info(const cassie_sim_t *c, double J_cl[192], double err_cl[6]){ //32*6 a
+    mj_fwdPosition_fp(c->m, c->d);
+
+    int idx_J = 0;
+
+    for(int i = 0; i < c->d->nefc; ++i){
+        // mj_id2name_fp(c->m, 15, c->d->efc_id[i])
+
+        // printf("Row: %i    Type: %i   efc_id: %d    efc_name:%s\n", i, c->d->efc_type[i], c->d->efc_id[i], mj_id2name_fp(c->m, 16, c->d->efc_id[i]));
+        // std::cout << d->efc_type[i] << std::endl;
+        if(c->d->efc_type[i] == 0 && (          // 0 is mjCNSTR_EQUALITY, I don't want to import mujoco constants
+            strcmp(mj_id2name_fp(c->m, 16, c->d->efc_id[i]), "left-achilles-rod-eq") == 0 || 
+            strcmp(mj_id2name_fp(c->m, 16, c->d->efc_id[i]), "right-achilles-rod-eq") == 0)){
+
+            // std::cout << J_eq.rows() << " " << J_eq.cols() << std::endl; //12x32 non contact
+            for(int j = 0; j < 32; ++j){
+                J_cl[idx_J*32 + j] = c->d->efc_J[i*c->m->nv + j];
+            }
+            err_cl[idx_J] = c->d->efc_pos[i];
+            idx_J++;
+        }
+    }
+}
+
 
 void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name)
 {

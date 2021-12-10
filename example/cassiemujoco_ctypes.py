@@ -359,6 +359,10 @@ cassie_sim_step_pd = _libraries['./libcassiemujoco.so'].cassie_sim_step_pd
 cassie_sim_step_pd.restype = None
 cassie_sim_step_pd.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(struct_c__SA_state_out_t), POINTER_T(struct_c__SA_pd_in_t)]
 
+cassie_integrate_pos = _libraries['./libcassiemujoco.so'].cassie_integrate_pos
+cassie_integrate_pos.restype = None
+cassie_integrate_pos.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(struct_c__SA_state_out_t)]
+
 cassie_sim_time = _libraries['./libcassiemujoco.so'].cassie_sim_time
 cassie_sim_time.restype = POINTER_T(ctypes.c_double)
 cassie_sim_time.argtypes = [POINTER_T(struct_cassie_sim)]
@@ -402,6 +406,34 @@ cassie_sim_foot_positions.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_dou
 cassie_sim_foot_velocities = _libraries['./libcassiemujoco.so'].cassie_sim_foot_velocities
 cassie_sim_foot_velocities.restype = None
 cassie_sim_foot_velocities.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 12]
+
+cassie_sim_cm_position = _libraries['./libcassiemujoco.so'].cassie_sim_cm_position
+cassie_sim_cm_position.restype = None
+cassie_sim_cm_position.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 3]
+
+cassie_sim_cm_velocity = _libraries['./libcassiemujoco.so'].cassie_sim_cm_velocity
+cassie_sim_cm_velocity.restype = None
+cassie_sim_cm_velocity.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 3]
+
+cassie_sim_centroid_inertia = _libraries['./libcassiemujoco.so'].cassie_sim_centroid_inertia
+cassie_sim_centroid_inertia.restype = None
+cassie_sim_centroid_inertia.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 9]
+
+cassie_sim_angular_momentum = _libraries['./libcassiemujoco.so'].cassie_sim_angular_momentum
+cassie_sim_angular_momentum.restype = None
+cassie_sim_angular_momentum.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 3]
+
+cassie_sim_full_mass_matrix = _libraries['./libcassiemujoco.so'].cassie_sim_full_mass_matrix
+cassie_sim_full_mass_matrix.restype = None
+cassie_sim_full_mass_matrix.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * (32*32)]
+
+cassie_sim_minimal_mass_matrix = _libraries['./libcassiemujoco.so'].cassie_sim_minimal_mass_matrix
+cassie_sim_minimal_mass_matrix.restype = None
+cassie_sim_minimal_mass_matrix.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * (16*16)]
+
+cassie_sim_loop_constraint_info = _libraries['./libcassiemujoco.so'].cassie_sim_loop_constraint_info
+cassie_sim_loop_constraint_info.restype = None
+cassie_sim_loop_constraint_info.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * (6*32), ctypes.c_double * (6)]
 
 cassie_sim_foot_quat = _libraries['./libcassiemujoco.so'].cassie_sim_foot_orient
 cassie_sim_foot_quat.restype = None
@@ -1010,7 +1042,7 @@ __all__ = \
     'struct_c__SA_target_pc_out_t', 'pd_input_step',
     'cassie_set_state', 'struct_c__SA_battery_out_t',
     'vectornav_out_t', 'struct_c__SA_packet_header_info_t',
-    'cassie_sim_step_pd', 'struct_sockaddr', 'cassie_vis_draw',
+    'cassie_sim_step_pd', 'struct_sockaddr', 'cassie_vis_draw','cassie_integrate_pos',
     'cassie_core_sim_copy', 'unpack_cassie_in_t', 'struct_cassie_sim',
     'unpack_cassie_user_in_t', 'cassie_sim_step', 'udp_init_host',
     'state_motor_out_t', 'cassie_core_sim_t', 'pack_state_out_t',
@@ -1022,6 +1054,9 @@ __all__ = \
     'struct_c__SA_cassie_leg_in_t', 'struct_c__SA_state_joint_out_t',
     'process_packet_header', 'cassie_sim_release', 'cassie_sim_foot_forces', 
     'cassie_sim_foot_positions', 'cassie_sim_foot_velocities', 'struct_c__SA_state_foot_out_t',
+    'cassie_sim_cm_position','cassie_sim_centroid_inertia',
+    'cassie_sim_cm_velocity','cassie_sim_angular_momentum',
+    'cassie_sim_full_mass_matrix','cassie_sim_minimal_mass_matrix',
     'pd_input_t', 'pack_cassie_user_in_t', 'cassie_state_duplicate',
     'state_pelvis_out_t', 'struct_c__SA_state_terrain_out_t',
     'cassie_sim_free', 'cassie_sim_xpos', 'cassie_sim_xquat', 'ssize_t', 'state_output_copy',
@@ -1034,6 +1069,7 @@ __all__ = \
     'pd_input_copy', 'cassie_sim_copy', 'struct_c__SA_cassie_out_t',
     'cassie_sim_dof_damping', 'cassie_sim_set_dof_damping',
     'cassie_sim_body_mass', 'cassie_sim_set_body_mass',
+    'cassie_sim_loop_constraint_info',
     'cassie_sim_body_ipos', 'cassie_sim_set_body_ipos',
     'cassie_sim_geom_friction', 'cassie_sim_set_geom_friction',
     'cassie_sim_set_const', 
