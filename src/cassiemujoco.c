@@ -1685,8 +1685,9 @@ void cassie_sim_hold(cassie_sim_t *c)
     }
 
     // Set damping for body rotation joint
-    for (int i = 3; i < 7; ++i)
-        c->m->dof_damping[i] = 1e3;
+    for (int i = 3; i < 6; ++i) {
+        c->m->dof_damping[i] = 1e4;
+    }
 }
 
 void cassie_sim_release(cassie_sim_t *c)
