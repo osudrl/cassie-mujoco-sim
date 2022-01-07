@@ -1699,7 +1699,7 @@ void cassie_sim_release(cassie_sim_t *c)
     }
 
     // Zero damping for body rotation joint
-    for (int i = 3; i < 7; ++i)
+    for (int i = 3; i < 6; ++i)
         c->m->dof_damping[i] = 0;
 }
 
