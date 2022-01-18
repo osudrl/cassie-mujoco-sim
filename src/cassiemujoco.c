@@ -1187,6 +1187,23 @@ void cassie_sim_get_jacobian(cassie_sim_t *c, double *jac, const char* name)
     }
 }
 
+void cassie_sim_get_jacobian_full(cassie_sim_t *c, double *jac, double *jacr, const char* name)
+{
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    double jacp[3][c->m->nv];
+    double jacr[3][c->m->nv];
+    // minimal computations to run to get updated Jacobians
+    mj_kinematics_fp(c->m, c->d);
+    mj_comPos_fp(c->m, c->d);
+    mj_jacBody_fp(c->m, c->d, *jacp, *jacr, body_id);
+    for(int i=0;i<3;++i){
+        for(int j=0;j<c->m->nv;++j){
+            jac[i*c->m->nv+j] = jacp[i][j];
+            jacr[i*c->m->nv+j] = jacr[i][j];
+        }
+    }
+}
+
 double *cassie_sim_dof_damping(cassie_sim_t *c)
 {
     return c->m->dof_damping;

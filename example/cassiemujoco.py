@@ -157,6 +157,17 @@ class CassieSim:
             jacp[i] = jacp_array[i]
         return jacp
 
+    def get_jacobian(self, name):
+        jacp = np.zeros(3*self.nv)
+        jacp_array = (ctypes.c_double * (3*self.nv))()
+        jacr = np.zeros(3*self.nv)
+        jacr_array = (ctypes.c_double * (3*self.nv))()
+        cassie_sim_get_jacobian_full(self.c, jacp_array, jacr_array, name.encode())
+        for i in range(3*self.nv):
+            jacp[i] = jacp_array[i]
+            jacr[i] = jacr_array[i]
+        return jacp, jacr
+
     def get_foot_forces(self):
         force = np.zeros(12)
         frc_array = (ctypes.c_double * 12)()
