@@ -220,6 +220,13 @@ class CassieSim:
             ret[i] = ptr[i]
         return ret
 
+    def get_body_pos(self, name):
+        ptr = cassie_sim_get_body_name_pos(self.c, name.encode())
+        ret = np.zeros(3)
+        for i in range(3):
+            ret[i] = ptr[i]
+        return ret
+
     def get_geom_friction(self):
         ptr = cassie_sim_geom_friction(self.c)
         ret = np.zeros(self.ngeom * 3)
@@ -309,6 +316,15 @@ class CassieSim:
         # "data" is a single double
         else:
             cassie_sim_set_body_name_mass(self.c, name.encode(), ctypes.c_double(data))
+
+    def set_body_pos(self, name, data):
+        if len(data) != 3:
+            print("SIZE MISMATCH SET BODY POS") 
+            exit(1)
+        c_arr = (ctypes.c_double * 3)()
+        for i in range(3):
+            c_arr[i] = data[i]
+        cassie_sim_set_body_name_pos(self.c, name.encode(), c_arr)
 
     def set_body_ipos(self, data):
         nbody = self.nbody * 3
@@ -518,6 +534,7 @@ class CassieSim:
 class CassieVis:
     def __init__(self, c, offscreen=False):
         self.v = cassie_vis_init(c.c, c.modelfile.encode('utf-8'), ctypes.c_bool(offscreen))
+        self.is_recording = False
 
     def draw(self, c):
         state = cassie_vis_draw(self.v, c.c)
@@ -528,6 +545,9 @@ class CassieVis:
 
     def ispaused(self):
         return cassie_vis_paused(self.v)
+
+    def remake(self):
+        cassie_vis_remakeSceneCon(self.v)
 
     # Applies the inputted force to the inputted body. "xfrc_apply" should contain the force/torque to 
     # apply in Cartesian coords as a 6-long array (first 3 are force, last 3 are torque). "body_name" 
@@ -607,12 +627,14 @@ class CassieVis:
 
     def init_recording(self, filename, width=1920, height=1080):
         cassie_vis_init_recording(self.v, filename.encode(), ctypes.c_int(width), ctypes.c_int(height))
+        self.is_recording = True
 
     def record_frame(self):
         cassie_vis_record_frame(self.v)
 
     def close_recording(self):
         cassie_vis_close_recording(self.v)
+        self.is_recording = False
 
     def __del__(self):
         cassie_vis_free(self.v)
