@@ -94,6 +94,10 @@ void cassie_sim_step(cassie_sim_t *sim, cassie_out_t *y, const cassie_user_in_t 
 // called on a given Cassie simulator instance.
 void cassie_sim_step_pd(cassie_sim_t *sim, state_out_t *y, const pd_in_t *u);
 
+// Forward Integrate the position coordinate based on what is in qvel. 
+// This takes 1/2000 sec steps. Adjust the "step size" by scaling velocity
+void cassie_integrate_pos(cassie_sim_t *c, state_out_t *y);
+
 // Returns a read-write pointer to the simulator time.
 double *cassie_sim_time(cassie_sim_t *sim);
 
@@ -203,6 +207,31 @@ void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12]);
 // Returns CoM velocities of the feet. Returns 12 long array, with 6 values for
 // each foot (left then right) in order of 3D rotation and then 3D translation
 void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12]);
+
+// Returns the CoM position of the entire robot in the world frame
+// (technically the subtree center of mass from the pelvis). [m]
+void cassie_sim_cm_position(const cassie_sim_t *c, double cm_pos[3]);
+
+// Returns the CoM velocity of the entire robot in the world frame
+// (technically the subtree center of mass from the pelvis). [m/s]
+void cassie_sim_cm_velocity(const cassie_sim_t *c, double cm_vel[3]);
+
+// Returns 3x3 rotational intertia matrix of the robot around its center
+// of mass in the pelvis frame. [kg*m^2]
+void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]);
+
+// Return the angular momentum of the robot in the world frame. 
+void cassie_sim_angular_momentum(const cassie_sim_t *c, double Lcm[3]);
+
+// Return the full 32x32 mass matrix of Cassie.
+void cassie_sim_full_mass_matrix(const cassie_sim_t *c, double M[1024]);
+
+// Return the minimal actuated mass matrix of Cassie. Contains 6 for floating 
+// base, 5 for left leg motors, 5 for right leg motors.
+void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[256]);
+
+// Return the conrod closed loop constraint jacobian and constraint violation (error) vectors
+void cassie_sim_loop_constraint_info(const cassie_sim_t *c, double J_cl[192], double err_cl[6]);
 
 // Returns CoM velocities of the inputted body specified by the input string. 
 // Returns 6 long array, with 6 values for each foot (left then right) in order of 3D rotation and then 3D translation

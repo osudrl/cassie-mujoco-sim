@@ -69,6 +69,11 @@ class CassieSim:
         cassie_sim_step_pd(self.c, y, u)
         return y
 
+    def integrate_pos(self):
+        y = state_out_t()
+        cassie_integrate_pos(self.c, y)
+        return y
+
     def get_state(self):
         s = CassieState()
         cassie_get_state(self.c, s.s)
@@ -182,6 +187,112 @@ class CassieSim:
         cassie_sim_body_vel(self.c, vel_array, body_name.encode())
         for i in range(6):
             vel[i] = vel_array[i]
+
+    # Returns the center of mass position vector in world frame
+    def center_of_mass_position(self):
+        pos_array = (ctypes.c_double * 3)()
+        cassie_sim_cm_position(self.c, pos_array)
+        pos = []
+        for i in range(3):
+            pos.append(pos_array[i])
+        return pos
+
+    # Returns the center of mass velocity vector in world frame
+    def center_of_mass_velocity(self):
+        vel_array = (ctypes.c_double * 3)()
+        cassie_sim_cm_velocity(self.c, vel_array)
+        vel = []
+        for i in range(3):
+            vel.append(vel_array[i])
+        return vel
+
+    # Returns 3x3 rotational intertia matrix of the robot around its center
+    # of mass in the pelvis frame. [kg*m^2]
+    def centroid_inertia(self):
+        I_array = (ctypes.c_double * 9)()
+        cassie_sim_centroid_inertia(self.c, I_array)
+        Icm = []
+        for i in range(9):
+            Icm.append(I_array[i])
+        return Icm
+
+    # Return the angular momentum of the robot in the world frame.
+    def angular_momentum(self):
+        L_array = (ctypes.c_double * 3)()
+        cassie_sim_angular_momentum(self.c, L_array)
+        L_return = []
+        for i in range(3):
+            L_return.append(L_array[i])
+        return L_return
+
+    # Return the full 32x32 mass matrix of Cassie.
+    def full_mass_matrix(self):
+        M_array = (ctypes.c_double * (32 * 32))()
+        cassie_sim_full_mass_matrix(self.c, M_array)
+        M_return = np.zeros((32,32))
+        for i in range(32):
+            for j in range(32):
+                M_return[i,j] = M_array[i*32+j]
+        return M_return
+
+    def constraint_jacobian(self):
+        J_array = (ctypes.c_double * (6 * 32))()
+        err_array = (ctypes.c_double * (6))()
+        cassie_sim_loop_constraint_info(self.c, J_array, err_array)
+        J_return = np.zeros((6,32))
+        for i in range(6):
+            for j in range(32):
+                J_return[i,j] = J_array[i*32+j]
+        return J_return
+
+    def constraint_error(self):
+        J_array = (ctypes.c_double * (6 * 32))()
+        err_array = (ctypes.c_double * (6))()
+        cassie_sim_loop_constraint_info(self.c, J_array, err_array)
+        err_return = np.zeros((6,1))
+        for i in range(6):
+                err_return[i] = err_array[i]
+        return err_return
+
+    # Return the minimal actuated mass matrix of Cassie. Contains 6 for floating 
+    # base, 5 for left leg motors, 5 for right leg motors.
+    def minimal_mass_matrix(self):
+        ind_full_idx = [0,1,2,3,4,5,6,7,8,12,18,19,20,21,25,31]
+        dep_full_idx = [9,10,11,14,22,23,24,27]
+        ind_idx = np.arange(0, 16)
+        dep_idx = np.arange(16, 24)
+        spring_idx = [13, 15, 26, 28]
+
+        J_c = self.constraint_jacobian()
+        J_c[:, 0:6] = 0  # Zero out floating base coordinates
+        J_c_div = J_c[:, ind_full_idx + dep_full_idx]
+        J_c_div[J_c_div < 1e-5] = 0 # Zero out very small terms for numerical stabilityL 
+        
+        M = self.full_mass_matrix()
+        M_div_temp = M[:, ind_full_idx + dep_full_idx]
+        M_div = M_div_temp[ind_full_idx + dep_full_idx, :]
+
+        G = np.linalg.lstsq(J_c_div[:, dep_idx], -J_c_div[:, ind_idx])
+
+        # print(G[0].shape)
+        P = np.block([[np.eye(16)], [G[0]]])
+        M_minimal = P.T  @ M_div @ P
+
+        #J_c_dep = J_c[:, (13,24)]
+        # This gets hard 
+        # import sys
+        # np.set_printoptions(threshold=sys.maxsize)
+        M_print = M_div[:, ind_idx]
+        M_print = M_print[ind_idx, :]
+
+        # print("M")
+        # print(M_print)
+        # print("M_minimal")
+        # print(M_minimal)
+
+
+        return M_minimal
+        
 
     def foot_quat(self, quat):
         quat_array = (ctypes.c_double * 4)()

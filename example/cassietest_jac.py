@@ -34,7 +34,7 @@ sim = CassieSim("../model/cassie.xml")
 vis = CassieVis(sim)
 # Set control parameters
 u = pd_in_t()
-test_jac_control = False
+test_jac_control = True
 test_random = True 
 
 if test_jac_control:
