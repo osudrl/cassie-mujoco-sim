@@ -24,10 +24,11 @@ VIDOUT := cassievideo
 DOUBLEVISOUT := test_doublevis
 HFIELDOUT := test_hfield
 TERRAINOUT := test_terrain
+FORCEOUT := test_heelforce
 endif
 
 # Default target
-all: $(TESTOUT) $(SIMOUT) $(CTRLOUT) $(VIDOUT) vel_check $(DOUBLEVISOUT) $(HFIELDOUT) $(TERRAINOUT)
+all: $(TESTOUT) $(SIMOUT) $(CTRLOUT) $(VIDOUT) vel_check $(DOUBLEVISOUT) $(HFIELDOUT) $(TERRAINOUT) $(FORCEOUT)
 
 # Normal targets
 clean:
@@ -59,6 +60,9 @@ $(HFIELDOUT): test_hfield.c
 
 $(TERRAINOUT): test_terrain.c 
 	$(CC) test_terrain.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $(TERRAINOUT)
+
+$(FORCEOUT): test_heelforce.c 
+	$(CC) test_heelforce.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $(FORCEOUT)
 
 vel_check: vel_check.c 
 	$(CC) vel_check.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o vel_check

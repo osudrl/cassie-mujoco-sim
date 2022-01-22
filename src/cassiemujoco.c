@@ -50,6 +50,10 @@ static bool mujoco_initialized = false;
 static mjModel *initial_model;
 static int left_foot_body_id;
 static int right_foot_body_id;
+static int left_heel_id;
+static int right_heel_id;
+static int left_toe_id;
+static int right_toe_id;
 // Globals for visualization
 static int fontscale = mjFONTSCALE_200;
 mjvFigure figsensor;
@@ -81,6 +85,7 @@ mjvFigure figsensor;
     X(mj_id2name)                               \
     X(mj_fullM)                                 \
     X(mj_jacBody)                               \
+    X(mj_jacSite)                               \
     X(mj_kinematics)                            \
     X(mj_comPos)                                \
     X(mj_subtreeVel)                            \
@@ -848,6 +853,10 @@ bool cassie_mujoco_init(const char *file_input)
         // Look up relevant IDs based on names
         ID_NAME_LOOKUP(initial_model, left_foot_body_id, mjOBJ_BODY, left-foot);
         ID_NAME_LOOKUP(initial_model, right_foot_body_id, mjOBJ_BODY, right-foot);
+        ID_NAME_LOOKUP(initial_model, left_heel_id, mjOBJ_SITE, left-heel);
+        ID_NAME_LOOKUP(initial_model, left_toe_id, mjOBJ_SITE, left-toe);
+        ID_NAME_LOOKUP(initial_model, right_heel_id, mjOBJ_SITE, right-heel);
+        ID_NAME_LOOKUP(initial_model, right_toe_id, mjOBJ_SITE, right-toe);
 
         mujoco_initialized = true;
     }
@@ -923,6 +932,10 @@ bool cassie_reload_xml(const char* modelfile) {
     // Look up relevant IDs based on names
     ID_NAME_LOOKUP(initial_model, left_foot_body_id, mjOBJ_BODY, left-foot);
     ID_NAME_LOOKUP(initial_model, right_foot_body_id, mjOBJ_BODY, right-foot);
+    ID_NAME_LOOKUP(initial_model, left_heel_id, mjOBJ_SITE, left-heel);
+    ID_NAME_LOOKUP(initial_model, left_toe_id, mjOBJ_SITE, left-toe);
+    ID_NAME_LOOKUP(initial_model, right_heel_id, mjOBJ_SITE, right-heel);
+    ID_NAME_LOOKUP(initial_model, right_toe_id, mjOBJ_SITE, right-toe);
     return true;
 }
 
@@ -982,6 +995,10 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
         // Look up relevant IDs based on names
         ID_NAME_LOOKUP(initial_model, left_foot_body_id, mjOBJ_BODY, left-foot);
         ID_NAME_LOOKUP(initial_model, right_foot_body_id, mjOBJ_BODY, right-foot);
+        ID_NAME_LOOKUP(initial_model, left_heel_id, mjOBJ_SITE, left-heel);
+        ID_NAME_LOOKUP(initial_model, left_toe_id, mjOBJ_SITE, left-toe);
+        ID_NAME_LOOKUP(initial_model, right_heel_id, mjOBJ_SITE, right-heel);
+        ID_NAME_LOOKUP(initial_model, right_toe_id, mjOBJ_SITE, right-toe);
         c->m =  mj_copyModel_fp(NULL, initial_model);
     } else {
         // Initialize mjModel
@@ -1187,7 +1204,7 @@ void cassie_sim_get_jacobian(cassie_sim_t *c, double *jac, const char* name)
     }
 }
 
-void cassie_sim_get_jacobian_full(cassie_sim_t *c, double *jac, double *jacr, const char* name)
+void cassie_sim_get_jacobian_full(cassie_sim_t *c, double *jac, double *jac_rot, const char* name)
 {
     int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
     double jacp[3][c->m->nv];
@@ -1199,7 +1216,24 @@ void cassie_sim_get_jacobian_full(cassie_sim_t *c, double *jac, double *jacr, co
     for(int i=0;i<3;++i){
         for(int j=0;j<c->m->nv;++j){
             jac[i*c->m->nv+j] = jacp[i][j];
-            jacr[i*c->m->nv+j] = jacr[i][j];
+            jac_rot[i*c->m->nv+j] = jacr[i][j];
+        }
+    }
+}
+
+void cassie_sim_get_jacobian_full_site(cassie_sim_t *c, double *jac, double *jac_rot, const char* name)
+{
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_SITE, name);
+    double jacp[3][c->m->nv];
+    double jacr[3][c->m->nv];
+    // minimal computations to run to get updated Jacobians
+    mj_kinematics_fp(c->m, c->d);
+    mj_comPos_fp(c->m, c->d);
+    mj_jacSite_fp(c->m, c->d, *jacp, *jacr, body_id);
+    for(int i=0;i<3;++i){
+        for(int j=0;j<c->m->nv;++j){
+            jac[i*c->m->nv+j] = jacp[i][j];
+            jac_rot[i*c->m->nv+j] = jacr[i][j];
         }
     }
 }
@@ -1633,6 +1667,50 @@ void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12])
                 for (int j = 0; j < 3; ++j) cfrc[j+6] -= force_global[j];
             else
                 for (int j = 0; j < 3; ++j) cfrc[j+6] += force_global[j];
+        }
+    }
+}
+
+void cassie_sim_heeltoe_forces(const cassie_sim_t *c, double toe_force[6], double heel_force[6])
+{
+    double force_torque[6];
+    double force_global[3];
+
+    // Zero the output foot forces
+    mju_zero_fp(toe_force, 6);
+    mju_zero_fp(heel_force, 6);
+    int heel_ids[2] = {left_heel_id, right_heel_id};
+    int toe_ids[2] = {left_toe_id, right_toe_id};
+
+    // Accumulate the forces on each foot
+    for (int i = 0; i < c->d->ncon; ++i) {
+        // Get body IDs for both geoms in the collision
+        int body1 = c->m->geom_bodyid[c->d->contact[i].geom1];
+        int body2 = c->m->geom_bodyid[c->d->contact[i].geom2];
+
+        if (body1 == left_foot_body_id || body2 == left_foot_body_id || body1 == right_foot_body_id || body2 == right_foot_body_id) {
+            // Not sure if this is necessary, in testing seems like never hits the negative case. For some reason
+            // foot is always the 2nd body. No clue why.
+            int sign = 1;
+            if (body1 == left_foot_body_id || body1 == right_foot_body_id) {
+                sign = -1;
+            }
+            int id_ind = 0; // By default left foot contact
+            if (body1 == right_foot_body_id || body2 == right_foot_body_id) { // Right foot contact
+                id_ind = 1;
+            }
+            // Get contact force in world coordinates
+            mj_contactForce_fp(c->m, c->d, i, force_torque);
+            mju_rotVecMatT_fp(force_global, force_torque,
+                             c->d->contact[i].frame);
+            
+            double toe_dist[2] = {c->d->site_xpos[3*toe_ids[id_ind]]-c->d->contact[i].pos[0], c->d->site_xpos[3*toe_ids[id_ind]+1]-c->d->contact[i].pos[1]};
+            double heel_dist[2] = {c->d->site_xpos[3*heel_ids[id_ind]]-c->d->contact[i].pos[0], c->d->site_xpos[3*heel_ids[id_ind]+1]-c->d->contact[i].pos[1]};
+            if (sqrt(pow(toe_dist[0], 2)+pow(toe_dist[1], 2)) < sqrt(pow(heel_dist[0], 2)+pow(heel_dist[1], 2))) { // Toe contact
+                for (int j = 0; j < 3; ++j) toe_force[j+3*id_ind] += sign*force_global[j];
+            } else { // Heel contact
+                for (int j = 0; j < 3; ++j) heel_force[j+3*id_ind] += sign*force_global[j];
+            }
         }
     }
 }

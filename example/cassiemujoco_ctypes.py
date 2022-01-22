@@ -399,6 +399,10 @@ cassie_sim_foot_forces = _libraries['./libcassiemujoco.so'].cassie_sim_foot_forc
 cassie_sim_foot_forces.restype = None
 cassie_sim_foot_forces.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 12]
 
+cassie_sim_heeltoe_forces = _libraries['./libcassiemujoco.so'].cassie_sim_heeltoe_forces
+cassie_sim_heeltoe_forces.restype = None
+cassie_sim_heeltoe_forces.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6, ctypes.c_double * 6]
+
 cassie_sim_foot_positions = _libraries['./libcassiemujoco.so'].cassie_sim_foot_positions
 cassie_sim_foot_positions.restype = None
 cassie_sim_foot_positions.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6]
@@ -820,6 +824,10 @@ cassie_sim_get_jacobian_full = _libraries['./libcassiemujoco.so'].cassie_sim_get
 cassie_sim_get_jacobian_full.restype = None
 cassie_sim_get_jacobian_full.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double), POINTER_T(ctypes.c_double), ctypes.c_char_p]
 
+cassie_sim_get_jacobian_full_site = _libraries['./libcassiemujoco.so'].cassie_sim_get_jacobian_full_site
+cassie_sim_get_jacobian_full_site.restype = None
+cassie_sim_get_jacobian_full_site.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double), POINTER_T(ctypes.c_double), ctypes.c_char_p]
+
 class struct_c__SA_pd_motor_in_t(ctypes.Structure):
     _pack_ = True # source:False
     _fields_ = [
@@ -1102,6 +1110,7 @@ __all__ = \
     'cassie_sim_params', 'cassie_sim_nv', 'cassie_sim_nbody', 'cassie_sim_nq', 'cassie_sim_ngeom',
     'cassie_vis_record_frame', 'cassie_vis_init_recording', 'cassie_vis_close_recording', 'cassie_vis_window_resize', 'cassie_vis_attach_cam',
     'cassie_vis_draw_depth', 'cassie_vis_get_depth_size', 'cassie_vis_init_depth', 'cassie_vis_attach_cam', 'cassie_vis_remakeSceneCon', 'cassie_vis_full_reset',
-    'cassie_sim_get_jacobian', 'cassie_sim_get_jacobian_full', 'cassie_sim_get_body_name_pos', 'cassie_sim_set_body_name_pos']
+    'cassie_sim_get_jacobian', 'cassie_sim_get_jacobian_full', 'cassie_sim_get_jacobian_full_site', 'cassie_sim_get_body_name_pos', 'cassie_sim_set_body_name_pos',
+    'cassie_sim_heeltoe_forces']
 
 

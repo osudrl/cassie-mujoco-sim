@@ -200,9 +200,16 @@ bool cassie_sim_check_self_collision(const cassie_sim_t *sim);
 // Returns the contact forces on the left and right feet
 // cfrc[0-2]:  Contact force acting on the left foot, in world coordinates
 // cfrc[3-5]:  Currently zero, reserved for torque acting on the left foot
-// cfrc[6-8]:  Contact force acting on the left foot, in world coordinates
+// cfrc[6-8]:  Contact force acting on the right foot, in world coordinates
 // cfrc[9-11]: Currently zero, reserved for torque acting on the right foot
 void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12]);
+
+// Returns the contact forces on the left and right toes and heels.
+// toe_force[0-2]:  Contact force acting on the left toe, in world coordinates
+// toe_force[3-5]:  Contact force acting on the right toe, in world coordinates
+// heel_force[6-8]:  Contact force acting on the left heel, in world coordinates
+// heel_force[9-11]: Contact force acting on the right heel, in world coordinates
+void cassie_sim_heeltoe_forces(const cassie_sim_t *c, double toe_force[6], double heel_force[6]);
 
 // Returns CoM velocities of the feet. Returns 12 long array, with 6 values for
 // each foot (left then right) in order of 3D rotation and then 3D translation
@@ -295,6 +302,10 @@ void cassie_sim_set_hfielddata(cassie_sim_t *c, float* data);
 void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, double azi, double elev);
 
 void cassie_sim_get_jacobian(cassie_sim_t *c, double *jac, const char* name);
+
+void cassie_sim_get_jacobian_full(cassie_sim_t *c, double *jac, double *jac_rot, const char* name);
+
+void cassie_sim_get_jacobian_full_site(cassie_sim_t *c, double *jac, double *jac_rot, const char* name);
 
 /*******************************************************************************
  * Cassie visualizer functions

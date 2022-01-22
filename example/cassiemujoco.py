@@ -157,12 +157,23 @@ class CassieSim:
             jacp[i] = jacp_array[i]
         return jacp
 
-    def get_jacobian(self, name):
+    def get_jacobian_full(self, name):
         jacp = np.zeros(3*self.nv)
         jacp_array = (ctypes.c_double * (3*self.nv))()
         jacr = np.zeros(3*self.nv)
         jacr_array = (ctypes.c_double * (3*self.nv))()
         cassie_sim_get_jacobian_full(self.c, jacp_array, jacr_array, name.encode())
+        for i in range(3*self.nv):
+            jacp[i] = jacp_array[i]
+            jacr[i] = jacr_array[i]
+        return jacp, jacr
+
+    def get_jacobian_full_site(self, name):
+        jacp = np.zeros(3*self.nv)
+        jacp_array = (ctypes.c_double * (3*self.nv))()
+        jacr = np.zeros(3*self.nv)
+        jacr_array = (ctypes.c_double * (3*self.nv))()
+        cassie_sim_get_jacobian_full_site(self.c, jacp_array, jacr_array, name.encode())
         for i in range(3*self.nv):
             jacp[i] = jacp_array[i]
             jacr[i] = jacr_array[i]
@@ -178,6 +189,18 @@ class CassieSim:
         rfrc = np.sqrt(np.power(force[6:9], 2).sum())
         return lfrc, rfrc
 
+    # Returns 2 arrays each 6 long, the toe force and heel force. Each array is in order of 
+    # left foot (3) and then right foot (3)
+    def get_heeltoe_forces(self):
+        toe_force = np.zeros(6)
+        heel_force = np.zeros(6)
+        toe_array = (ctypes.c_double * 6)()
+        heel_array = (ctypes.c_double * 6)()
+        cassie_sim_heeltoe_forces(self.c, toe_array, heel_array)
+        for i in range(6):
+            toe_force[i] = toe_array[i]
+            heel_force[i] = heel_array[i]
+        return toe_force, heel_force
 
     def foot_pos(self):
         pos_array = (ctypes.c_double * 6)()
@@ -313,12 +336,6 @@ class CassieSim:
 
     def clear_forces(self):
         cassie_sim_clear_forces(self.c)
-
-    def get_foot_force(self):
-        y = state_out_t()
-        force = np.zeros(12)
-        self.foot_force(force)
-        return force
 
     def get_dof_damping(self):
         ptr = cassie_sim_dof_damping(self.c)
