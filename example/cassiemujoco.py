@@ -679,6 +679,15 @@ class CassieVis:
         state = cassie_vis_draw(self.v, c.c)
         return state
 
+    def get_extent(self):
+        return cassie_vis_extent(self.v)
+
+    def get_znear(self):
+        return cassie_vis_znear(self.v)
+
+    def get_zfar(self):
+        return cassie_vis_zfar(self.v)
+
     def valid(self):
         return cassie_vis_valid(self.v)
 
