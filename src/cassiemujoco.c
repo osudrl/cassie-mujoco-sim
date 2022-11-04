@@ -2377,6 +2377,21 @@ void cassie_vis_attach_cam(cassie_vis_t* v, const char* cam_name){
     v->extent1 = initial_model->stat.extent;
 }
 
+float cassie_vis_extent(cassie_vis_t* v)
+{
+    return v->extent1;
+}
+
+float cassie_vis_znear(cassie_vis_t* v)
+{
+    return v->znear;
+}
+
+float cassie_vis_zfar(cassie_vis_t* v)
+{
+    return v->zfar;
+}
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     (void)scancode;
     cassie_vis_t* v = glfwGetWindowUserPointer_fp(window);

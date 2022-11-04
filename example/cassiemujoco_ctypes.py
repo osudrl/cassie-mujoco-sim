@@ -511,6 +511,18 @@ cassie_vis_init = _libraries['./libcassiemujoco.so'].cassie_vis_init
 cassie_vis_init.restype = POINTER_T(struct_cassie_vis)
 cassie_vis_init.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p,ctypes.c_bool]
 
+cassie_vis_extent = _libraries['./libcassiemujoco.so'].cassie_vis_extent
+cassie_vis_extent.restype = ctypes.c_float
+cassie_vis_extent.argtypes = [POINTER_T(struct_cassie_vis)]
+
+cassie_vis_znear = _libraries['./libcassiemujoco.so'].cassie_vis_znear
+cassie_vis_znear.restype = ctypes.c_float
+cassie_vis_znear.argtypes = [POINTER_T(struct_cassie_vis)]
+
+cassie_vis_zfar = _libraries['./libcassiemujoco.so'].cassie_vis_zfar
+cassie_vis_zfar.restype = ctypes.c_float
+cassie_vis_zfar.argtypes = [POINTER_T(struct_cassie_vis)]
+
 cassie_vis_close = _libraries['./libcassiemujoco.so'].cassie_vis_close
 cassie_vis_close.restype = None
 cassie_vis_close.argtypes = [POINTER_T(struct_cassie_vis)]
@@ -1111,6 +1123,6 @@ __all__ = \
     'cassie_vis_record_frame', 'cassie_vis_init_recording', 'cassie_vis_close_recording', 'cassie_vis_window_resize', 'cassie_vis_attach_cam',
     'cassie_vis_draw_depth', 'cassie_vis_get_depth_size', 'cassie_vis_init_depth', 'cassie_vis_attach_cam', 'cassie_vis_remakeSceneCon', 'cassie_vis_full_reset',
     'cassie_sim_get_jacobian', 'cassie_sim_get_jacobian_full', 'cassie_sim_get_jacobian_full_site', 'cassie_sim_get_body_name_pos', 'cassie_sim_set_body_name_pos',
-    'cassie_sim_heeltoe_forces']
+    'cassie_sim_heeltoe_forces', 'cassie_vis_extent', 'cassie_vis_znear', 'cassie_vis_zfar']
 
 
