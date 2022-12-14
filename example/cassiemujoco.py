@@ -765,6 +765,10 @@ class CassieVis:
     def init_depth(self, width, height):
         cassie_vis_init_depth(self.v, ctypes.c_int(width), ctypes.c_int(height))
 
+    # Must be called during initialization before calling get_rgb
+    def init_rgb(self, width, height):
+        cassie_vis_init_rgb(self.v, ctypes.c_int(width), ctypes.c_int(height))
+
     def get_depth_size(self):
         size = cassie_vis_get_depth_size(self.v)
         return size
@@ -772,6 +776,11 @@ class CassieVis:
     def draw_depth(self, c, width=30, height=30):
         depth = cassie_vis_draw_depth(self.v, c.c, ctypes.c_int(width), ctypes.c_int(height))
         return depth[:width*height]
+
+    # Returns first person RGB image. Return data must be reshaped in width x height x dimension(3)
+    def get_rgb(self, c, width=30, height=30):
+        data = cassie_vis_get_rgb(self.v, c.c, ctypes.c_int(width), ctypes.c_int(height))
+        return data[:3 * width * height]
 
     def init_recording(self, filename, width=1920, height=1080):
         cassie_vis_init_recording(self.v, filename.encode(), ctypes.c_int(width), ctypes.c_int(height))
