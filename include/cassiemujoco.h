@@ -94,12 +94,18 @@ void cassie_sim_step(cassie_sim_t *sim, cassie_out_t *y, const cassie_user_in_t 
 // called on a given Cassie simulator instance.
 void cassie_sim_step_pd(cassie_sim_t *sim, state_out_t *y, const pd_in_t *u);
 
+void cassie_sim_step_pd_no2khz(cassie_sim_t *c, state_out_t *y, const pd_in_t *u);
+
 // Forward Integrate the position coordinate based on what is in qvel. 
 // This takes 1/2000 sec steps. Adjust the "step size" by scaling velocity
 void cassie_integrate_pos(cassie_sim_t *c, state_out_t *y);
 
 // Returns a read-write pointer to the simulator time.
 double *cassie_sim_time(cassie_sim_t *sim);
+
+double *cassie_sim_timestep(cassie_sim_t *c);
+
+void cassie_sim_set_timestep(cassie_sim_t *c, double dt);
 
 // Returns a read-write pointer to the simulator joint positions.
 // The order of the values are as follows:
@@ -265,6 +271,8 @@ void cassie_sim_radio(cassie_sim_t *sim, double channels[16]);
 // out all other data used for computation (like velocities, accelerations, forces)
 void cassie_sim_full_reset(cassie_sim_t *sim);
 
+void reset_state_est(cassie_sim_t *c, state_out_t *y);
+
 double* cassie_sim_xpos(cassie_sim_t *c, const char* name);
 
 double* cassie_sim_xquat(cassie_sim_t *c, const char* name);
@@ -275,6 +283,8 @@ void cassie_sim_set_geom_name_quat(cassie_sim_t *c, const char* name, double *qu
 
 void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double *fric);
 
+double *cassie_sim_get_geom_name_friction(cassie_sim_t *c, const char* name);
+
 void cassie_sim_set_geom_name_pos(cassie_sim_t *c, const char* name, double *pos);
 
 double *cassie_sim_geom_name_pos(cassie_sim_t *c, const char* name);
@@ -284,6 +294,8 @@ void cassie_sim_set_body_name_mass(cassie_sim_t *c, const char* name, double mas
 void cassie_sim_set_body_name_pos(cassie_sim_t *c, const char* name, double *data);
 
 double* cassie_sim_get_body_name_pos(cassie_sim_t *c, const char* name);
+
+double* cassie_sim_site_xpos(cassie_sim_t *c, const char* name);
 
 int cassie_sim_get_hfield_nrow(cassie_sim_t *c);
 
@@ -301,11 +313,15 @@ void cassie_sim_set_hfielddata(cassie_sim_t *c, float* data);
 
 void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, double azi, double elev);
 
+void cassie_vis_set_cam_pos(cassie_vis_t* v, double* look_point, double distance, double azi, double elev);
+
 void cassie_sim_get_jacobian(cassie_sim_t *c, double *jac, const char* name);
 
 void cassie_sim_get_jacobian_full(cassie_sim_t *c, double *jac, double *jac_rot, const char* name);
 
 void cassie_sim_get_jacobian_full_site(cassie_sim_t *c, double *jac, double *jac_rot, const char* name);
+
+void cassie_sim_just_set_const(cassie_sim_t *c);
 
 /*******************************************************************************
  * Cassie visualizer functions

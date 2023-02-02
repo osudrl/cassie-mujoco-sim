@@ -69,6 +69,11 @@ class CassieSim:
         cassie_sim_step_pd(self.c, y, u)
         return y
 
+    def step_pd_no2khz(self, u):
+        y = state_out_t()
+        cassie_sim_step_pd_no2khz(self.c, y, u)
+        return y
+
     def integrate_pos(self):
         y = state_out_t()
         cassie_integrate_pos(self.c, y)
@@ -85,6 +90,13 @@ class CassieSim:
     def time(self):
         timep = cassie_sim_time(self.c)
         return timep[0]
+
+    def timestep(self):
+        timep = cassie_sim_timestep(self.c)
+        return timep[0]
+    
+    def set_timestep(self, dt):
+        cassie_sim_set_timestep(self.c, ctypes.c_double(dt))
 
     def qpos(self):
         qposp = cassie_sim_qpos(self.c)
@@ -373,6 +385,13 @@ class CassieSim:
             ret[i] = ptr[i]
         return ret
 
+    def get_geom_name_friction(self, name):
+        ptr = cassie_sim_get_geom_name_friction(self.c, name.encode())
+        ret = np.zeros(3)
+        for i in range(3):
+            ret[i] = ptr[i]
+        return ret
+
     def get_geom_rgba(self, name=None):
         if name is not None:
             ptr = cassie_sim_geom_name_rgba(self.c, name.encode())
@@ -578,8 +597,15 @@ class CassieSim:
                 array[i] = data[i]
             cassie_sim_set_geom_name_size(self.c, name.encode(), array)
 
+    def get_site_xpos(self, name):
+        sitep = cassie_sim_site_xpos(self.c, name.encode())
+        return sitep[:3]
+
     def set_const(self):
         cassie_sim_set_const(self.c)
+    
+    def just_set_const(self):
+        cassie_sim_just_set_const(self.c)
 
     def full_reset(self):
         cassie_sim_full_reset(self.c)
@@ -746,6 +772,12 @@ class CassieVis:
 
     def set_cam(self, body_name, zoom, azimuth, elevation):
         cassie_vis_set_cam(self.v, body_name.encode(), zoom, azimuth, elevation)
+
+    def set_cam_pos(self, look_point, distance, azi, elev):
+        point_arr = (ctypes.c_double * 3)()
+        for i in range(3):
+            point_arr[i] = look_point[i]
+        cassie_vis_set_cam_pos(self.v, point_arr, distance, azi, elev)
 
     def window_resize(self, width=1200, height=900):
         cassie_vis_window_resize(self.v, ctypes.c_int(width), ctypes.c_int(height))

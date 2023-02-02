@@ -306,10 +306,10 @@ struct cassie_vis {
 
     int perturb_body;   // Body to apply perturb force to in vis_draw
     double perturb_force[6];    // Perturb force to apply
-    
+
     // Markers
     size_t marker_num;
-    struct vis_marker_info marker_infos[MAX_VIS_MARKERS];  
+    struct vis_marker_info marker_infos[MAX_VIS_MARKERS];
 
     // GLFW  handle
     GLFWwindow *window;
@@ -383,7 +383,7 @@ const char* RNDSTRING[mjNRNDFLAG][3] = {{"Shadow"      ,"1",  "S"},
                                         {"Id Color"    ,"0",  "."}};
 
 // help strings
-const char help_content[] = 
+const char help_content[] =
         "Alt mouse button\n"
         "UI right hold\n"
         "UI title double-click\n"
@@ -403,7 +403,7 @@ const char help_content[] =
         "Ctrl [Shift] drag\n"
         "Ctrl [Shift] right drag";
 
-const char help_title[] = 
+const char help_title[] =
         "Swap left-right\n"
         "Show UI shortcuts\n"
         "Expand/collapse all  \n"
@@ -524,7 +524,7 @@ static bool load_mujoco_library()
     // Try loading GLFW
     bool __attribute__((unused)) gl = load_glfw_library(homedir);
     //struct passwd *pw = getpwuid(getuid());
-    
+
     // Choose library version
     snprintf(buf, sizeof buf, "%.4096s/.mujoco/mujoco210/bin/" MJLIBNAME, homedir);
 #ifndef _WIN32
@@ -812,7 +812,7 @@ static void cassie_motor_data(cassie_sim_t *c, const cassie_in_t *cassie_in)
 
 bool cassie_mujoco_init(const char *file_input)
 {
-    
+
     // Check if mujoco has already been initialized
     if (!mujoco_initialized) {
         // If no base directory is provided, use the direectory
@@ -841,7 +841,7 @@ bool cassie_mujoco_init(const char *file_input)
         }
         // Load the model;
         char error[1000] = "Could not load XML model";
-        initial_model = mj_loadXML_fp(file_input, 0, error, 1000); 
+        initial_model = mj_loadXML_fp(file_input, 0, error, 1000);
         if (!initial_model) {
             fprintf(stderr, "Load model error: %s\n", error);
             return false;
@@ -863,7 +863,7 @@ bool cassie_mujoco_init(const char *file_input)
     // Initialize GLFW if it was loaded
     if (glfw_handle && !glfw_initialized) {
         if (!glfwInit_fp()) {
-            //fprintf(stderr, "Could not initialize GLFW\n");
+            fprintf(stderr, "Could not initialize GLFW\n");
             return false;
         }
         glfw_initialized = true;
@@ -890,8 +890,8 @@ void cassie_cleanup()
         mj_handle = NULL;
     }
 
-    /* 
-    NOTE: For some reason glfwTerminate causes a seg fault, and trying to unload the library without calling 
+    /*
+    NOTE: For some reason glfwTerminate causes a seg fault, and trying to unload the library without calling
     glfwTerminate will causes a memory leak.
     if (glfw_handle) {
         if (glfw_initialized) {
@@ -920,7 +920,7 @@ void cassie_cleanup()
 
 bool cassie_reload_xml(const char* modelfile) {
     char error[1000] = "Could not load XML model";
-    initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
+    initial_model = mj_loadXML_fp(modelfile, 0, error, 1000);
     if (!initial_model) {
         fprintf(stderr, "Load model error: %s\n", error);
         return false;
@@ -964,6 +964,10 @@ void cassie_sim_set_const(cassie_sim_t *c)
     mj_forward_fp(c->m, c->d);
 }
 
+void cassie_sim_just_set_const(cassie_sim_t *c)
+{
+    mj_setConst_fp(c->m, c->d);
+}
 
 cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
 {
@@ -971,7 +975,7 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
     if (!mujoco_initialized) {
         if (!cassie_mujoco_init(modelfile)) {
             return NULL;
-        }   
+        }
     }
 
     // Allocate memory, zeroed for cassie_out_t and filter initialization
@@ -983,7 +987,7 @@ cassie_sim_t *cassie_sim_init(const char* modelfile, bool reinit)
     if (reinit) {
         char error[1000] = "Could not load XML model";
         mj_deleteModel_fp(initial_model);
-        initial_model = mj_loadXML_fp(modelfile, 0, error, 1000); 
+        initial_model = mj_loadXML_fp(modelfile, 0, error, 1000);
         if (!initial_model) {
             fprintf(stderr, "Load model error: %s\n", error);
             return NULL;
@@ -1036,10 +1040,27 @@ int cassie_sim_nq(const cassie_sim_t *c){
   return c->m->nq;
 }
 
+int cassie_sim_nu(const cassie_sim_t *c){
+  return c->m->nu;
+}
+
+int cassie_sim_njnt(const cassie_sim_t *c){
+  return c->m->njnt;
+}
+
 int cassie_sim_ngeom(const cassie_sim_t *c){
   return c->m->ngeom;
 }
 
+int *cassie_sim_jnt_qposadr(cassie_sim_t *c)
+{
+    return c->m->jnt_qposadr;
+}
+
+int *cassie_sim_jnt_dofadr(cassie_sim_t *c)
+{
+    return c->m->jnt_dofadr;
+}
 
 cassie_sim_t *cassie_sim_duplicate(const cassie_sim_t *src)
 {
@@ -1128,6 +1149,30 @@ void cassie_sim_step_pd(cassie_sim_t *c, state_out_t *y, const pd_in_t *u)
     state_output_step(c->estimator, &cassie_out, y);
 }
 
+void cassie_sim_step_pd_no2khz(cassie_sim_t *c, state_out_t *y, const pd_in_t *u)
+{
+    // Run PD controller system
+    cassie_user_in_t cassie_user_in;
+    pd_input_step(c->pd, u, &c->cassie_out, &cassie_user_in);
+    // Run core-level simulator
+    cassie_out_t cassie_out;
+    cassie_in_t cassie_in;
+    cassie_core_sim_step(c->core, &cassie_user_in, &c->cassie_out, &cassie_in);
+
+    // Run ethercat-level simulator
+    cassie_motor_data(c, &cassie_in);
+    cassie_sensor_data(c);
+    cassie_out = c->cassie_out;
+
+    // Step the MuJoCo simulation forward
+    mj_step_fp(c->m, c->d);
+
+    // cassie_sim_step_ethercat(c, y, &cassie_in);
+    // cassie_sim_step(c, &cassie_out, &cassie_user_in);
+    // Run state estimator system
+    state_output_step(c->estimator, &cassie_out, y);
+}
+
 void cassie_integrate_pos(cassie_sim_t *c, state_out_t *y)
 {
     mj_integratePos_fp(c->m, c->d->qpos, c->d->qvel, c->m->opt.timestep);
@@ -1139,6 +1184,16 @@ void cassie_integrate_pos(cassie_sim_t *c, state_out_t *y)
 double *cassie_sim_time(cassie_sim_t *c)
 {
     return &c->d->time;
+}
+
+double *cassie_sim_timestep(cassie_sim_t *c)
+{
+    return &c->m->opt.timestep;
+}
+
+void cassie_sim_set_timestep(cassie_sim_t *c, double dt)
+{
+    c->m->opt.timestep = dt;
 }
 
 double *cassie_sim_qpos(cassie_sim_t *c)
@@ -1317,6 +1372,12 @@ void cassie_sim_set_geom_name_friction(cassie_sim_t *c, const char* name, double
     mju_copy_fp(&c->m->geom_friction[geom_id], fric, 3);
 }
 
+double *cassie_sim_get_geom_name_friction(cassie_sim_t *c, const char* name)
+{
+    int geom_id = mj_name2id_fp(initial_model, mjOBJ_GEOM, name);
+    return &c->m->geom_friction[geom_id];
+}
+
 float *cassie_sim_geom_rgba(cassie_sim_t *c)
 {
     return c->m->geom_rgba;
@@ -1334,7 +1395,7 @@ void cassie_sim_set_geom_rgba(cassie_sim_t *c, float *rgba)
     {
         c->m->geom_rgba[i] = rgba[i];
     }
-}    
+}
 
 void cassie_sim_set_geom_name_rgba(cassie_sim_t *c, const char* name, float *rgba)
 {
@@ -1421,6 +1482,12 @@ void cassie_sim_set_geom_name_size(cassie_sim_t *c, const char* name, double *si
     mju_copy_fp(&c->m->geom_size[3 * geom_id], size, 3);
 }
 
+double* cassie_sim_site_xpos(cassie_sim_t *c, const char* name)
+{
+    int site_id = mj_name2id_fp(c->m, mjOBJ_SITE, name);
+    return &c->d->site_xpos[3 * site_id];
+}
+
 // Get import mujoco model size parameters for the inputted cassie sim stuct.
 // Takes in an int array that should be 6 long
 void cassie_sim_params(cassie_sim_t *c, int* params)
@@ -1467,7 +1534,7 @@ bool cassie_sim_check_self_collision(const cassie_sim_t *c)
 
 void cassie_sim_foot_positions(const cassie_sim_t *c, double cpos[6])
 {
-    // Zero the output foot positions 
+    // Zero the output foot positions
     mju_zero_fp(cpos, 6);
     mju_copy_fp(cpos, &c->d->xpos[3 * left_foot_body_id], 3);
     mju_copy_fp(&cpos[3], &c->d->xpos[3 * right_foot_body_id], 3);
@@ -1483,7 +1550,7 @@ void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12])
 {
     // Calculate body CoM velocities
     mj_comVel_fp(c->m, c->d);
-    // Zero the output foot velocities 
+    // Zero the output foot velocities
     mju_zero_fp(cvel, 12);
     mju_copy_fp(cvel, &c->d->cvel[6 * left_foot_body_id], 6);
     mju_copy_fp(&cvel[6], &c->d->cvel[6 * right_foot_body_id], 6);
@@ -1492,21 +1559,21 @@ void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12])
 void cassie_sim_cm_position(const cassie_sim_t *c, double cm_pos[3]){
     mj_fwdPosition_fp(c->m, c->d);
     for(int i = 0; i < 3; ++i){
-        cm_pos[i] = c->d->subtree_com[i];   // Just i because the pelvis is the first body 
+        cm_pos[i] = c->d->subtree_com[i];   // Just i because the pelvis is the first body
     }
 }
 
 void cassie_sim_cm_velocity(const cassie_sim_t *c, double cm_vel[3]){
     mj_fwdPosition_fp(c->m, c->d);
     mj_subtreeVel_fp(c->m, c->d);
-    for(int i=0; i < 3; ++i){ 
-       cm_vel[i] = c->d->subtree_linvel[i]; // Just i because the pelvis is the first body 
+    for(int i=0; i < 3; ++i){
+       cm_vel[i] = c->d->subtree_linvel[i]; // Just i because the pelvis is the first body
     }
 }
 
 void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]){
     double storedQuat[4];
-    // Store the original quaternion and set the quaternion to [1,0,0,0] 
+    // Store the original quaternion and set the quaternion to [1,0,0,0]
     for(int i = 0; i < 4; ++i){
         storedQuat[i] = c->d->qpos[i+3];
         c->d->qpos[i+3] = 0;
@@ -1531,7 +1598,7 @@ void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]){
             I_p[i][j] = fullMassMatrix[(i+3)*c->m->nv + (j+3)];
         }
     }
-    
+
     // Apply 3D Parallel Axis law
     I_c[0][0] = I_p[0][0] - m*( pow(rcm[1],2) + pow(rcm[2],2));
     I_c[1][1] = I_p[1][1] - m*( pow(rcm[2],2) + pow(rcm[0],2));
@@ -1554,8 +1621,8 @@ void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]){
 void cassie_sim_angular_momentum(const cassie_sim_t *c, double Lcm[3]){
     mj_fwdPosition_fp(c->m, c->d);
     mj_subtreeVel_fp(c->m, c->d);
-    for(int i=0; i < 3; ++i){ 
-       Lcm[i] = c->d->subtree_angmom[i]; // Just i because the pelvis is the first body 
+    for(int i=0; i < 3; ++i){
+       Lcm[i] = c->d->subtree_angmom[i]; // Just i because the pelvis is the first body
     }
 }
 
@@ -1595,7 +1662,7 @@ void cassie_sim_loop_constraint_info(const cassie_sim_t *c, double J_cl[192], do
         // printf("Row: %i    Type: %i   efc_id: %d    efc_name:%s\n", i, c->d->efc_type[i], c->d->efc_id[i], mj_id2name_fp(c->m, 16, c->d->efc_id[i]));
         // std::cout << d->efc_type[i] << std::endl;
         if(c->d->efc_type[i] == 0 && (          // 0 is mjCNSTR_EQUALITY, I don't want to import mujoco constants
-            strcmp(mj_id2name_fp(c->m, 16, c->d->efc_id[i]), "left-achilles-rod-eq") == 0 || 
+            strcmp(mj_id2name_fp(c->m, 16, c->d->efc_id[i]), "left-achilles-rod-eq") == 0 ||
             strcmp(mj_id2name_fp(c->m, 16, c->d->efc_id[i]), "right-achilles-rod-eq") == 0)){
 
             // std::cout << J_eq.rows() << " " << J_eq.cols() << std::endl; //12x32 non contact
@@ -1613,7 +1680,7 @@ void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const cha
 {
     // Calculate body CoM velocities
     mj_comVel_fp(c->m, c->d);
-    // Zero the output foot velocities 
+    // Zero the output foot velocities
     mju_zero_fp(cvel, 6);
     int body_id = mj_name2id_fp(c->m, mjOBJ_BODY, name);
     mju_copy_fp(cvel, &c->d->cvel[6 * body_id], 6);
@@ -1631,6 +1698,7 @@ void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12])
 {
     double force_torque[6];
     double force_global[3];
+    double torque_global[3];
 
     // Zero the output foot forces
     mju_zero_fp(cfrc, 12);
@@ -1703,7 +1771,7 @@ void cassie_sim_heeltoe_forces(const cassie_sim_t *c, double toe_force[6], doubl
             mj_contactForce_fp(c->m, c->d, i, force_torque);
             mju_rotVecMatT_fp(force_global, force_torque,
                              c->d->contact[i].frame);
-            
+
             double toe_dist[2] = {c->d->site_xpos[3*toe_ids[id_ind]]-c->d->contact[i].pos[0], c->d->site_xpos[3*toe_ids[id_ind]+1]-c->d->contact[i].pos[1]};
             double heel_dist[2] = {c->d->site_xpos[3*heel_ids[id_ind]]-c->d->contact[i].pos[0], c->d->site_xpos[3*heel_ids[id_ind]+1]-c->d->contact[i].pos[1]};
             if (sqrt(pow(toe_dist[0], 2)+pow(toe_dist[1], 2)) < sqrt(pow(heel_dist[0], 2)+pow(heel_dist[1], 2))) { // Toe contact
@@ -1831,6 +1899,21 @@ void cassie_sim_full_reset(cassie_sim_t *c)
     state_output_setup(c->estimator);
 }
 
+void reset_state_est(cassie_sim_t *c, state_out_t *y) {
+    // state_output_setup(c->estimator);
+    pd_in_t u = {0};
+    cassie_user_in_t cassie_user_in;
+    cassie_out_t cassie_out;
+    cassie_in_t cassie_in;
+    pd_input_step(c->pd, &u, &c->cassie_out, &cassie_user_in);
+    cassie_core_sim_step(c->core, &cassie_user_in, &c->cassie_out, &cassie_in);
+    cassie_motor_data(c, &cassie_in);
+    cassie_sensor_data(c);
+    // Run state estimator system
+    // for (int i=0; i<100; i++) {
+    state_output_step(c->estimator, &cassie_out, y);
+}
+
 int cassie_sim_get_hfield_nrow(cassie_sim_t *c) {
     return c->m->hfield_nrow[0];
 }
@@ -1901,7 +1984,7 @@ joint_filter_t *cassie_sim_joint_filter(cassie_sim_t *c) {
 }
 
 // Gets joint filters for the inputted cassie_sim struct. Takes in 2 double arrays to put values in
-// (x and y), which should be 6*4 and 6*3 long respectively. 
+// (x and y), which should be 6*4 and 6*3 long respectively.
 // (6 joints, for each joint x has 4 values y has 3)
 void cassie_sim_get_joint_filter(cassie_sim_t *c, double* x, double* y) {
     for (int j=0; j<NUM_JOINTS; j++) {
@@ -1914,8 +1997,8 @@ void cassie_sim_get_joint_filter(cassie_sim_t *c, double* x, double* y) {
     }
 }
 
-// Sets joint filters for the inputted cassie_sim struct. Takes in 2 arrays of values (x and y), 
-// which should be 6*4 and 6*3 long respectively. 
+// Sets joint filters for the inputted cassie_sim struct. Takes in 2 arrays of values (x and y),
+// which should be 6*4 and 6*3 long respectively.
 // (6 joints, for each joint x has 4 values y has 3)
 void cassie_sim_set_joint_filter(cassie_sim_t *c, double* x, double* y) {
     // printf("in c\n");
@@ -1975,6 +2058,60 @@ void cassie_sim_set_torque_delay(cassie_sim_t *c, double* t) {
     }
 }
 
+int cassie_sim_mj_name2id(cassie_sim_t *c, char* mj_type, char* name) {
+    // NOTE: This is absolutely TERRIBLE. No way around the length, the other option is to define
+    // a const hashmap that will map string to the corresponding mjOBJ type.
+    int obj_type  = mjOBJ_UNKNOWN;
+    if (strcmp(mj_type, "body") == 0) {
+        obj_type = mjOBJ_BODY;
+    } else if (strcmp(mj_type, "xbody") == 0) {
+        obj_type = mjOBJ_XBODY;
+    } else if (strcmp(mj_type, "joint") == 0) {
+        obj_type = mjOBJ_JOINT;
+    } else if (strcmp(mj_type, "dof") == 0) {
+        obj_type = mjOBJ_DOF;
+    } else if (strcmp(mj_type, "geom") == 0) {
+        obj_type = mjOBJ_GEOM;
+    } else if (strcmp(mj_type, "site") == 0) {
+        obj_type = mjOBJ_SITE;
+    } else if (strcmp(mj_type, "camera") == 0) {
+        obj_type = mjOBJ_CAMERA;
+    } else if (strcmp(mj_type, "light") == 0) {
+        obj_type = mjOBJ_LIGHT;
+    } else if (strcmp(mj_type, "mesh") == 0) {
+        obj_type = mjOBJ_MESH;
+    } else if (strcmp(mj_type, "skin") == 0) {
+        obj_type = mjOBJ_SKIN;
+    } else if (strcmp(mj_type, "hfield") == 0) {
+        obj_type = mjOBJ_HFIELD;
+    } else if (strcmp(mj_type, "texture") == 0) {
+        obj_type = mjOBJ_TEXTURE;
+    } else if (strcmp(mj_type, "material") == 0) {
+        obj_type = mjOBJ_MATERIAL;
+    } else if (strcmp(mj_type, "pair") == 0) {
+        obj_type = mjOBJ_PAIR;
+    } else if (strcmp(mj_type, "exclude") == 0) {
+        obj_type = mjOBJ_EXCLUDE;
+    } else if (strcmp(mj_type, "equality") == 0) {
+        obj_type = mjOBJ_EQUALITY;
+    } else if (strcmp(mj_type, "tendon") == 0) {
+        obj_type = mjOBJ_TENDON;
+    } else if (strcmp(mj_type, "actuator") == 0) {
+        obj_type = mjOBJ_ACTUATOR;
+    } else if (strcmp(mj_type, "sensor") == 0) {
+        obj_type = mjOBJ_SENSOR;
+    } else if (strcmp(mj_type, "numeric") == 0) {
+        obj_type = mjOBJ_NUMERIC;
+    } else if (strcmp(mj_type, "text") == 0) {
+        obj_type = mjOBJ_TEXT;
+    } else if (strcmp(mj_type, "tuple") == 0) {
+        obj_type = mjOBJ_TUPLE;
+    } else if (strcmp(mj_type, "key") == 0) {
+        obj_type = mjOBJ_KEY;
+    }
+    return mj_name2id_fp(c->m, obj_type, name);
+}
+
 void cassie_vis_full_reset(cassie_vis_t *v)
 {
     mjv_freeScene_fp(&v->scn);
@@ -2020,7 +2157,7 @@ void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], doubl
     {
         printf("max vis markers reached!");
         exit(1);
-    } 
+    }
 }
 
 
@@ -2130,7 +2267,7 @@ void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
 void cassie_vis_init_recording(cassie_vis_t *sim, const char* videofile, int width, int height){
     char ffmpeg_cmd[1000] = "ffmpeg -hide_banner -loglevel error -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s ";
     char integer_string[32];
-    
+
     sprintf(integer_string, "%d", width); // Convert and write widthxheight
     strcat(ffmpeg_cmd, integer_string);
     strcat(ffmpeg_cmd, "x");
@@ -2150,7 +2287,7 @@ void cassie_vis_init_recording(cassie_vis_t *sim, const char* videofile, int wid
     glfwSetWindowSize_fp(sim->window, width, height);
     sim->frame = (unsigned char*)malloc(3*width*height);
 
-    sim->pipe_video_out = popen(ffmpeg_cmd, "w"); 
+    sim->pipe_video_out = popen(ffmpeg_cmd, "w");
 }
 
 void cassie_vis_record_frame(cassie_vis_t *sim){
@@ -2265,7 +2402,7 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
     if (mods == GLFW_MOD_CONTROL && v->pert.select > 0) {
         if (act == GLFW_PRESS) {
             // Disable vis perturb force when using mouse perturb, only want to vis perturb object
-            v->opt.flags[11] = 0;   
+            v->opt.flags[11] = 0;
             // right: translate;  left: rotate
             if (v->button_right) {
                 newperturb = mjPERT_TRANSLATE;
@@ -2278,7 +2415,7 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
             }
         } else {
             // Enable vis perturb force again
-            v->opt.flags[11] = 1;   
+            v->opt.flags[11] = 1;
         }
     }
     v->pert.active = newperturb;
@@ -2307,7 +2444,7 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
 
         int selbody = mjv_select_fp(v->m, v->d, &v->opt,
                             aspectratio, relx,
-                            rely, 
+                            rely,
                             &v->scn, selpnt, &selgeom, &selskin);
         // set lookat point, start tracking is requested
         if (selmode == 2 || selmode == 3) {
@@ -2350,7 +2487,7 @@ void mouse_button(GLFWwindow* window, int button, int act, int mods) {
         // If mouse not pressed, not applying perturb so zero it out.
         mju_zero_fp(v->d->xfrc_applied, 6 * v->m->nbody);
     }
-    
+
 }
 
 void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, double azi, double elev)
@@ -2375,6 +2512,16 @@ void cassie_vis_attach_cam(cassie_vis_t* v, const char* cam_name){
     v->zfar = initial_model->vis.map.zfar;
     v->znear = initial_model->vis.map.znear;
     v->extent1 = initial_model->stat.extent;
+}
+
+void cassie_vis_set_cam_pos(cassie_vis_t* v, double* look_point, double distance, double azi, double elev) {
+    v->cam.type = mjCAMERA_FREE;
+    v->cam.lookat[0] = look_point[0];
+    v->cam.lookat[1] = look_point[1];
+    v->cam.lookat[2] = look_point[2];
+    v->cam.distance = distance;
+    v->cam.azimuth = azi;
+    v->cam.elevation = elev;
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -2578,7 +2725,7 @@ void sensorinit(cassie_vis_t *v) {
     v->figsensor.flg_symmetric = 1;
 
     strcpy(v->figsensor.title, "Sensor data");
-    
+
     // y-tick number format
     strcpy(v->figsensor.yformat, "%.0f");
     // grid size
@@ -2637,7 +2784,7 @@ void sensorupdate(cassie_vis_t* v) {
         }
 
         // update linepnt
-        v->figsensor.linepnt[lineid] = mjMIN(mjMAXLINEPNT-1, 
+        v->figsensor.linepnt[lineid] = mjMIN(mjMAXLINEPNT-1,
                                           figsensor.linepnt[lineid]+2*dim);
     }
 }
@@ -2649,9 +2796,9 @@ void sensorshow(cassie_vis_t* v, mjrRect rect) {
 
     // render figure on the right
     mjrRect viewport = {
-        rect.left + 3*width, 
-        rect.bottom, 
-        width, 
+        rect.left + 3*width,
+        rect.bottom,
+        width,
         rect.height/3
     };
     mjr_figure_fp(viewport, &v->figsensor, &v->con);
@@ -2666,7 +2813,7 @@ void grfinit(cassie_vis_t *v) {
     // v->figGRF.flg_barplot = 1;
 
     strcpy(v->figGRF.title, "Ground Reaction Forces");
-    
+
     // y-tick number format
     strcpy(v->figGRF.yformat, "%.2f");
     // grid size
@@ -2696,7 +2843,7 @@ void grfupdate(cassie_vis_t* v) {
     // if (v->GRFcount == 0) {
         double cfrc[12];
         cassie_vis_foot_forces(v, cfrc);
-        float tdata[2] = { 
+        float tdata[2] = {
             (float)(cfrc[2]),
             (float)(cfrc[8])
         };
@@ -2717,9 +2864,9 @@ void grfupdate(cassie_vis_t* v) {
 // show sensor figure
 void grfshow(cassie_vis_t* v, mjrRect rect) {
     mjrRect viewport = {
-        rect.left + rect.width - rect.width/2, 
-        rect.bottom + rect.height/3, 
-        rect.width/2, 
+        rect.left + rect.width - rect.width/2,
+        rect.bottom + rect.height/3,
+        rect.width/2,
         rect.height/2
     };
 

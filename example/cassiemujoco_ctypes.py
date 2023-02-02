@@ -359,6 +359,10 @@ cassie_sim_step_pd = _libraries['./libcassiemujoco.so'].cassie_sim_step_pd
 cassie_sim_step_pd.restype = None
 cassie_sim_step_pd.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(struct_c__SA_state_out_t), POINTER_T(struct_c__SA_pd_in_t)]
 
+cassie_sim_step_pd_no2khz = _libraries['./libcassiemujoco.so'].cassie_sim_step_pd_no2khz
+cassie_sim_step_pd_no2khz.restype = None
+cassie_sim_step_pd_no2khz.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(struct_c__SA_state_out_t), POINTER_T(struct_c__SA_pd_in_t)]
+
 cassie_integrate_pos = _libraries['./libcassiemujoco.so'].cassie_integrate_pos
 cassie_integrate_pos.restype = None
 cassie_integrate_pos.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(struct_c__SA_state_out_t)]
@@ -366,6 +370,14 @@ cassie_integrate_pos.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(struct_
 cassie_sim_time = _libraries['./libcassiemujoco.so'].cassie_sim_time
 cassie_sim_time.restype = POINTER_T(ctypes.c_double)
 cassie_sim_time.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_timestep = _libraries['./libcassiemujoco.so'].cassie_sim_timestep
+cassie_sim_timestep.restype = POINTER_T(ctypes.c_double)
+cassie_sim_timestep.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_set_timestep = _libraries['./libcassiemujoco.so'].cassie_sim_set_timestep
+cassie_sim_set_timestep.restype = None
+cassie_sim_set_timestep.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double]
 
 cassie_sim_qpos = _libraries['./libcassiemujoco.so'].cassie_sim_qpos
 cassie_sim_qpos.restype = POINTER_T(ctypes.c_double)
@@ -526,6 +538,10 @@ cassie_vis_draw.argtypes = [POINTER_T(struct_cassie_vis), POINTER_T(struct_cassi
 cassie_vis_set_cam = _libraries['./libcassiemujoco.so'].cassie_vis_set_cam
 cassie_vis_set_cam.restype = None
 cassie_vis_set_cam.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_char_p, ctypes.c_double, ctypes.c_double, ctypes.c_double]
+
+cassie_vis_set_cam_pos = _libraries['./libcassiemujoco.so'].cassie_vis_set_cam_pos
+cassie_vis_set_cam_pos.restype = None
+cassie_vis_set_cam_pos.argtypes = [POINTER_T(struct_cassie_vis), POINTER_T(ctypes.c_double), ctypes.c_double, ctypes.c_double, ctypes.c_double]
 
 cassie_vis_window_resize = _libraries['./libcassiemujoco.so'].cassie_vis_window_resize
 cassie_vis_window_resize.restype = None
@@ -697,6 +713,10 @@ cassie_sim_set_geom_name_friction = _libraries['./libcassiemujoco.so'].cassie_si
 cassie_sim_set_geom_name_friction.restype = None
 cassie_sim_set_geom_name_friction.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, POINTER_T(ctypes.c_double)]
 
+cassie_sim_get_geom_name_friction = _libraries['./libcassiemujoco.so'].cassie_sim_get_geom_name_friction
+cassie_sim_get_geom_name_friction.restype = POINTER_T(ctypes.c_double)
+cassie_sim_get_geom_name_friction.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
+
 cassie_sim_geom_rgba = _libraries['./libcassiemujoco.so'].cassie_sim_geom_rgba
 cassie_sim_geom_rgba.restype = POINTER_T(ctypes.c_float)
 cassie_sim_geom_rgba.argtypes = [POINTER_T(struct_cassie_sim)]
@@ -761,9 +781,17 @@ cassie_sim_set_geom_name_size = _libraries['./libcassiemujoco.so'].cassie_sim_se
 cassie_sim_set_geom_name_size.restype = None
 cassie_sim_set_geom_name_size.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, POINTER_T(ctypes.c_double)]
 
+cassie_sim_site_xpos = _libraries['./libcassiemujoco.so'].cassie_sim_site_xpos
+cassie_sim_site_xpos.restype = POINTER_T(ctypes.c_double)
+cassie_sim_site_xpos.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
+
 cassie_sim_set_const = _libraries['./libcassiemujoco.so'].cassie_sim_set_const
 cassie_sim_set_const.restype = None
 cassie_sim_set_const.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_just_set_const = _libraries['./libcassiemujoco.so'].cassie_sim_just_set_const
+cassie_sim_just_set_const.restype = None
+cassie_sim_just_set_const.argtypes = [POINTER_T(struct_cassie_sim)]
 
 cassie_sim_params = _libraries['./libcassiemujoco.so'].cassie_sim_params
 cassie_sim_params.restype = None
@@ -1091,7 +1119,7 @@ __all__ = \
     'cassie_sim_body_mass', 'cassie_sim_set_body_mass',
     'cassie_sim_loop_constraint_info',
     'cassie_sim_body_ipos', 'cassie_sim_set_body_ipos',
-    'cassie_sim_geom_friction', 'cassie_sim_set_geom_friction',
+    'cassie_sim_geom_friction', 'cassie_sim_set_geom_friction', 'cassie_sim_get_geom_name_friction',
     'cassie_sim_set_const', 
     'cassie_sim_geom_rgba', 'cassie_sim_geom_name_rgba', 'cassie_sim_set_geom_rgba', 'cassie_sim_set_geom_name_rgba',
     'cassie_sim_geom_quat', 'cassie_sim_geom_name_quat', 'cassie_sim_set_geom_quat', 'cassie_sim_set_geom_name_quat',
@@ -1111,6 +1139,7 @@ __all__ = \
     'cassie_vis_record_frame', 'cassie_vis_init_recording', 'cassie_vis_close_recording', 'cassie_vis_window_resize', 'cassie_vis_attach_cam',
     'cassie_vis_draw_depth', 'cassie_vis_get_depth_size', 'cassie_vis_init_depth', 'cassie_vis_attach_cam', 'cassie_vis_remakeSceneCon', 'cassie_vis_full_reset',
     'cassie_sim_get_jacobian', 'cassie_sim_get_jacobian_full', 'cassie_sim_get_jacobian_full_site', 'cassie_sim_get_body_name_pos', 'cassie_sim_set_body_name_pos',
-    'cassie_sim_heeltoe_forces']
+    'cassie_sim_heeltoe_forces', 'cassie_sim_site_xpos', 'cassie_vis_set_cam_pos', 'cassie_sim_timestep', 'cassie_sim_set_timestep', 'cassie_sim_just_set_const',
+    'cassie_sim_step_pd_no2khz']
 
 
