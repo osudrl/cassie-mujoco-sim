@@ -89,6 +89,8 @@ mjvFigure figsensor;
     X(mj_kinematics)                            \
     X(mj_comPos)                                \
     X(mj_subtreeVel)                            \
+    X(mj_rnePostConstraint)                     \
+    X(mju_transformSpatial)                     \
     X(mju_copy)                                 \
     X(mju_zero)                                 \
     X(mju_rotVecMatT)                           \
@@ -1686,6 +1688,17 @@ void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const cha
     mju_copy_fp(cvel, &c->d->cvel[6 * body_id], 6);
 }
 
+void cassie_sim_body_acceleration(const cassie_sim_t *c, double accel[6], const char* name)
+{
+    // Calculate body CoM velocities/accel
+    mj_comVel_fp(c->m, c->d);
+    mj_rnePostConstraint_fp(c->m, c->d);
+    // Zero the output foot velocities
+    mju_zero_fp(accel, 6);
+    int body_id = mj_name2id_fp(c->m, mjOBJ_BODY, name);
+    mju_copy_fp(accel, &c->d->cacc[6 * body_id], 6);
+}
+
 void cassie_sim_foot_orient(const cassie_sim_t *c, double corient[4])
 {
     int right_id = mj_name2id_fp(c->m, mjOBJ_SITE, "right-foot-middle");
@@ -1694,11 +1707,41 @@ void cassie_sim_foot_orient(const cassie_sim_t *c, double corient[4])
     mju_mat2Quat_fp(corient, right_rot_mat);
 }
 
+void cassie_sim_body_contact_force(const cassie_sim_t *c, double cfrc[6], const char* name)
+{
+    double force_torque[6];
+    double force_global[6];
+
+    // Zero the output foot forces
+    mju_zero_fp(cfrc, 6);
+    int body_id = mj_name2id_fp(c->m, mjOBJ_BODY, name);
+
+    // Accumulate the forces for all geoms witin a body
+    for (int i = 0; i < c->d->ncon; ++i) {
+        // Get body IDs for both geoms in the collision
+        int body1 = c->m->geom_bodyid[c->d->contact[i].geom1];
+        int body2 = c->m->geom_bodyid[c->d->contact[i].geom2];
+
+        if (body_id == body1|| body_id == body2) {
+            // Get contact force in local coordinates
+            mj_contactForce_fp(c->m, c->d, i, force_torque);
+            // Transform into global
+            mju_transformSpatial_fp(force_global, force_torque, 1, &c->d->xpos[3*body_id], 
+                c->d->contact[i].pos, c->d->contact[i].frame);
+
+            // Add to total forces on foot
+            if (body_id == body1)
+                for (int j = 0; j < 6; ++j) cfrc[j] -= force_global[j];
+            else
+                for (int j = 0; j < 6; ++j) cfrc[j] += force_global[j];
+        }
+    }
+}
+
 void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12])
 {
     double force_torque[6];
     double force_global[3];
-    double torque_global[3];
 
     // Zero the output foot forces
     mju_zero_fp(cfrc, 12);
@@ -2522,6 +2565,8 @@ void cassie_vis_set_cam_pos(cassie_vis_t* v, double* look_point, double distance
     v->cam.distance = distance;
     v->cam.azimuth = azi;
     v->cam.elevation = elev;
+}
+
 float cassie_vis_extent(cassie_vis_t* v)
 {
     return v->extent1;
