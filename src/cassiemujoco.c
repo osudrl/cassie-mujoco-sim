@@ -2522,6 +2522,19 @@ void cassie_vis_set_cam_pos(cassie_vis_t* v, double* look_point, double distance
     v->cam.distance = distance;
     v->cam.azimuth = azi;
     v->cam.elevation = elev;
+float cassie_vis_extent(cassie_vis_t* v)
+{
+    return v->extent1;
+}
+
+float cassie_vis_znear(cassie_vis_t* v)
+{
+    return v->znear;
+}
+
+float cassie_vis_zfar(cassie_vis_t* v)
+{
+    return v->zfar;
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {

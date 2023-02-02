@@ -26,7 +26,7 @@ else:
     ctypes._pointer_t_type_cache = {}
     def POINTER_T(pointee):
         # a pointer should have the same length as LONG
-        fake_ptr_base_type = ctypes.c_uint64 
+        fake_ptr_base_type = ctypes.c_uint64
         # specific case for c_void_p
         if pointee is None: # VOID pointer type. c_void_p.
             pointee = type(None) # ctypes.c_void_p # ctypes.c_ulong
@@ -47,7 +47,7 @@ else:
                 raise TypeError('This is not a ctypes pointer.')
             def __init__(self, **args):
                 raise TypeError('This is not a ctypes pointer. It is not instanciable.')
-        _class = type('LP_%d_%s'%(8, clsname), (_T,),{}) 
+        _class = type('LP_%d_%s'%(8, clsname), (_T,),{})
         ctypes._pointer_t_type_cache[clsname] = _class
         return _class
 
@@ -522,6 +522,18 @@ cassie_sim_set_hfielddata.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ct
 cassie_vis_init = _libraries['./libcassiemujoco.so'].cassie_vis_init
 cassie_vis_init.restype = POINTER_T(struct_cassie_vis)
 cassie_vis_init.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p,ctypes.c_bool]
+
+cassie_vis_extent = _libraries['./libcassiemujoco.so'].cassie_vis_extent
+cassie_vis_extent.restype = ctypes.c_float
+cassie_vis_extent.argtypes = [POINTER_T(struct_cassie_vis)]
+
+cassie_vis_znear = _libraries['./libcassiemujoco.so'].cassie_vis_znear
+cassie_vis_znear.restype = ctypes.c_float
+cassie_vis_znear.argtypes = [POINTER_T(struct_cassie_vis)]
+
+cassie_vis_zfar = _libraries['./libcassiemujoco.so'].cassie_vis_zfar
+cassie_vis_zfar.restype = ctypes.c_float
+cassie_vis_zfar.argtypes = [POINTER_T(struct_cassie_vis)]
 
 cassie_vis_close = _libraries['./libcassiemujoco.so'].cassie_vis_close
 cassie_vis_close.restype = None
@@ -1100,7 +1112,7 @@ __all__ = \
     'elmo_out_t', 'pack_cassie_in_t', 'cassie_sim_apply_force','cassie_sim_full_reset',
     'cassie_leg_out_t', 'wait_for_packet',
     'struct_c__SA_cassie_leg_in_t', 'struct_c__SA_state_joint_out_t',
-    'process_packet_header', 'cassie_sim_release', 'cassie_sim_foot_forces', 
+    'process_packet_header', 'cassie_sim_release', 'cassie_sim_foot_forces',
     'cassie_sim_foot_positions', 'cassie_sim_foot_velocities', 'struct_c__SA_state_foot_out_t',
     'cassie_sim_cm_position','cassie_sim_centroid_inertia',
     'cassie_sim_cm_velocity','cassie_sim_angular_momentum',
@@ -1120,7 +1132,7 @@ __all__ = \
     'cassie_sim_loop_constraint_info',
     'cassie_sim_body_ipos', 'cassie_sim_set_body_ipos',
     'cassie_sim_geom_friction', 'cassie_sim_set_geom_friction', 'cassie_sim_get_geom_name_friction',
-    'cassie_sim_set_const', 
+    'cassie_sim_set_const',
     'cassie_sim_geom_rgba', 'cassie_sim_geom_name_rgba', 'cassie_sim_set_geom_rgba', 'cassie_sim_set_geom_name_rgba',
     'cassie_sim_geom_quat', 'cassie_sim_geom_name_quat', 'cassie_sim_set_geom_quat', 'cassie_sim_set_geom_name_quat',
     'cassie_sim_geom_pos', 'cassie_sim_geom_name_pos', 'cassie_sim_set_geom_pos', 'cassie_sim_set_geom_name_pos',
@@ -1131,15 +1143,16 @@ __all__ = \
     'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass',
     'cassie_sim_get_hfield_nrow', 'cassie_sim_get_hfield_ncol', 'cassie_sim_get_nhfielddata',
     'cassie_sim_get_hfield_size', 'cassie_sim_set_hfield_size', 'cassie_sim_hfielddata', 'cassie_sim_set_hfielddata',
-    'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass', 'cassie_vis_set_cam', 
+    'cassie_sim_foot_quat', 'cassie_sim_body_vel', 'cassie_sim_set_body_name_mass', 'cassie_vis_set_cam',
     'cassie_sim_joint_filter', 'cassie_sim_drive_filter', 'cassie_sim_set_joint_filter', 'cassie_sim_set_drive_filter',
-    'cassie_sim_get_joint_filter',  'cassie_sim_get_drive_filter', 
+    'cassie_sim_get_joint_filter',  'cassie_sim_get_drive_filter',
     'cassie_sim_torque_delay', 'cassie_sim_set_torque_delay', 'drive_filter_t', 'joint_filter_t',
     'cassie_sim_params', 'cassie_sim_nv', 'cassie_sim_nbody', 'cassie_sim_nq', 'cassie_sim_ngeom',
     'cassie_vis_record_frame', 'cassie_vis_init_recording', 'cassie_vis_close_recording', 'cassie_vis_window_resize', 'cassie_vis_attach_cam',
     'cassie_vis_draw_depth', 'cassie_vis_get_depth_size', 'cassie_vis_init_depth', 'cassie_vis_attach_cam', 'cassie_vis_remakeSceneCon', 'cassie_vis_full_reset',
     'cassie_sim_get_jacobian', 'cassie_sim_get_jacobian_full', 'cassie_sim_get_jacobian_full_site', 'cassie_sim_get_body_name_pos', 'cassie_sim_set_body_name_pos',
     'cassie_sim_heeltoe_forces', 'cassie_sim_site_xpos', 'cassie_vis_set_cam_pos', 'cassie_sim_timestep', 'cassie_sim_set_timestep', 'cassie_sim_just_set_const',
-    'cassie_sim_step_pd_no2khz']
+    'cassie_sim_step_pd_no2khz',
+    'cassie_sim_heeltoe_forces', 'cassie_vis_extent', 'cassie_vis_znear', 'cassie_vis_zfar']
 
 
