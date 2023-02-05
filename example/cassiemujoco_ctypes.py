@@ -813,6 +813,16 @@ cassie_sim_site_xpos = _libraries['./libcassiemujoco.so'].cassie_sim_site_xpos
 cassie_sim_site_xpos.restype = POINTER_T(ctypes.c_double)
 cassie_sim_site_xpos.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
 
+cassie_sim_site_xquat = _libraries['./libcassiemujoco.so'].cassie_sim_site_xquat
+cassie_sim_site_xquat.restype = None
+cassie_sim_site_xquat.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
+
+cassie_sim_relative_pose = _libraries['./libcassiemujoco.so'].cassie_sim_relative_pose
+cassie_sim_relative_pose.restype = None
+cassie_sim_relative_pose.argtypes = [POINTER_T(ctypes.c_double), POINTER_T(ctypes.c_double),
+                                     POINTER_T(ctypes.c_double), POINTER_T(ctypes.c_double),
+                                     ctypes.c_double * 3, ctypes.c_double * 4]
+
 cassie_sim_just_set_const = _libraries['./libcassiemujoco.so'].cassie_sim_just_set_const
 cassie_sim_just_set_const.restype = None
 cassie_sim_just_set_const.argtypes = [POINTER_T(struct_cassie_sim)]
@@ -1188,6 +1198,7 @@ __all__ = \
     'cassie_sim_heeltoe_forces', 'cassie_vis_extent', 'cassie_vis_znear', 'cassie_vis_zfar',
     'cassie_sim_body_contact_force', 'cassie_sim_body_acceleration',
     'cassie_sim_mj_name2id', 'cassie_sim_nu', 'cassie_sim_njnt', 'cassie_sim_ctrl',
-    'cassie_sim_jnt_qposadr', 'cassie_sim_jnt_dofadr']
+    'cassie_sim_jnt_qposadr', 'cassie_sim_jnt_dofadr',
+    'cassie_sim_site_xquat', 'cassie_sim_relative_pose']
 
 

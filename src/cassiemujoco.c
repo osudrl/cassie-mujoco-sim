@@ -97,6 +97,8 @@ mjvFigure figsensor;
     X(mju_sub3)                                 \
     X(mju_mulMatTVec)                           \
     X(mju_mat2Quat)                             \
+    X(mju_negPose)                              \
+    X(mju_mulPose)                              \
     X(mju_printMat)                             \
     X(mjv_makeScene)                            \
     X(mjv_defaultScene)                         \
@@ -1488,6 +1490,21 @@ double* cassie_sim_site_xpos(cassie_sim_t *c, const char* name)
 {
     int site_id = mj_name2id_fp(c->m, mjOBJ_SITE, name);
     return &c->d->site_xpos[3 * site_id];
+}
+
+void cassie_sim_site_xquat(cassie_sim_t *c, const char* name, double* xquat)
+{
+    int site_id = mj_name2id_fp(c->m, mjOBJ_SITE, name);
+    mju_mat2Quat_fp(xquat, &c->d->site_xmat[9 * site_id]);
+}
+
+void cassie_sim_relative_pose(double pos1[3], double quat1[4],
+                              double pos2[3], double quat2[4],
+                              double pos2_in_pos1[3],double quat2_in_quat1[4])
+{
+    mjtNum conj_pos[3], conj_quat[4];
+    mju_negPose_fp(conj_pos, conj_quat, pos1, quat1);
+    mju_mulPose_fp(pos2_in_pos1, quat2_in_quat1, conj_pos, conj_quat, pos2, quat2);
 }
 
 // Get import mujoco model size parameters for the inputted cassie sim stuct.

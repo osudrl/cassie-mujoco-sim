@@ -12,7 +12,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from .cassiemujoco_ctypes import *
+from cassiemujoco_ctypes import *
 import os
 import ctypes
 import numpy as np
@@ -639,6 +639,31 @@ class CassieSim:
         sitep = cassie_sim_site_xpos(self.c, name.encode())
         return sitep[:3]
 
+    def get_site_quat(self, name):
+        array = (ctypes.c_double * 4)()
+        cassie_sim_site_xquat(self.c, name.encode(), array)
+        return array[:4]
+
+    def get_object_relative_pose(self, pose1, pose2, relative_pose):
+        pos = (ctypes.c_double * 3)()
+        quat = (ctypes.c_double * 4)()
+        pose1_pos = (ctypes.c_double * 3)()
+        pose1_quat = (ctypes.c_double * 4)()
+        pose2_pos = (ctypes.c_double * 3)()
+        pose2_quat = (ctypes.c_double * 4)()
+        for i in range(3):
+            pose1_pos[i] = pose1[i]
+            pose2_pos[i] = pose2[i]
+        for i in range(4):
+            pose1_quat[i] = pose1[i+3]
+            pose2_quat[i] = pose2[i+3]
+        cassie_sim_relative_pose(self.c, pose1_pos, pose1_quat, pose2_pos, pose2_quat,
+                                 pos, quat)
+        for i in range(3):
+            relative_pose[i] = pos[i]
+        for i in range(4):
+            relative_pose[i+3] = quat[i]
+        
     def set_const(self):
         cassie_sim_set_const(self.c)
 

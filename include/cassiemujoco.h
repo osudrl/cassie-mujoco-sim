@@ -303,6 +303,12 @@ double* cassie_sim_get_body_name_pos(cassie_sim_t *c, const char* name);
 
 double* cassie_sim_site_xpos(cassie_sim_t *c, const char* name);
 
+void cassie_sim_site_xquat(cassie_sim_t *c, const char* name, double* xquat);
+
+void cassie_sim_relative_pose(double pos1[3], double quat1[4],
+                              double pos2[3], double quat2[4],
+                              double pos2_in_pos1[3],double quat2_in_quat1[4]);
+
 int cassie_sim_get_hfield_nrow(cassie_sim_t *c);
 
 int cassie_sim_get_hfield_ncol(cassie_sim_t *c);
