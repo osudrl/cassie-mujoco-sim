@@ -28,7 +28,7 @@ FORCEOUT := test_heelforce
 endif
 
 # Default target
-all: $(TESTOUT) $(SIMOUT) $(CTRLOUT) $(VIDOUT) vel_check $(DOUBLEVISOUT) $(HFIELDOUT) $(TERRAINOUT) $(FORCEOUT)
+all: $(TESTOUT) $(SIMOUT) $(CTRLOUT) $(VIDOUT) $(DOUBLEVISOUT) $(HFIELDOUT) $(TERRAINOUT) $(FORCEOUT)
 
 # Normal targets
 clean:
@@ -38,7 +38,6 @@ clean:
 	rm -f $(VIDOUT)
 	rm -f $(DOUBLEVISOUT)
 	rm -f $(HFIELDOUT)
-	rm -f vel_check
 
 $(TESTOUT): cassietest.c
 	$(CC) cassietest.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $(TESTOUT)
@@ -63,9 +62,6 @@ $(TERRAINOUT): test_terrain.c
 
 $(FORCEOUT): test_heelforce.c 
 	$(CC) test_heelforce.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $(FORCEOUT)
-
-vel_check: vel_check.c 
-	$(CC) vel_check.c $(INC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o vel_check
 
 
 

@@ -391,6 +391,18 @@ cassie_sim_qacc = _libraries['./libcassiemujoco.so'].cassie_sim_qacc
 cassie_sim_qacc.restype = POINTER_T(ctypes.c_double)
 cassie_sim_qacc.argtypes = [POINTER_T(struct_cassie_sim)]
 
+cassie_sim_ctrl = _libraries['./libcassiemujoco.so'].cassie_sim_ctrl
+cassie_sim_ctrl.restype = POINTER_T(ctypes.c_double)
+cassie_sim_ctrl.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_jnt_qposadr = _libraries['./libcassiemujoco.so'].cassie_sim_jnt_qposadr
+cassie_sim_jnt_qposadr.restype = POINTER_T(ctypes.c_int32)
+cassie_sim_jnt_qposadr.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_jnt_dofadr = _libraries['./libcassiemujoco.so'].cassie_sim_jnt_dofadr
+cassie_sim_jnt_dofadr.restype = POINTER_T(ctypes.c_int32)
+cassie_sim_jnt_dofadr.argtypes = [POINTER_T(struct_cassie_sim)]
+
 cassie_sim_mjmodel = _libraries['./libcassiemujoco.so'].cassie_sim_mjmodel
 cassie_sim_mjmodel.restype = POINTER_T(None)
 cassie_sim_mjmodel.argtypes = [POINTER_T(struct_cassie_sim)]
@@ -793,13 +805,23 @@ cassie_sim_set_geom_name_size = _libraries['./libcassiemujoco.so'].cassie_sim_se
 cassie_sim_set_geom_name_size.restype = None
 cassie_sim_set_geom_name_size.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, POINTER_T(ctypes.c_double)]
 
+cassie_sim_set_const = _libraries['./libcassiemujoco.so'].cassie_sim_set_const
+cassie_sim_set_const.restype = None
+cassie_sim_set_const.argtypes = [POINTER_T(struct_cassie_sim)]
+
 cassie_sim_site_xpos = _libraries['./libcassiemujoco.so'].cassie_sim_site_xpos
 cassie_sim_site_xpos.restype = POINTER_T(ctypes.c_double)
 cassie_sim_site_xpos.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
 
-cassie_sim_set_const = _libraries['./libcassiemujoco.so'].cassie_sim_set_const
-cassie_sim_set_const.restype = None
-cassie_sim_set_const.argtypes = [POINTER_T(struct_cassie_sim)]
+cassie_sim_site_xquat = _libraries['./libcassiemujoco.so'].cassie_sim_site_xquat
+cassie_sim_site_xquat.restype = None
+cassie_sim_site_xquat.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
+
+cassie_sim_relative_pose = _libraries['./libcassiemujoco.so'].cassie_sim_relative_pose
+cassie_sim_relative_pose.restype = None
+cassie_sim_relative_pose.argtypes = [POINTER_T(ctypes.c_double), POINTER_T(ctypes.c_double),
+                                     POINTER_T(ctypes.c_double), POINTER_T(ctypes.c_double),
+                                     ctypes.c_double * 3, ctypes.c_double * 4]
 
 cassie_sim_just_set_const = _libraries['./libcassiemujoco.so'].cassie_sim_just_set_const
 cassie_sim_just_set_const.restype = None
@@ -856,9 +878,21 @@ cassie_sim_nq = _libraries['./libcassiemujoco.so'].cassie_sim_nq
 cassie_sim_nq.restype = ctypes.c_int32
 cassie_sim_nq.argtypes = [POINTER_T(struct_cassie_sim)]
 
+cassie_sim_nu = _libraries['./libcassiemujoco.so'].cassie_sim_nu
+cassie_sim_nu.restype = ctypes.c_int32
+cassie_sim_nu.argtypes = [POINTER_T(struct_cassie_sim)]
+
+cassie_sim_njnt = _libraries['./libcassiemujoco.so'].cassie_sim_njnt
+cassie_sim_njnt.restype = ctypes.c_int32
+cassie_sim_njnt.argtypes = [POINTER_T(struct_cassie_sim)]
+
 cassie_sim_get_jacobian = _libraries['./libcassiemujoco.so'].cassie_sim_get_jacobian
 cassie_sim_get_jacobian.restype = None
 cassie_sim_get_jacobian.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double), ctypes.c_char_p]
+
+cassie_sim_mj_name2id = _libraries['./libcassiemujoco.so'].cassie_sim_mj_name2id
+cassie_sim_mj_name2id.restype = ctypes.c_int32
+cassie_sim_mj_name2id.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p, ctypes.c_char_p]
 
 cassie_sim_get_jacobian_full = _libraries['./libcassiemujoco.so'].cassie_sim_get_jacobian_full
 cassie_sim_get_jacobian_full.restype = None
@@ -867,6 +901,14 @@ cassie_sim_get_jacobian_full.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T
 cassie_sim_get_jacobian_full_site = _libraries['./libcassiemujoco.so'].cassie_sim_get_jacobian_full_site
 cassie_sim_get_jacobian_full_site.restype = None
 cassie_sim_get_jacobian_full_site.argtypes = [POINTER_T(struct_cassie_sim), POINTER_T(ctypes.c_double), POINTER_T(ctypes.c_double), ctypes.c_char_p]
+
+cassie_sim_body_contact_force = _libraries['./libcassiemujoco.so'].cassie_sim_body_contact_force
+cassie_sim_body_contact_force.restype = None
+cassie_sim_body_contact_force.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6, ctypes.c_char_p]
+
+cassie_sim_body_acceleration = _libraries['./libcassiemujoco.so'].cassie_sim_body_acceleration
+cassie_sim_body_acceleration.restype = None
+cassie_sim_body_acceleration.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6, ctypes.c_char_p]
 
 class struct_c__SA_pd_motor_in_t(ctypes.Structure):
     _pack_ = True # source:False
@@ -1153,6 +1195,10 @@ __all__ = \
     'cassie_sim_get_jacobian', 'cassie_sim_get_jacobian_full', 'cassie_sim_get_jacobian_full_site', 'cassie_sim_get_body_name_pos', 'cassie_sim_set_body_name_pos',
     'cassie_sim_heeltoe_forces', 'cassie_sim_site_xpos', 'cassie_vis_set_cam_pos', 'cassie_sim_timestep', 'cassie_sim_set_timestep', 'cassie_sim_just_set_const',
     'cassie_sim_step_pd_no2khz',
-    'cassie_sim_heeltoe_forces', 'cassie_vis_extent', 'cassie_vis_znear', 'cassie_vis_zfar']
+    'cassie_sim_heeltoe_forces', 'cassie_vis_extent', 'cassie_vis_znear', 'cassie_vis_zfar',
+    'cassie_sim_body_contact_force', 'cassie_sim_body_acceleration',
+    'cassie_sim_mj_name2id', 'cassie_sim_nu', 'cassie_sim_njnt', 'cassie_sim_ctrl',
+    'cassie_sim_jnt_qposadr', 'cassie_sim_jnt_dofadr',
+    'cassie_sim_site_xquat', 'cassie_sim_relative_pose']
 
 

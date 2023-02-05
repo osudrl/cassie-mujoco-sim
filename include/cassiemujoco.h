@@ -250,6 +250,12 @@ void cassie_sim_loop_constraint_info(const cassie_sim_t *c, double J_cl[192], do
 // Returns 6 long array, with 6 values for each foot (left then right) in order of 3D rotation and then 3D translation
 void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name);
 
+// Body accelerations
+void cassie_sim_body_acceleration(const cassie_sim_t *c, double accel[6], const char* name);
+
+// Body contact force in global frame
+void cassie_sim_body_contact_force(const cassie_sim_t *c, double cfrc[6], const char* name);
+
 // Applies an external force to a specified body.
 void cassie_sim_apply_force(cassie_sim_t *sim, double xfrc[6], const char* name);
 
@@ -297,6 +303,12 @@ double* cassie_sim_get_body_name_pos(cassie_sim_t *c, const char* name);
 
 double* cassie_sim_site_xpos(cassie_sim_t *c, const char* name);
 
+void cassie_sim_site_xquat(cassie_sim_t *c, const char* name, double* xquat);
+
+void cassie_sim_relative_pose(double pos1[3], double quat1[4],
+                              double pos2[3], double quat2[4],
+                              double pos2_in_pos1[3],double quat2_in_quat1[4]);
+
 int cassie_sim_get_hfield_nrow(cassie_sim_t *c);
 
 int cassie_sim_get_hfield_ncol(cassie_sim_t *c);
@@ -305,7 +317,7 @@ int cassie_sim_get_nhfielddata(cassie_sim_t *c);
 
 double* cassie_sim_get_hfield_size(cassie_sim_t *c);
 
-void cassie_sim_set_hfield_size(cassie_sim_t *c, double* size);
+void cassie_sim_set_hfield_size(cassie_sim_t *c, double size[4]);
 
 float* cassie_sim_hfielddata(cassie_sim_t *c);
 
