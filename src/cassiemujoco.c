@@ -1331,6 +1331,42 @@ void cassie_sim_set_dof_damping(cassie_sim_t *c, double *damp)
     }
 }
 
+// Set the damping value(s) of a named joint
+void cassie_sim_set_dof_name_damping(cassie_sim_t *c, const char* name, double *damp)
+{
+    int jnt_id = mj_name2id_fp(initial_model, mjOBJ_JOINT, name);
+    // int jnt_type = c->m->jnt_type[jnt_type];
+    // int num_dof = 1;
+    // if (jnt_type == 0) {    // Free joint, 6 dof
+    //     num_dof = 6;
+    // } else if (jnt_type == 1) { //Ball joint, 3 dof
+    //     num_dof = 3;
+    // }
+    int num_dof = cassie_sim_get_joint_num_dof(c, name);
+    for (int i = 0; i < num_dof; i++) {
+        c->m->dof_damping[c->m->jnt_dofadr[jnt_id] + i] = damp[i];
+    }
+}
+
+double* cassie_sim_get_dof_name_damping(cassie_sim_t *c, const char* name)
+{
+    int jnt_id = mj_name2id_fp(initial_model, mjOBJ_JOINT, name);
+    return &(c->m->dof_damping[c->m->jnt_dofadr[jnt_id]]);
+}
+
+int cassie_sim_get_joint_num_dof(cassie_sim_t *c, const char* name)
+{
+    int jnt_id = mj_name2id_fp(initial_model, mjOBJ_JOINT, name);
+    int jnt_type = c->m->jnt_type[jnt_id];
+    int num_dof = 1;
+    if (jnt_type == 0) {    // Free joint, 6 dof
+        num_dof = 6;
+    } else if (jnt_type == 1) { //Ball joint, 3 dof
+        num_dof = 3;
+    }
+    return num_dof;
+}
+
 void cassie_sim_set_body_mass(cassie_sim_t *c, double *mass)
 {
     for (int i = 0; i < c->m->nbody; i++) {
@@ -1344,11 +1380,33 @@ void cassie_sim_set_body_name_mass(cassie_sim_t *c, const char* name, double mas
     c->m->body_mass[mass_id] = mass;
 }
 
+double cassie_sim_get_body_name_mass(cassie_sim_t *c, const char* name)
+{
+    int mass_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    return c->m->body_mass[mass_id];
+}
+
 void cassie_sim_set_body_ipos(cassie_sim_t *c, double *ipos)
 {
     for (int i = 0; i < c->m->nbody; i++) {
-        c->m->body_ipos[i] = ipos[i];
+        for (int j = 0; j < 3; j++) {
+            c->m->body_ipos[3 * i + j] = ipos[i + j];
+        }
     }
+}
+
+void cassie_sim_set_body_name_ipos(cassie_sim_t *c, const char* name, double *ipos)
+{
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    for (int i = 0; i < 3; i++) {
+        c->m->body_ipos[3 * body_id + i] = ipos[i];
+    }
+}
+
+double* cassie_sim_get_body_name_ipos(cassie_sim_t *c, const char* name)
+{
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    return &(c->m->body_ipos[3 * body_id]);
 }
 
 void cassie_sim_set_body_name_pos(cassie_sim_t *c, const char* name, double *data)
@@ -1743,7 +1801,7 @@ void cassie_sim_body_contact_force(const cassie_sim_t *c, double cfrc[6], const 
             // Get contact force in local coordinates
             mj_contactForce_fp(c->m, c->d, i, force_torque);
             // Transform into global
-            mju_transformSpatial_fp(force_global, force_torque, 1, &c->d->xpos[3*body_id], 
+            mju_transformSpatial_fp(force_global, force_torque, 1, &c->d->xpos[3*body_id],
                 c->d->contact[i].pos, c->d->contact[i].frame);
 
             // Add to total forces on foot
