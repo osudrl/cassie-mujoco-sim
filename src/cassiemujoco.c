@@ -1360,16 +1360,6 @@ int cassie_sim_get_joint_num_dof(cassie_sim_t *c, const char* name)
     return num_dof;
 }
 
-int cassie_sim_get_joint_dof_adr(cassie_sim_t *c , const char* name)
-{
-    return c->m->jnt_dofadr[mj_name2id_fp(initial_model, mjOBJ_JOINT, name)];
-}
-
-int cassie_sim_get_body_adr(const char* name)
-{
-    return mj_name2id_fp(initial_model, mjOBJ_BODY, name);
-}
-
 void cassie_sim_set_body_mass(cassie_sim_t *c, double *mass)
 {
     for (int i = 0; i < c->m->nbody; i++) {
