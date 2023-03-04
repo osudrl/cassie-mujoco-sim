@@ -715,7 +715,7 @@ cassie_sim_get_joint_dof_adr.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_
 
 cassie_sim_get_body_adr = _libraries['./libcassiemujoco.so'].cassie_sim_get_body_adr
 cassie_sim_get_body_adr.restype = ctypes.c_int32
-cassie_sim_get_body_adr.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_char_p]
+cassie_sim_get_body_adr.argtypes = [ctypes.c_char_p]
 
 cassie_sim_body_mass = _libraries['./libcassiemujoco.so'].cassie_sim_body_mass
 cassie_sim_body_mass.restype = POINTER_T(ctypes.c_double)

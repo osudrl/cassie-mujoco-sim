@@ -394,7 +394,7 @@ class CassieSim:
         return cassie_sim_get_joint_dof_adr(self.c, name.encode())
 
     def get_body_adr(self, name):
-        return cassie_sim_get_body_adr(self.c, name.encode())
+        return cassie_sim_get_body_adr(name.encode())
 
     def get_dof_damping(self, name = None):
         if name:

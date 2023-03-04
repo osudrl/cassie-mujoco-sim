@@ -53,14 +53,14 @@ void cassie_cleanup(void);
  * Cassie simulator functions
  ******************************************************************************/
 
-// Reloads the xml file used for the cassie mujoco model. Overwrites the 
+// Reloads the xml file used for the cassie mujoco model. Overwrites the
 // previously used model. Returns whether successful or not. This is used for overwriting
 // the global mjModel that all new cassie sim objects will use by default (reinit set to false)
 bool cassie_reload_xml(const char *modelfile);
 
 // Creates an instance of the Cassie simulator. If called before
 // cassie_mujoco_init, cassie_mujoco_init is called with the parameter
-// NULL. The "reinit" arg allows for the created cassie sim object to use a 
+// NULL. The "reinit" arg allows for the created cassie sim object to use a
 // different mjModel than the global one loaded by cassie_mujoco_init. If reinit
 // is true, then a new mjModel is made using the inputted "modelfile" arg. Note that
 // in this case the global "initial_model" that is used by default is not changed.
@@ -96,7 +96,7 @@ void cassie_sim_step_pd(cassie_sim_t *sim, state_out_t *y, const pd_in_t *u);
 
 void cassie_sim_step_pd_no2khz(cassie_sim_t *c, state_out_t *y, const pd_in_t *u);
 
-// Forward Integrate the position coordinate based on what is in qvel. 
+// Forward Integrate the position coordinate based on what is in qvel.
 // This takes 1/2000 sec steps. Adjust the "step size" by scaling velocity
 void cassie_integrate_pos(cassie_sim_t *c, state_out_t *y);
 
@@ -233,20 +233,20 @@ void cassie_sim_cm_velocity(const cassie_sim_t *c, double cm_vel[3]);
 // of mass in the pelvis frame. [kg*m^2]
 void cassie_sim_centroid_inertia(const cassie_sim_t *c, double Icm[9]);
 
-// Return the angular momentum of the robot in the world frame. 
+// Return the angular momentum of the robot in the world frame.
 void cassie_sim_angular_momentum(const cassie_sim_t *c, double Lcm[3]);
 
 // Return the full 32x32 mass matrix of Cassie.
 void cassie_sim_full_mass_matrix(const cassie_sim_t *c, double M[1024]);
 
-// Return the minimal actuated mass matrix of Cassie. Contains 6 for floating 
+// Return the minimal actuated mass matrix of Cassie. Contains 6 for floating
 // base, 5 for left leg motors, 5 for right leg motors.
 void cassie_sim_minimal_mass_matrix(const cassie_sim_t *c, double M[256]);
 
 // Return the conrod closed loop constraint jacobian and constraint violation (error) vectors
 void cassie_sim_loop_constraint_info(const cassie_sim_t *c, double J_cl[192], double err_cl[6]);
 
-// Returns CoM velocities of the inputted body specified by the input string. 
+// Returns CoM velocities of the inputted body specified by the input string.
 // Returns 6 long array, with 6 values for each foot (left then right) in order of 3D rotation and then 3D translation
 void cassie_sim_body_velocities(const cassie_sim_t *c, double cvel[6], const char* name);
 
@@ -300,6 +300,8 @@ void cassie_sim_set_body_name_mass(cassie_sim_t *c, const char* name, double mas
 void cassie_sim_set_body_name_pos(cassie_sim_t *c, const char* name, double *data);
 
 double* cassie_sim_get_body_name_pos(cassie_sim_t *c, const char* name);
+
+int cassie_sim_get_joint_num_dof(cassie_sim_t *c, const char* name);
 
 double* cassie_sim_site_xpos(cassie_sim_t *c, const char* name);
 
@@ -389,8 +391,8 @@ void cassie_vis_apply_force(cassie_vis_t *vis, double xfrc[6], const char* name)
 // out all other data used for computation (like velocities, accelerations, forces)
 void cassie_vis_full_reset(cassie_vis_t *sim);
 
-// Remake the visualized mjvScene and mjrContext. Used to update cassie_vis_t 
-// after some change has been made to the underlying model. 
+// Remake the visualized mjvScene and mjrContext. Used to update cassie_vis_t
+// after some change has been made to the underlying model.
 void cassie_vis_remakeSceneCon(cassie_vis_t *v);
 
 // Set height field data for vis model
@@ -399,7 +401,7 @@ void cassie_vis_set_hfielddata(cassie_vis_t *v, float* data);
 float* cassie_vis_hfielddata(cassie_vis_t *c);
 
 // Set the visualization camera to track the inputted body (specified by a string matching the name of a body defined
-// in the XML model file). Also takes in as input a zoom level as well as a azimuth and elevation value controlling 
+// in the XML model file). Also takes in as input a zoom level as well as a azimuth and elevation value controlling
 // the angle of the camera.
 void cassie_vis_set_cam(cassie_vis_t* v, const char* body_name, double zoom, double azi, double elev);
 

@@ -1335,13 +1335,6 @@ void cassie_sim_set_dof_damping(cassie_sim_t *c, double *damp)
 void cassie_sim_set_dof_name_damping(cassie_sim_t *c, const char* name, double *damp)
 {
     int jnt_id = mj_name2id_fp(initial_model, mjOBJ_JOINT, name);
-    // int jnt_type = c->m->jnt_type[jnt_type];
-    // int num_dof = 1;
-    // if (jnt_type == 0) {    // Free joint, 6 dof
-    //     num_dof = 6;
-    // } else if (jnt_type == 1) { //Ball joint, 3 dof
-    //     num_dof = 3;
-    // }
     int num_dof = cassie_sim_get_joint_num_dof(c, name);
     for (int i = 0; i < num_dof; i++) {
         c->m->dof_damping[c->m->jnt_dofadr[jnt_id] + i] = damp[i];
@@ -1372,7 +1365,7 @@ int cassie_sim_get_joint_dof_adr(cassie_sim_t *c , const char* name)
     return c->m->jnt_dofadr[mj_name2id_fp(initial_model, mjOBJ_JOINT, name)];
 }
 
-int cassie_sim_get_body_adr(cassie_sim_t *c , const char* name)
+int cassie_sim_get_body_adr(const char* name)
 {
     return mj_name2id_fp(initial_model, mjOBJ_BODY, name);
 }
