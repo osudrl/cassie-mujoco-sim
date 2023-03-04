@@ -429,7 +429,7 @@ class CassieSim:
             ret = np.zeros(nbody)
             for i in range(nbody):
                 ret[i] = ptr[i]
-            return ret
+            return ret.reshape((self.nbody, 3))
 
     def get_body_pos(self, name):
         ptr = cassie_sim_get_body_name_pos(self.c, name.encode())
@@ -450,7 +450,7 @@ class CassieSim:
             ret = np.zeros(self.ngeom * 3)
             for i in range(self.ngeom * 3):
                 ret[i] = ptr[i]
-            return ret
+            return ret.reshape((self.ngeom, 3))
 
     def get_geom_name_friction(self, name):
         ptr = cassie_sim_get_geom_name_friction(self.c, name.encode())
