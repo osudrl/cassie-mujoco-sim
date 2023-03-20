@@ -53,6 +53,8 @@ class CassieSim:
         self.nbody = cassie_sim_nbody(self.c)
         self.nq = cassie_sim_nq(self.c)
         self.ngeom = cassie_sim_ngeom(self.c)
+        self.nu = cassie_sim_nu(self.c)
+        self.njnt = cassie_sim_njnt(self.c)
 
     def randomize_terrain(self):
         hfield = self.hfields[np.random.randint(len(self.hfields))]
@@ -96,7 +98,8 @@ class CassieSim:
         return timep[0]
 
     def set_timestep(self, dt):
-        cassie_sim_set_timestep(self.c, ctypes.c_double(dt))
+        timep = cassie_sim_timestep(self.c)
+        timep[0] = dt
 
     def qpos(self):
         qposp = cassie_sim_qpos(self.c)
@@ -126,6 +129,18 @@ class CassieSim:
         xquatp = cassie_sim_xquat(self.c, body_name.encode())
         return xquatp[:4]
 
+    def ctrl(self):
+        ctrlp = cassie_sim_ctrl(self.c)
+        return ctrlp[:self.nu]
+
+    def jnt_qposadr(self):
+        qposadrp = cassie_sim_jnt_qposadr(self.c)
+        return qposadrp[:self.njnt]
+
+    def jnt_dofadr(self):
+        dofadrp = cassie_sim_jnt_dofadr(self.c)
+        return dofadrp[:self.njnt]
+
     def set_time(self, time):
         timep = cassie_sim_time(self.c)
         timep[0] = time
@@ -139,6 +154,11 @@ class CassieSim:
         qvelp = cassie_sim_qvel(self.c)
         for i in range(min(len(qvel), self.nv)):
             qvelp[i] = qvel[i]
+
+    def set_ctrl(self, ctrl):
+        ctrlp = cassie_sim_ctrl(self.c)
+        for i in range(self.nu):
+            ctrlp[i] = ctrl[i]
 
     def hold(self):
         cassie_sim_hold(self.c)
@@ -236,6 +256,18 @@ class CassieSim:
         cassie_sim_body_vel(self.c, vel_array, body_name.encode())
         for i in range(6):
             vel[i] = vel_array[i]
+
+    def get_body_acceleration(self, accel, body_name):
+        accel_array = (ctypes.c_double * 6)()
+        cassie_sim_body_acceleration(self.c, accel_array, body_name.encode())
+        for i in range(6):
+            accel[i] = accel_array[i]
+
+    def get_body_contact_force(self, force, body_name):
+        force_array = (ctypes.c_double * 6)()
+        cassie_sim_body_contact_force(self.c, force_array, body_name.encode())
+        for i in range(6):
+            force[i] = force_array[i]
 
     # Returns the center of mass position vector in world frame
     def center_of_mass_position(self):
@@ -351,6 +383,12 @@ class CassieSim:
 
     def clear_forces(self):
         cassie_sim_clear_forces(self.c)
+
+    def get_foot_force(self):
+        y = state_out_t()
+        force = np.zeros(12)
+        self.foot_force(force)
+        return force
 
     def get_dof_damping(self):
         ptr = cassie_sim_dof_damping(self.c)
@@ -604,6 +642,31 @@ class CassieSim:
         sitep = cassie_sim_site_xpos(self.c, name.encode())
         return sitep[:3]
 
+    def get_site_quat(self, name):
+        array = (ctypes.c_double * 4)()
+        cassie_sim_site_xquat(self.c, name.encode(), array)
+        return array[:4]
+
+    def get_object_relative_pose(self, pose1, pose2, relative_pose):
+        pos = (ctypes.c_double * 3)()
+        quat = (ctypes.c_double * 4)()
+        pose1_pos = (ctypes.c_double * 3)()
+        pose1_quat = (ctypes.c_double * 4)()
+        pose2_pos = (ctypes.c_double * 3)()
+        pose2_quat = (ctypes.c_double * 4)()
+        for i in range(3):
+            pose1_pos[i] = pose1[i]
+            pose2_pos[i] = pose2[i]
+        for i in range(4):
+            pose1_quat[i] = pose1[i+3]
+            pose2_quat[i] = pose2[i+3]
+        cassie_sim_relative_pose(self.c, pose1_pos, pose1_quat, pose2_pos, pose2_quat,
+                                 pos, quat)
+        for i in range(3):
+            relative_pose[i] = pos[i]
+        for i in range(4):
+            relative_pose[i+3] = quat[i]
+        
     def set_const(self):
         cassie_sim_set_const(self.c)
 
@@ -695,6 +758,15 @@ class CassieSim:
     def set_torque_delay(self, data):
         set_t_arr = (ctypes.c_double * 60)(*data.flatten())
         cassie_sim_set_torque_delay(self.c, ctypes.cast(set_t_arr, ctypes.POINTER(ctypes.c_double)))
+
+    def check_self_collision(self):
+        return cassie_sim_check_self_collision(self.c)
+
+    def check_obstacle_collision(self):
+        return cassie_sim_check_obstacle_collision(self.c)
+
+    def mj_name2id(self, obj_type, name):
+        return cassie_sim_mj_name2id(self.c, obj_type.encode(), name.encode())
 
     def __del__(self):
         cassie_sim_free(self.c)
