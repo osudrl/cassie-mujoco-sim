@@ -2925,6 +2925,10 @@ void cassie_vis_free(cassie_vis_t *v)
         free(v->depth_raw);
     }
 
+    if (v->rgb_raw) {
+        free(v->rgb_raw);
+    }
+
     // Free cassie_vis_t
     mjr_freeContext_fp(&v->con);
     free(v);
