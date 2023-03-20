@@ -335,11 +335,14 @@ struct cassie_vis {
     mjModel* m;
     mjData* d;
     float *depth_raw;
+    unsigned char *rgb_raw;
     float znear;
     float zfar;
     float extent1;
     int depth_width;
     int depth_height;
+    int rgb_width;
+    int rgb_height;
 };
 
 struct cassie_state {
@@ -3054,6 +3057,13 @@ void cassie_vis_init_depth(cassie_vis_t *v, int width, int height)
     v->depth_height = height;
 }
 
+void cassie_vis_init_rgb(cassie_vis_t *sim, int width, int height)
+{
+    sim->rgb_raw = (unsigned char*)calloc(3*width*height, sizeof(char));
+    sim->rgb_width = width;
+    sim->rgb_height = height;
+}
+
 float* cassie_vis_draw_depth(cassie_vis_t *v, cassie_sim_t *c, int width, int height)
 {
     if (v->depth_raw == NULL){
@@ -3075,6 +3085,31 @@ float* cassie_vis_draw_depth(cassie_vis_t *v, cassie_sim_t *c, int width, int he
     mjr_render_fp(viewport, &v->scn, &v->con);
     mjr_readPixels_fp(NULL, v->depth_raw, viewport, &v->con);
     return v->depth_raw;
+}
+
+unsigned char* cassie_vis_get_rgb(cassie_vis_t *sim, cassie_sim_t *c, int width, int height)
+{
+    if (sim->rgb_raw == NULL){
+        printf("ERROR: rgb_raw is null. Please initialize it first");
+        return NULL;
+    }
+    if (sim->rgb_width != width){
+        printf("ERROR: wrong width, should be %i, got %i\n", sim->rgb_width, width);
+        return NULL;
+    }
+    if (sim->rgb_height != height){
+        printf("ERROR: wrong height, should be %i, got %i\n", sim->rgb_height, height);
+        return NULL;
+    }
+
+    mjrRect viewport={0,0,width,height};
+    glfwSetWindowSize_fp(sim->window, sim->rgb_width, sim->rgb_height);
+    glfwMakeContextCurrent_fp(sim->window);
+    mjv_updateScene_fp(c->m, c->d, &sim->opt, &sim->pert, &sim->cam, mjCAT_ALL, &sim->scn);
+    mjr_render_fp(viewport, &sim->scn, &sim->con);
+    mjr_readPixels_fp(sim->rgb_raw, NULL, viewport, &sim->con);
+
+    return sim->rgb_raw;
 }
 
 int cassie_vis_get_depth_size(cassie_vis_t *v)
@@ -3113,6 +3148,10 @@ void cassie_vis_free(cassie_vis_t *v)
 
     if (v->depth_raw) {
         free(v->depth_raw);
+    }
+
+    if (v->rgb_raw) {
+        free(v->rgb_raw);
     }
 
     // Free cassie_vis_t

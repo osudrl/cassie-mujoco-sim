@@ -583,6 +583,10 @@ cassie_vis_draw_depth = _libraries['./libcassiemujoco.so'].cassie_vis_draw_depth
 cassie_vis_draw_depth.restype = POINTER_T(ctypes.c_float)
 cassie_vis_draw_depth.argtypes = [POINTER_T(struct_cassie_vis), POINTER_T(struct_cassie_sim), ctypes.c_int32, ctypes.c_int32]
 
+cassie_vis_get_rgb = _libraries['./libcassiemujoco.so'].cassie_vis_get_rgb
+cassie_vis_get_rgb.restype = POINTER_T(ctypes.c_ubyte)
+cassie_vis_get_rgb.argtypes = [POINTER_T(struct_cassie_vis), POINTER_T(struct_cassie_sim), ctypes.c_int32, ctypes.c_int32]
+
 cassie_vis_get_depth_size = _libraries['./libcassiemujoco.so'].cassie_vis_get_depth_size
 cassie_vis_get_depth_size.restype = ctypes.c_int32
 cassie_vis_get_depth_size.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int32, ctypes.c_int32]
@@ -590,6 +594,10 @@ cassie_vis_get_depth_size.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int
 cassie_vis_init_depth = _libraries['./libcassiemujoco.so'].cassie_vis_init_depth
 cassie_vis_init_depth.restype = None
 cassie_vis_init_depth.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int, ctypes.c_int]
+
+cassie_vis_init_rgb = _libraries['./libcassiemujoco.so'].cassie_vis_init_rgb
+cassie_vis_init_rgb.restype = None
+cassie_vis_init_rgb.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int, ctypes.c_int]
 
 cassie_vis_valid = _libraries['./libcassiemujoco.so'].cassie_vis_valid
 cassie_vis_valid.restype = ctypes.c_bool
@@ -1203,6 +1211,7 @@ __all__ = \
     'cassie_sim_body_contact_force', 'cassie_sim_body_acceleration',
     'cassie_sim_mj_name2id', 'cassie_sim_nu', 'cassie_sim_njnt', 'cassie_sim_ctrl',
     'cassie_sim_jnt_qposadr', 'cassie_sim_jnt_dofadr',
-    'cassie_sim_site_xquat', 'cassie_sim_relative_pose', 'cassie_sim_geom_collision']
+    'cassie_sim_site_xquat', 'cassie_sim_relative_pose', 'cassie_sim_geom_collision',
+    'cassie_vis_init_rgb','cassie_vis_get_rgb']
 
 
