@@ -74,7 +74,7 @@
     <light mode='trackcom' pos='0 0 5' dir='0 0 -1'/>
     <light directional='true' pos='0 0 3' dir='0 0 -1' diffuse='0.2 0.2 0.2' specular='0 0 0'/>
 
-    <body name='cassie-pelvis' pos='0 0 1.01' childclass='cassie'>
+    <body name='cassie-pelvis' pos='0 0 1.2' childclass='cassie'>
       <camera name='track' pos='0 -3 1' zaxis='0 -1 0.5' mode='track'/>
       <!--camera name='track' pos='-3 0 0' xyaxes='0 -1 0 0 0 1' mode='track'/-->
       <inertial pos='0.05066 0.000346 0.02841' mass='10.33' fullinertia='0.085821 0.049222 0.08626 1.276e-05 -0.00016022 -0.000414'/>
@@ -83,7 +83,7 @@
       <joint type='slide' axis='0 0 1' limited='false' ref='1.01'/>
       <joint type='ball' limited='false'/>
       <geom type='mesh' mesh='cassie-pelvis'/>
-      <geom type='sphere' size='0.15' pos='0.02 0 0.02' class='collision'/>
+      <geom type='sphere' size='0.15' pos='0.02 0 0.02' class='collision' group='1'/>
       <site name='imu' size='0.01' pos='0.03155 0 -0.07996'/>
 
       <site name='range1' type='cylinder' size='0.005 0.1 0.005' rgba='0.5 0.5 0.5 1' fromto='0 0 -0.1 0.02452 0 -0.10488'/>
@@ -105,7 +105,7 @@
             <inertial pos='0.05946 5e-05 -0.03581' mass='5.52' fullinertia='0.010898 0.029714 0.030257 -0.0002669 -5.721e-05 9.17e-06'/>
             <joint name='left-hip-pitch' type='hinge' range='-50 80' damping='1' armature='0.09344'/>
             <geom type='mesh' mesh='left-hip-pitch'/>
-            <geom type='capsule' size='0.08' fromto='0 0 -0.04 0.12 0 -0.0355' class='collision'/>
+            <geom type='capsule' size='0.08' fromto='0 0 -0.04 0.12 0 -0.0355' class='collision' group='1'/>
             <body name='left-achilles-rod' pos='0 0 0.045' xyaxes='0.7922 -0.60599 -0.072096 0.60349 0.79547 -0.054922'>
               <inertial pos='0.24719 0 0' mass='0.1567' fullinertia='3.754e-06 0.004487 0.004488 -3.74e-08 -1.61e-08 0'/>
               <joint name='left-achilles-rod' type='ball' limited='false' damping='0.01'/>
@@ -123,12 +123,12 @@
                 <inertial pos='0.18338 0.001169 0.0002123' mass='0.577' fullinertia='0.00035939 0.014728 0.014707 -0.00020981 2.266e-05 -1.2e-07'/>
                 <joint name='left-shin' type='hinge' range='-20 20' stiffness='1500' damping='0.1'/>
                 <geom type='mesh' mesh='left-shin'/>
-                <geom type='capsule' size='0.04' fromto='0 0 0 0.43476 0.02 0' class='collision-left'/>
+                <geom type='capsule' size='0.04' fromto='0 0 0 0.43476 0.02 0' class='collision-left' group='1'/>
                 <body name='left-tarsus' pos='0.43476 0.02 0' xyaxes='0.52992 0.84805 0 -0.84805 0.52992 0'>
                   <inertial pos='0.11046 -0.03058 -0.00131' mass='0.782' fullinertia='0.00039238 0.013595 0.013674 0.00023651 -4.987e-05 -4.82e-06'/>
                   <joint name='left-tarsus' type='hinge' ref='58' range='50 170' damping='0.1'/>
                   <geom type='mesh' mesh='left-tarsus'/>
-                  <geom type='capsule' size='0.04' fromto='-0.01269 -0.03059 0.00092 0.408 -0.04 0' class='collision-left'/>
+                  <geom type='capsule' size='0.04' fromto='-0.01269 -0.03059 0.00092 0.408 -0.04 0' class='collision-left' group='1'/>
                   <body name='left-heel-spring' pos='-0.01269 -0.03059 0.00092' xyaxes='-0.91211 0.40829 0.036948 -0.40992 -0.90952 -0.068841'>
                     <inertial pos='0.081 0.0022 0' mass='0.126' fullinertia='2.959e-05 0.00022231 0.0002007 7.15e-06 -6e-07 1e-07'/>
                     <joint name='left-heel-spring' type='hinge' limited='false' stiffness='1250'/>
@@ -148,7 +148,7 @@
                     <inertial pos='0.00474 0.02748 -0.00014' mass='0.1498' fullinertia='0.00017388 0.00016793 0.00033261 0.00011814 1.36e-06 -4e-07'/>
                     <joint name='left-foot' type='hinge' range='-140 -30' damping='1' armature='0.01225'/>
                     <geom type='mesh' mesh='left-foot'/>
-                    <geom type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-left'/>
+                    <geom type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-left' group='1'/>
                     <site name="left-foot-pt" type="sphere" pos="0.01965 0.05375 0" size="0.005" rgba="0.7 0.2 0.1 1"/>
                     <site name="left-toe" type="sphere" pos="-0.052821 0.092622 0" size="0.005" rgba="0.7 0.2 0.1 1"/>
                     <site name="left-heel" type="sphere" pos="0.069746 -0.010224 0" size="0.005" rgba="0.7 0.2 0.1 1"/>
@@ -171,7 +171,7 @@
             <inertial pos='0.05946 5e-05 0.03581' mass='5.52' fullinertia='0.010898 0.029714 0.030257 -0.0002669 5.721e-05 -9.17e-06'/>
             <joint name='right-hip-pitch' type='hinge' range='-50 80' damping='1' armature='0.09344'/>
             <geom type='mesh' mesh='right-hip-pitch'/>
-            <geom type='capsule' size='0.08' fromto='0 0 0.04 0.12 0 0.0355' class='collision'/>
+            <geom type='capsule' size='0.08' fromto='0 0 0.04 0.12 0 0.0355' class='collision' group='1'/>
             <body name='right-achilles-rod' pos='0 0 -0.045' xyaxes='0.7922 -0.60599 0.072096 0.60349 0.79547 0.054922'>
               <inertial pos='0.24719 0 0' mass='0.1567' fullinertia='3.754e-06 0.004487 0.004488 -3.74e-08 1.61e-08 0'/>
               <joint name='right-achilles-rod' type='ball' limited='false' damping='0.01'/>
@@ -189,12 +189,12 @@
                 <inertial pos='0.18338 0.001169 -0.0002123' mass='0.577' fullinertia='0.00035939 0.014728 0.014707 -0.00020981 -2.266e-05 1.2e-07'/>
                 <joint name='right-shin' type='hinge' range='-20 20' stiffness='1500' damping='0.1'/>
                 <geom type='mesh' mesh='right-shin'/>
-                <geom type='capsule' size='0.04' fromto='0 0 0 0.43476 0.02 0' class='collision-right'/>
+                <geom type='capsule' size='0.04' fromto='0 0 0 0.43476 0.02 0' class='collision-right' group='1'/>
                 <body name='right-tarsus' pos='0.43476 0.02 0' xyaxes='0.52992 0.84805 0 -0.84805 0.52992 0'>
                   <inertial pos='0.11046 -0.03058 0.00131' mass='0.782' fullinertia='0.00039238 0.013595 0.013674 0.00023651 4.987e-05 4.82e-06'/>
                   <joint name='right-tarsus' type='hinge' ref='58' range='50 170' damping='0.1'/>
                   <geom type='mesh' mesh='right-tarsus'/>
-                  <geom type='capsule' size='0.04' fromto='-0.01269 -0.03059 -0.00092 0.408 -0.04 0' class='collision-right'/>
+                  <geom type='capsule' size='0.04' fromto='-0.01269 -0.03059 -0.00092 0.408 -0.04 0' class='collision-right' group='1'/>
                   <body name='right-heel-spring' pos='-0.01269 -0.03059 -0.00092' xyaxes='-0.91211 0.40829 -0.036948 -0.40992 -0.90952 0.068841'>
                     <inertial pos='0.081 0.0022 0' mass='0.126' fullinertia='2.959e-05 0.00022231 0.0002007 7.15e-06 6e-07 -1e-07'/>
                     <joint name='right-heel-spring' type='hinge' limited='false' stiffness='1250'/>
@@ -214,7 +214,7 @@
                     <inertial pos='0.00474 0.02748 0.00014' mass='0.1498' fullinertia='0.00017388 0.00016793 0.00033261 0.00011814 -1.36e-06 4e-07'/>
                     <joint name='right-foot' type='hinge' range='-140 -30' damping='1' armature='0.01225'/>
                     <geom type='mesh' mesh='right-foot'/>
-                    <geom type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-right'/>
+                    <geom type='capsule' size='0.02' fromto='-0.052821 0.092622 0 0.069746 -0.010224 0' class='collision-right' group='1'/>
                     <site name="right-foot-pt" type="sphere" pos="0.01965 0.05375 0" size="0.005" rgba="0.1 0.7 0.2 1"/>
                     <site name="right-toe" type="sphere" pos="-0.052821 0.092622 0.0" size="0.005" rgba="0.1 0.7 0.2 1"/>
                     <site name="right-heel" type="sphere" pos="0.069746 -0.010224 0" size="0.005" rgba="0.1 0.7 0.2 1"/>
@@ -229,21 +229,21 @@
 
     <!-- Add any other moving bodies after the Cassie definition -->
     <!-- Stairs -->
-    <geom name='box1' pos='1.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box2' pos='2.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box3' pos='3.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box4' pos='4.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box5' pos='5.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box6' pos='6.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box7' pos='7.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box8' pos='8.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box9' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box10' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box11' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box12' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box13' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box14' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
-    <geom name='box15' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15'/>
+    <geom name='box1' pos='1.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box2' pos='2.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box3' pos='3.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box4' pos='4.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box5' pos='5.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box6' pos='6.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box7' pos='7.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box8' pos='8.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box9' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box10' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box11' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box12' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box13' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box14' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
+    <geom name='box15' pos='9.1 20 0.01' size='1 1 1' type='box' condim='3' conaffinity='15' group='2'/>
   </worldbody>
 
   <equality>

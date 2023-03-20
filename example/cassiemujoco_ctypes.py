@@ -415,6 +415,10 @@ cassie_sim_heeltoe_forces = _libraries['./libcassiemujoco.so'].cassie_sim_heelto
 cassie_sim_heeltoe_forces.restype = None
 cassie_sim_heeltoe_forces.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6, ctypes.c_double * 6]
 
+cassie_sim_geom_collision = _libraries['./libcassiemujoco.so'].cassie_sim_geom_collision
+cassie_sim_geom_collision.restype = ctypes.c_bool
+cassie_sim_geom_collision.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_int32]
+
 cassie_sim_foot_positions = _libraries['./libcassiemujoco.so'].cassie_sim_foot_positions
 cassie_sim_foot_positions.restype = None
 cassie_sim_foot_positions.argtypes = [POINTER_T(struct_cassie_sim), ctypes.c_double * 6]
@@ -1153,6 +1157,6 @@ __all__ = \
     'cassie_sim_get_jacobian', 'cassie_sim_get_jacobian_full', 'cassie_sim_get_jacobian_full_site', 'cassie_sim_get_body_name_pos', 'cassie_sim_set_body_name_pos',
     'cassie_sim_heeltoe_forces', 'cassie_sim_site_xpos', 'cassie_vis_set_cam_pos', 'cassie_sim_timestep', 'cassie_sim_set_timestep', 'cassie_sim_just_set_const',
     'cassie_sim_step_pd_no2khz',
-    'cassie_sim_heeltoe_forces', 'cassie_vis_extent', 'cassie_vis_znear', 'cassie_vis_zfar']
+    'cassie_sim_heeltoe_forces', 'cassie_vis_extent', 'cassie_vis_znear', 'cassie_vis_zfar', 'cassie_sim_geom_collision']
 
 
