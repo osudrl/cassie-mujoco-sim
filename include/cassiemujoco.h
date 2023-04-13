@@ -417,7 +417,11 @@ void cassie_vis_close_recording(cassie_vis_t *sim);
 // Depth Functions
 void cassie_vis_init_depth(cassie_vis_t *v, int width, int height);
 
+void cassie_vis_init_rgb(cassie_vis_t *v, int width, int height);
+
 float* cassie_vis_draw_depth(cassie_vis_t *v, cassie_sim_t *c, int width, int height);
+
+unsigned char* cassie_vis_get_rgb(cassie_vis_t *v, cassie_sim_t *c, int width, int height);
 
 
 /*******************************************************************************
