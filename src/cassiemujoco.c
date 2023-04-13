@@ -1941,6 +1941,25 @@ void cassie_vis_foot_forces(const cassie_vis_t *c, double cfrc[12])
     }
 }
 
+bool cassie_sim_geom_collision(const cassie_sim_t *c, int geom_group)
+{
+    // Checks if Cassie is colliding with any geom in the inputted geom group. Assumes that all
+    // Cassie geoms are in group "1".
+
+    // Accumulate the forces on each foot
+    for (int i = 0; i < c->d->ncon; ++i) {
+        // Get body IDs for both geoms in the collision
+        int body1 = c->m->geom_bodyid[c->d->contact[i].geom1];
+        int body2 = c->m->geom_bodyid[c->d->contact[i].geom2];
+        if (c->m->geom_group[c->d->contact[i].geom1] == 1 && c->m->geom_group[c->d->contact[i].geom2] == geom_group) {
+            return true;
+        } else if (c->m->geom_group[c->d->contact[i].geom2] == 1 && c->m->geom_group[c->d->contact[i].geom1] == geom_group) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void cassie_sim_apply_force(cassie_sim_t *c, double xfrc[6], const char* name)
 {
     int body_id = mj_name2id_fp(c->m, mjOBJ_BODY, name);
@@ -2841,7 +2860,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             } break;
         }
     }
-
 }
 
 void sensorinit(cassie_vis_t *v) {

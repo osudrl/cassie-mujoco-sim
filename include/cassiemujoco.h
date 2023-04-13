@@ -217,6 +217,9 @@ void cassie_sim_foot_forces(const cassie_sim_t *c, double cfrc[12]);
 // heel_force[9-11]: Contact force acting on the right heel, in world coordinates
 void cassie_sim_heeltoe_forces(const cassie_sim_t *c, double toe_force[6], double heel_force[6]);
 
+// Returns whether or not Cassie is colliding with a geom in the inputted group
+bool cassie_sim_geom_collision(const cassie_sim_t *c, int geom_group);
+
 // Returns CoM velocities of the feet. Returns 12 long array, with 6 values for
 // each foot (left then right) in order of 3D rotation and then 3D translation
 void cassie_sim_foot_velocities(const cassie_sim_t *c, double cvel[12]);

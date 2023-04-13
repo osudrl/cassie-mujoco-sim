@@ -234,6 +234,9 @@ class CassieSim:
             heel_force[i] = heel_array[i]
         return toe_force, heel_force
 
+    def check_collision(self, geom_group):
+        return cassie_sim_geom_collision(self.c, ctypes.c_int(geom_group))
+
     def foot_pos(self):
         pos_array = (ctypes.c_double * 6)()
         cassie_sim_foot_positions(self.c, pos_array)
