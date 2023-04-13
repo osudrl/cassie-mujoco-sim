@@ -304,6 +304,8 @@ void cassie_sim_set_body_name_pos(cassie_sim_t *c, const char* name, double *dat
 
 double* cassie_sim_get_body_name_pos(cassie_sim_t *c, const char* name);
 
+int cassie_sim_get_joint_num_dof(cassie_sim_t *c, const char* name);
+
 double* cassie_sim_site_xpos(cassie_sim_t *c, const char* name);
 
 void cassie_sim_site_xquat(cassie_sim_t *c, const char* name, double* xquat);
