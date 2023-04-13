@@ -304,6 +304,8 @@ void cassie_sim_set_body_name_pos(cassie_sim_t *c, const char* name, double *dat
 
 double* cassie_sim_get_body_name_pos(cassie_sim_t *c, const char* name);
 
+int cassie_sim_get_joint_num_dof(cassie_sim_t *c, const char* name);
+
 double* cassie_sim_site_xpos(cassie_sim_t *c, const char* name);
 
 void cassie_sim_site_xquat(cassie_sim_t *c, const char* name, double* xquat);
@@ -418,7 +420,11 @@ void cassie_vis_close_recording(cassie_vis_t *sim);
 // Depth Functions
 void cassie_vis_init_depth(cassie_vis_t *v, int width, int height);
 
+void cassie_vis_init_rgb(cassie_vis_t *v, int width, int height);
+
 float* cassie_vis_draw_depth(cassie_vis_t *v, cassie_sim_t *c, int width, int height);
+
+unsigned char* cassie_vis_get_rgb(cassie_vis_t *v, cassie_sim_t *c, int width, int height);
 
 
 /*******************************************************************************

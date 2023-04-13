@@ -390,27 +390,49 @@ class CassieSim:
         self.foot_force(force)
         return force
 
-    def get_dof_damping(self):
-        ptr = cassie_sim_dof_damping(self.c)
-        ret = np.zeros(self.nv)
-        for i in range(self.nv):
-            ret[i] = ptr[i]
-        return ret
+    def get_joint_num_dof(self, name):
+        return cassie_sim_get_joint_num_dof(self.c, name.encode())
 
-    def get_body_mass(self):
-        ptr = cassie_sim_body_mass(self.c)
-        ret = np.zeros(self.nbody)
-        for i in range(self.nbody):
-            ret[i] = ptr[i]
-        return ret
+    def get_dof_damping(self, name = None):
+        if name:
+            num_dof = cassie_sim_get_joint_num_dof(self.c, name.encode())
+            ptr = cassie_sim_get_dof_name_damping(self.c, name.encode())
+            ret = np.zeros(num_dof)
+            for i in range(num_dof):
+                ret[i] = ptr[i]
+            return ret
+        else:
+            ptr = cassie_sim_dof_damping(self.c)
+            ret = np.zeros(self.nv)
+            for i in range(self.nv):
+                ret[i] = ptr[i]
+            return ret
 
-    def get_body_ipos(self):
-        nbody = self.nbody * 3
-        ptr = cassie_sim_body_ipos(self.c)
-        ret = np.zeros(nbody)
-        for i in range(nbody):
-            ret[i] = ptr[i]
-        return ret
+    def get_body_mass(self, name = None):
+        if name:
+            mass = cassie_sim_get_body_name_mass(self.c, name.encode())
+            return mass
+        else:
+            ptr = cassie_sim_body_mass(self.c)
+            ret = np.zeros(self.nbody)
+            for i in range(self.nbody):
+                ret[i] = ptr[i]
+            return ret
+
+    def get_body_ipos(self, name = None):
+        if name:
+            ptr = cassie_sim_get_body_name_ipos(self.c, name.encode())
+            ret = np.zeros(3)
+            for i in range(3):
+                ret[i] = ptr[i]
+            return ret
+        else:
+            nbody = self.nbody * 3
+            ptr = cassie_sim_body_ipos(self.c)
+            ret = np.zeros(nbody)
+            for i in range(nbody):
+                ret[i] = ptr[i]
+            return ret.reshape((self.nbody, 3))
 
     def get_body_pos(self, name):
         ptr = cassie_sim_get_body_name_pos(self.c, name.encode())
@@ -419,12 +441,19 @@ class CassieSim:
             ret[i] = ptr[i]
         return ret
 
-    def get_geom_friction(self):
-        ptr = cassie_sim_geom_friction(self.c)
-        ret = np.zeros(self.ngeom * 3)
-        for i in range(self.ngeom * 3):
-            ret[i] = ptr[i]
-        return ret
+    def get_geom_friction(self, name = None):
+        if name:
+            ptr = cassie_sim_get_geom_name_friction(self.c, name.encode())
+            ret = np.zeros(3)
+            for i in range(3):
+                ret[i] = ptr[i]
+            return ret
+        else:
+            ptr = cassie_sim_geom_friction(self.c)
+            ret = np.zeros(self.ngeom * 3)
+            for i in range(self.ngeom * 3):
+                ret[i] = ptr[i]
+            return ret.reshape((self.ngeom, 3))
 
     def get_geom_name_friction(self, name):
         ptr = cassie_sim_get_geom_name_friction(self.c, name.encode())
@@ -485,17 +514,32 @@ class CassieSim:
                 ret[i] = ptr[i]
         return ret
 
-    def set_dof_damping(self, data):
-        c_arr = (ctypes.c_double * self.nv)()
+    def set_dof_damping(self, data, name = None):
+        if name:
+            num_dof = cassie_sim_get_joint_num_dof(self.c, name.encode())
+            if num_dof == 1:
+                assert (isinstance(data, float) or isinstance(data, int)), \
+                    f"set_dof_damping size mismatch for joint {name}. Expected single number but " \
+                    f"{type(data)} as input"
+                c_arr = ctypes.c_double(data)
+            else:
+                assert data.shape == (num_dof,), \
+                    f"set_dof_damping size mismatch for joint {name}. Expected array of length " \
+                    f"({num_dof},) but got {data.shape} instead."
+                c_arr = (ctypes.c_double * num_dof)()
+                for i in range(num_dof):
+                    c_arr[i] = data[i]
+            cassie_sim_set_dof_name_damping(self.c, name.encode(), c_arr)
+        else:
+            c_arr = (ctypes.c_double * self.nv)()
+            if len(data) != self.nv:
+                print("SIZE MISMATCH SET_DOF_DAMPING()")
+                exit(1)
 
-        if len(data) != self.nv:
-            print("SIZE MISMATCH SET_DOF_DAMPING()")
-            exit(1)
+            for i in range(self.nv):
+                c_arr[i] = data[i]
 
-        for i in range(self.nv):
-            c_arr[i] = data[i]
-
-        cassie_sim_set_dof_damping(self.c, c_arr)
+            cassie_sim_set_dof_damping(self.c, c_arr)
 
     def set_body_mass(self, data, name=None):
         # If no name is provided, set ALL body masses and assume "data" is array
@@ -525,18 +569,27 @@ class CassieSim:
             c_arr[i] = data[i]
         cassie_sim_set_body_name_pos(self.c, name.encode(), c_arr)
 
-    def set_body_ipos(self, data):
-        nbody = self.nbody * 3
-        c_arr = (ctypes.c_double * nbody)()
+    def set_body_ipos(self, data, name=None):
+        if name:
+            if len(data) != 3:
+                print("SIZE MISMATCH SET_BODY_IPOS()")
+                exit(1)
+            c_arr = (ctypes.c_double * 3)()
+            for i in range(3):
+                c_arr[i] = data[i]
+            cassie_sim_set_body_name_ipos(self.c, name.encode(), c_arr)
+        else:
+            nbody = self.nbody * 3
+            c_arr = (ctypes.c_double * nbody)()
 
-        if len(data) != nbody:
-            print("SIZE MISMATCH SET_BODY_IPOS()")
-            exit(1)
+            if len(data) != nbody:
+                print("SIZE MISMATCH SET_BODY_IPOS()")
+                exit(1)
 
-        for i in range(nbody):
-            c_arr[i] = data[i]
+            for i in range(nbody):
+                c_arr[i] = data[i]
 
-        cassie_sim_set_body_ipos(self.c, c_arr)
+            cassie_sim_set_body_ipos(self.c, c_arr)
 
     def set_geom_friction(self, data, name=None):
         if name is None:
@@ -660,7 +713,7 @@ class CassieSim:
         for i in range(4):
             pose1_quat[i] = pose1[i+3]
             pose2_quat[i] = pose2[i+3]
-        cassie_sim_relative_pose(self.c, pose1_pos, pose1_quat, pose2_pos, pose2_quat,
+        cassie_sim_relative_pose(pose1_pos, pose1_quat, pose2_pos, pose2_quat,
                                  pos, quat)
         for i in range(3):
             relative_pose[i] = pos[i]
@@ -902,6 +955,10 @@ class CassieVis:
     def init_depth(self, width, height):
         cassie_vis_init_depth(self.v, ctypes.c_int(width), ctypes.c_int(height))
 
+    # Must be called during initialization before calling get_rgb
+    def init_rgb(self, width, height):
+        cassie_vis_init_rgb(self.v, ctypes.c_int(width), ctypes.c_int(height))
+
     def get_depth_size(self):
         size = cassie_vis_get_depth_size(self.v)
         return size
@@ -909,6 +966,11 @@ class CassieVis:
     def draw_depth(self, c, width=30, height=30):
         depth = cassie_vis_draw_depth(self.v, c.c, ctypes.c_int(width), ctypes.c_int(height))
         return depth[:width*height]
+
+    # Returns first person RGB image. Return data must be reshaped in width x height x dimension(3)
+    def get_rgb(self, c, width=30, height=30):
+        data = cassie_vis_get_rgb(self.v, c.c, ctypes.c_int(width), ctypes.c_int(height))
+        return data[:3 * width * height]
 
     def init_recording(self, filename, width=1920, height=1080):
         cassie_vis_init_recording(self.v, filename.encode(), ctypes.c_int(width), ctypes.c_int(height))

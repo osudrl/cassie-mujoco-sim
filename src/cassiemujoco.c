@@ -338,11 +338,14 @@ struct cassie_vis {
     mjModel* m;
     mjData* d;
     float *depth_raw;
+    unsigned char *rgb_raw;
     float znear;
     float zfar;
     float extent1;
     int depth_width;
     int depth_height;
+    int rgb_width;
+    int rgb_height;
 };
 
 struct cassie_state {
@@ -1334,6 +1337,35 @@ void cassie_sim_set_dof_damping(cassie_sim_t *c, double *damp)
     }
 }
 
+// Set the damping value(s) of a named joint
+void cassie_sim_set_dof_name_damping(cassie_sim_t *c, const char* name, double *damp)
+{
+    int jnt_id = mj_name2id_fp(initial_model, mjOBJ_JOINT, name);
+    int num_dof = cassie_sim_get_joint_num_dof(c, name);
+    for (int i = 0; i < num_dof; i++) {
+        c->m->dof_damping[c->m->jnt_dofadr[jnt_id] + i] = damp[i];
+    }
+}
+
+double* cassie_sim_get_dof_name_damping(cassie_sim_t *c, const char* name)
+{
+    int jnt_id = mj_name2id_fp(initial_model, mjOBJ_JOINT, name);
+    return &(c->m->dof_damping[c->m->jnt_dofadr[jnt_id]]);
+}
+
+int cassie_sim_get_joint_num_dof(cassie_sim_t *c, const char* name)
+{
+    int jnt_id = mj_name2id_fp(initial_model, mjOBJ_JOINT, name);
+    int jnt_type = c->m->jnt_type[jnt_id];
+    int num_dof = 1;
+    if (jnt_type == 0) {    // Free joint, 6 dof
+        num_dof = 6;
+    } else if (jnt_type == 1) { //Ball joint, 3 dof
+        num_dof = 3;
+    }
+    return num_dof;
+}
+
 void cassie_sim_set_body_mass(cassie_sim_t *c, double *mass)
 {
     for (int i = 0; i < c->m->nbody; i++) {
@@ -1347,11 +1379,33 @@ void cassie_sim_set_body_name_mass(cassie_sim_t *c, const char* name, double mas
     c->m->body_mass[mass_id] = mass;
 }
 
+double cassie_sim_get_body_name_mass(cassie_sim_t *c, const char* name)
+{
+    int mass_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    return c->m->body_mass[mass_id];
+}
+
 void cassie_sim_set_body_ipos(cassie_sim_t *c, double *ipos)
 {
     for (int i = 0; i < c->m->nbody; i++) {
-        c->m->body_ipos[i] = ipos[i];
+        for (int j = 0; j < 3; j++) {
+            c->m->body_ipos[3 * i + j] = ipos[i + j];
+        }
     }
+}
+
+void cassie_sim_set_body_name_ipos(cassie_sim_t *c, const char* name, double *ipos)
+{
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    for (int i = 0; i < 3; i++) {
+        c->m->body_ipos[3 * body_id + i] = ipos[i];
+    }
+}
+
+double* cassie_sim_get_body_name_ipos(cassie_sim_t *c, const char* name)
+{
+    int body_id = mj_name2id_fp(initial_model, mjOBJ_BODY, name);
+    return &(c->m->body_ipos[3 * body_id]);
 }
 
 void cassie_sim_set_body_name_pos(cassie_sim_t *c, const char* name, double *data)
@@ -3085,6 +3139,13 @@ void cassie_vis_init_depth(cassie_vis_t *v, int width, int height)
     v->depth_height = height;
 }
 
+void cassie_vis_init_rgb(cassie_vis_t *sim, int width, int height)
+{
+    sim->rgb_raw = (unsigned char*)calloc(3*width*height, sizeof(char));
+    sim->rgb_width = width;
+    sim->rgb_height = height;
+}
+
 float* cassie_vis_draw_depth(cassie_vis_t *v, cassie_sim_t *c, int width, int height)
 {
     if (v->depth_raw == NULL){
@@ -3106,6 +3167,31 @@ float* cassie_vis_draw_depth(cassie_vis_t *v, cassie_sim_t *c, int width, int he
     mjr_render_fp(viewport, &v->scn, &v->con);
     mjr_readPixels_fp(NULL, v->depth_raw, viewport, &v->con);
     return v->depth_raw;
+}
+
+unsigned char* cassie_vis_get_rgb(cassie_vis_t *sim, cassie_sim_t *c, int width, int height)
+{
+    if (sim->rgb_raw == NULL){
+        printf("ERROR: rgb_raw is null. Please initialize it first");
+        return NULL;
+    }
+    if (sim->rgb_width != width){
+        printf("ERROR: wrong width, should be %i, got %i\n", sim->rgb_width, width);
+        return NULL;
+    }
+    if (sim->rgb_height != height){
+        printf("ERROR: wrong height, should be %i, got %i\n", sim->rgb_height, height);
+        return NULL;
+    }
+
+    mjrRect viewport={0,0,width,height};
+    glfwSetWindowSize_fp(sim->window, sim->rgb_width, sim->rgb_height);
+    glfwMakeContextCurrent_fp(sim->window);
+    mjv_updateScene_fp(c->m, c->d, &sim->opt, &sim->pert, &sim->cam, mjCAT_ALL, &sim->scn);
+    mjr_render_fp(viewport, &sim->scn, &sim->con);
+    mjr_readPixels_fp(sim->rgb_raw, NULL, viewport, &sim->con);
+
+    return sim->rgb_raw;
 }
 
 int cassie_vis_get_depth_size(cassie_vis_t *v)
@@ -3144,6 +3230,10 @@ void cassie_vis_free(cassie_vis_t *v)
 
     if (v->depth_raw) {
         free(v->depth_raw);
+    }
+
+    if (v->rgb_raw) {
+        free(v->rgb_raw);
     }
 
     // Free cassie_vis_t

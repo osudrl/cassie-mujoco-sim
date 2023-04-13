@@ -74,7 +74,7 @@
     <light mode='trackcom' pos='0 0 5' dir='0 0 -1'/>
     <light directional='true' pos='0 0 3' dir='0 0 -1' diffuse='0.2 0.2 0.2' specular='0 0 0'/>
 
-    <body name='cassie-pelvis' pos='0 0 1.2' childclass='cassie'>
+    <body name='cassie-pelvis' pos='0 0 1.01' childclass='cassie'>
       <camera name='track' pos='0 -3 1' zaxis='0 -1 0.5' mode='track'/>
       <!--camera name='track' pos='-3 0 0' xyaxes='0 -1 0 0 0 1' mode='track'/-->
       <inertial pos='0.05066 0.000346 0.02841' mass='10.33' fullinertia='0.085821 0.049222 0.08626 1.276e-05 -0.00016022 -0.000414'/>
