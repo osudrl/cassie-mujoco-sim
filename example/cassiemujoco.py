@@ -666,7 +666,7 @@ class CassieSim:
             relative_pose[i] = pos[i]
         for i in range(4):
             relative_pose[i+3] = quat[i]
-        
+
     def set_const(self):
         cassie_sim_set_const(self.c)
 
@@ -808,7 +808,7 @@ class CassieVis:
             xfrc_array[i] = xfrc_apply[i]
         cassie_vis_apply_force(self.v, xfrc_array, body_name.encode())
 
-    def add_marker(self, pos, size, rgba, so3):
+    def add_marker(self, geom_type, name, pos, size, rgba, so3):
         pos_array = (ctypes.c_double * 3)()
         for i in range(len(pos)):
             pos_array[i] = pos[i]
@@ -821,7 +821,7 @@ class CassieVis:
         so3_array = (ctypes.c_double * 9)()
         for i in range(len(so3)):
             so3_array[i] = so3[i]
-        cassie_vis_add_marker(self.v, pos_array, size_array, rgba_array, so3_array)
+        cassie_vis_add_marker(self.v, geom_type.encode(), name.encode(), pos_array, size_array, rgba_array, so3_array)
 
     def remove_marker(self, id_val):
         cassie_vis_remove_marker(self.v, id_val)
@@ -845,6 +845,36 @@ class CassieVis:
         cassie_vis_update_marker_pos(self.v, ctypes.c_int(id_val), pos_array)
         cassie_vis_update_marker_size(self.v, ctypes.c_int(id_val), size_array)
         cassie_vis_update_marker_rgba(self.v, ctypes.c_int(id_val), rgba_array)
+        cassie_vis_update_marker_orient(self.v, ctypes.c_int(id_val), so3_array)
+
+    def update_marker_type(self, id_val, geom_type):
+        cassie_vis_update_marker_type(self.v, ctypes.c_int(id_val), geom_type.encode())
+
+    def update_marker_name(self, id_val, name):
+        cassie_vis_update_marker_name(self.v, ctypes.c_int(id_val), name.encode())
+
+    def update_marker_position(self, id_val, pos):
+        pos_array = (ctypes.c_double * 3)()
+        for i in range(3):
+            pos_array[i] = pos[i]
+        cassie_vis_update_marker_pos(self.v, ctypes.c_int(id_val), pos_array)
+
+    def update_marker_size(self, id_val, size):
+        size_array = (ctypes.c_double * 3)()
+        for i in range(3):
+            size_array[i] = size[i]
+        cassie_vis_update_marker_size(self.v, ctypes.c_int(id_val), size_array)
+
+    def update_marker_rgba(self, id_val, rgba):
+        rgba_array = (ctypes.c_double * 4)()
+        for i in range(4):
+            rgba_array[i] = rgba[i]
+        cassie_vis_update_marker_rgba(self.v, ctypes.c_int(id_val), rgba_array)
+
+    def update_marker_so3(self, id_val, so3):
+        so3_array = (ctypes.c_double * 9)()
+        for i in range(9):
+            so3_array[i] = so3[i]
         cassie_vis_update_marker_orient(self.v, ctypes.c_int(id_val), so3_array)
 
     def reset(self, c):

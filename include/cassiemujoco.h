@@ -371,7 +371,7 @@ bool cassie_vis_paused(cassie_vis_t *vis);
 bool cassie_vis_slowmo(cassie_vis_t *vis);
 
 // add a spherical marker for visualization purposes into scene.
-void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], double rgba[4], double so3[9]);
+int cassie_vis_add_marker(cassie_vis_t* v, char *geom_type, char *name, double pos[3], double size[3], double rgba[4], double so3[9]);
 
 // remove a visualization marker
 void cassie_vis_remove_marker(cassie_vis_t* v, int id);

@@ -605,7 +605,7 @@ cassie_vis_apply_force.argtypes = [POINTER_T(struct_cassie_vis), POINTER_T(ctype
 
 cassie_vis_add_marker = _libraries['./libcassiemujoco.so'].cassie_vis_add_marker
 cassie_vis_add_marker.restype = None
-cassie_vis_add_marker.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_double * 3, ctypes.c_double * 3, ctypes.c_double * 4, ctypes.c_double * 9]
+cassie_vis_add_marker.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_char_p, ctypes.c_char_p, ctypes.c_double * 3, ctypes.c_double * 3, ctypes.c_double * 4, ctypes.c_double * 9]
 
 cassie_vis_remove_marker = _libraries['./libcassiemujoco.so'].cassie_vis_remove_marker
 cassie_vis_remove_marker.restype = None
@@ -614,6 +614,14 @@ cassie_vis_remove_marker.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int]
 cassie_vis_clear_markers = _libraries['./libcassiemujoco.so'].cassie_vis_clear_markers
 cassie_vis_clear_markers.restype = None
 cassie_vis_clear_markers.argtypes = [POINTER_T(struct_cassie_vis)]
+
+cassie_vis_update_marker_type = _libraries['./libcassiemujoco.so'].cassie_vis_update_marker_type
+cassie_vis_update_marker_type.restype = None
+cassie_vis_update_marker_type.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int, ctypes.c_char_p]
+
+cassie_vis_update_marker_name = _libraries['./libcassiemujoco.so'].cassie_vis_update_marker_name
+cassie_vis_update_marker_name.restype = None
+cassie_vis_update_marker_name.argtypes = [POINTER_T(struct_cassie_vis), ctypes.c_int, ctypes.c_char_p]
 
 cassie_vis_update_marker_pos = _libraries['./libcassiemujoco.so'].cassie_vis_update_marker_pos
 cassie_vis_update_marker_pos.restype = None
@@ -1203,6 +1211,7 @@ __all__ = \
     'cassie_sim_body_contact_force', 'cassie_sim_body_acceleration',
     'cassie_sim_mj_name2id', 'cassie_sim_nu', 'cassie_sim_njnt', 'cassie_sim_ctrl',
     'cassie_sim_jnt_qposadr', 'cassie_sim_jnt_dofadr',
-    'cassie_sim_site_xquat', 'cassie_sim_relative_pose', 'cassie_sim_geom_collision']
+    'cassie_sim_site_xquat', 'cassie_sim_relative_pose', 'cassie_sim_geom_collision',
+    'cassie_vis_update_marker_type', 'cassie_vis_update_marker_name']
 
 

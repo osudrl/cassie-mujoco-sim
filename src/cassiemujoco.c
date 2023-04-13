@@ -267,6 +267,9 @@ struct cassie_sim {
 struct vis_marker_info {
     int id;
 
+    char *geom_type;
+    char *name;
+
     double pos_x;
     double pos_y;
     double pos_z;
@@ -1743,7 +1746,7 @@ void cassie_sim_body_contact_force(const cassie_sim_t *c, double cfrc[6], const 
             // Get contact force in local coordinates
             mj_contactForce_fp(c->m, c->d, i, force_torque);
             // Transform into global
-            mju_transformSpatial_fp(force_global, force_torque, 1, &c->d->xpos[3*body_id], 
+            mju_transformSpatial_fp(force_global, force_torque, 1, &c->d->xpos[3*body_id],
                 c->d->contact[i].pos, c->d->contact[i].frame);
 
             // Add to total forces on foot
@@ -2208,13 +2211,15 @@ void cassie_vis_remakeSceneCon(cassie_vis_t *v) {
 }
 
 // add markers to visualization
-void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], double rgba[4], double so3[9])
+int cassie_vis_add_marker(cassie_vis_t* v, char *geom_type, char *name, double pos[3], double size[3], double rgba[4], double so3[9])
 {
     int i;
     if (v->marker_num + 1 < MAX_VIS_MARKERS)
     {
         //struct vis_marker_info new_marker;
         v->marker_infos[v->marker_num].id = v->marker_num;
+        strcpy(v->marker_infos[v->marker_num].geom_type, geom_type);
+        strcpy(v->marker_infos[v->marker_num].name, name);
         v->marker_infos[v->marker_num].pos_x = pos[0];
         v->marker_infos[v->marker_num].pos_y = pos[1];
         v->marker_infos[v->marker_num].pos_z = pos[2];
@@ -2229,8 +2234,8 @@ void cassie_vis_add_marker(cassie_vis_t* v, double pos[3], double size[3], doubl
         {
             v->marker_infos[v->marker_num].so3[i] = so3[i];
         }
-        printf("marker with id: %d\n", v->marker_infos[v->marker_num].id);
         v->marker_num++;
+        return v->marker_num - 1;
     }
     else
     {
@@ -2268,72 +2273,93 @@ void cassie_vis_clear_markers(cassie_vis_t* v)
     v->marker_num = 0;
 }
 
+// update existing marker type
+void cassie_vis_update_marker_type(cassie_vis_t* v, int id, char *geom_type)
+{
+    for (int i = 0; i < v->marker_num; i++) {
+        if (v->marker_infos[i].id == id) {
+            // v->marker_infos[i].geom_type = geom_type;
+            strcpy(v->marker_infos[v->marker_num].geom_type, geom_type);
+            return;
+        }
+    }
+    printf("Marker with id %d not found, did not update anything!\n", id);
+    return;
+}
+
+// update existing marker type
+void cassie_vis_update_marker_name(cassie_vis_t* v, int id, char *name)
+{
+    for (int i = 0; i < v->marker_num; i++) {
+        if (v->marker_infos[i].id == id) {
+            // v->marker_infos[i].name = name;
+            strcpy(v->marker_infos[v->marker_num].name, name);
+            return;
+        }
+    }
+    printf("Marker with id %d not found, did not update anything!\n", id);
+    return;
+}
+
 // update existing marker position
 void cassie_vis_update_marker_pos(cassie_vis_t* v, int id, double pos[3])
 {
-    if (id > (int)v->marker_num)
-    {
-        printf("%lu > %d invalid marker id\n", v->marker_num, id);
-        return;
+    for (int i = 0; i < v->marker_num; i++) {
+        if (v->marker_infos[i].id == id) {
+            v->marker_infos[i].pos_x = pos[0];
+            v->marker_infos[i].pos_y = pos[1];
+            v->marker_infos[i].pos_z = pos[2];
+            return;
+        }
     }
-    else
-    {
-        v->marker_infos[id].pos_x = pos[0];
-        v->marker_infos[id].pos_y = pos[1];
-        v->marker_infos[id].pos_z = pos[2];
-        return;
-    }
+    printf("Marker with id %d not found, did not update anything!\n", id);
+    return;
 }
 
 // update existing marker size
 void cassie_vis_update_marker_size(cassie_vis_t* v, int id, double size[3])
 {
-    if (id > (int)v->marker_num)
-    {
-        printf("%lu > %d invalid marker id\n", v->marker_num, id);
-        return;
+    for (int i = 0; i < v->marker_num; i++) {
+        if (v->marker_infos[i].id == id) {
+            v->marker_infos[i].size_x = size[0];
+            v->marker_infos[i].size_y = size[1];
+            v->marker_infos[i].size_z = size[2];
+            return;
+        }
     }
-    else
-    {
-        v->marker_infos[id].size_x = size[0];
-        v->marker_infos[id].size_y = size[1];
-        v->marker_infos[id].size_z = size[2];
-        return;
-    }
+    printf("Marker with id %d not found, did not update anything!\n", id);
+    return;
 }
 
 // update existing marker color
 void cassie_vis_update_marker_rgba(cassie_vis_t* v, int id, double rgba[4])
 {
-    if (id > (int)v->marker_num)
-    {
-        printf("%lu > %d invalid marker id\n", v->marker_num, id);
-        return;
+    for (int i = 0; i < v->marker_num; i++) {
+        if (v->marker_infos[i].id == id) {
+            v->marker_infos[i].r = rgba[0];
+            v->marker_infos[i].g = rgba[1];
+            v->marker_infos[i].b = rgba[2];
+            v->marker_infos[i].a = rgba[3];
+            return;
+        }
     }
-    else
-    {
-        v->marker_infos[id].r = rgba[0];
-        v->marker_infos[id].g = rgba[1];
-        v->marker_infos[id].b = rgba[2];
-        v->marker_infos[id].a = rgba[3];
-        return;
-    }
+    printf("Marker with id %d not found, did not update anything!\n", id);
+    return;
 }
 
 // update existing marker orientation
 void cassie_vis_update_marker_orient(cassie_vis_t* v, int id, double so3[9])
 {
-    if (id > (int)v->marker_num)
-    {
-        printf("%lu > %d invalid marker id\n", v->marker_num, id);
-        return;
+    for (int i = 0; i < v->marker_num; i++) {
+        if (v->marker_infos[i].id == id) {
+            v->marker_infos[i].so3[0] = so3[0]; v->marker_infos[i].so3[1] = so3[1]; v->marker_infos[i].so3[2] = so3[2];
+            v->marker_infos[i].so3[3] = so3[3]; v->marker_infos[i].so3[4] = so3[4]; v->marker_infos[i].so3[5] = so3[5];
+            v->marker_infos[i].so3[6] = so3[6]; v->marker_infos[i].so3[7] = so3[7]; v->marker_infos[i].so3[8] = so3[8];
+            return;
+        }
     }
-    else
-    {
-        v->marker_infos[id].so3[0] = so3[0]; v->marker_infos[id].so3[1] = so3[1]; v->marker_infos[id].so3[2] = so3[2];
-        v->marker_infos[id].so3[3] = so3[3]; v->marker_infos[id].so3[4] = so3[4]; v->marker_infos[id].so3[5] = so3[5];
-        v->marker_infos[id].so3[6] = so3[6]; v->marker_infos[id].so3[7] = so3[7]; v->marker_infos[id].so3[8] = so3[8];
-    }
+    printf("Marker with id %d not found, did not update anything!\n", id);
+    return;
 }
 
 void cassie_vis_apply_force(cassie_vis_t *v, double xfrc[6], const char* name)
@@ -2982,6 +3008,11 @@ cassie_vis_t *cassie_vis_init(cassie_sim_t* c, const char* modelfile, bool offsc
     }
     // Allocate visualization structure
     cassie_vis_t *v = malloc(sizeof (cassie_vis_t));
+    // Allocate marker string pointers
+    for (int i = 0; i < MAX_VIS_MARKERS; i++) {
+        v->marker_infos[i].geom_type = malloc(sizeof(char) * 1024);
+        v->marker_infos[i].name = malloc(sizeof(char) * 1024);
+    }
     // Set interaction ctrl vars
     v->lastx = 0.0;
     v->lasty = 0.0;
@@ -3135,7 +3166,9 @@ void v_setMarkerGeom(mjvGeom* geom, struct vis_marker_info info)
     geom->specular = 0.5;
     geom->shininess = 0.5;
     geom->reflectance = 0;
-    geom->label[0] = 0;
+    for (int i = 0; i < strlen(info.name); i++) {
+        geom->label[i] = info.name[i];
+    }
     geom->size[0] = info.size_x;
     geom->size[1] = info.size_y;
     geom->size[2] = info.size_z;
@@ -3149,7 +3182,32 @@ void v_setMarkerGeom(mjvGeom* geom, struct vis_marker_info info)
     geom->mat[0] = info.so3[0]; geom->mat[1] = info.so3[1]; geom->mat[2] = info.so3[2];
     geom->mat[3] = info.so3[3]; geom->mat[4] = info.so3[4]; geom->mat[5] = info.so3[5];
     geom->mat[6] = info.so3[6]; geom->mat[7] = info.so3[7]; geom->mat[8] = info.so3[8];
-    geom->type = mjGEOM_SPHERE;
+    if (strcmp(info.geom_type, "plane") == 0) {
+        geom->type = mjGEOM_PLANE;
+    } else if (strcmp(info.geom_type, "sphere") == 0) {
+        geom->type = mjGEOM_SPHERE;
+    } else if (strcmp(info.geom_type, "capsule") == 0) {
+        geom->type = mjGEOM_CAPSULE;
+    } else if (strcmp(info.geom_type, "ellipsoid") == 0) {
+        geom->type = mjGEOM_ELLIPSOID;
+    } else if (strcmp(info.geom_type, "cylinder") == 0) {
+        geom->type = mjGEOM_CYLINDER;
+    } else if (strcmp(info.geom_type, "box") == 0) {
+        geom->type = mjGEOM_BOX;
+    } else if (strcmp(info.geom_type, "arrow") == 0) {
+        geom->type = mjGEOM_ARROW;
+    } else if (strcmp(info.geom_type, "arrow1") == 0) {
+        geom->type = mjGEOM_ARROW1;
+    } else if (strcmp(info.geom_type, "arrow2") == 0) {
+        geom->type = mjGEOM_ARROW2;
+    } else if (strcmp(info.geom_type, "line") == 0) {
+        geom->type = mjGEOM_LINE;
+    } else if (strcmp(info.geom_type, "label") == 0) {
+        geom->type = mjGEOM_LABEL;
+    } else {
+        printf("Error: Unknown geom type for marker.\n");
+        exit(1);
+    }
 }
 
 void add_vis_markers(cassie_vis_t* v)
